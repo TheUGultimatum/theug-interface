@@ -25,7 +25,7 @@ const bebasNeue = Bebas_Neue({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://theug.dev"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://theug.vercel.app"),
   title: "theUG · AI & Automation Engineer",
   description:
     "Portfolio of theUG — building AI agents, automation tools, and experimental products. Enter the workspace.",
