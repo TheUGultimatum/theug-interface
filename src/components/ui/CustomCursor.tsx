@@ -14,11 +14,18 @@ export function CustomCursor() {
   const [clicked, setClicked] = useState(false);
   const [cursorState, setCursorState] = useState<"default" | "link" | "crosshair" | "text">("default");
   const [cursorText, setCursorText] = useState("");
+  const [mounted, setMounted] = useState(false);
+  const [isTouch, setIsTouch] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && window.matchMedia("(hover: none)").matches) {
-      return;
+    setMounted(true);
+    if (window.matchMedia("(hover: none) and (pointer: coarse)").matches) {
+      setIsTouch(true);
     }
+  }, []);
+
+  useEffect(() => {
+    if (!mounted || isTouch) return;
 
     const dot = dotRef.current;
     const ring = ringRef.current;
@@ -192,6 +199,8 @@ export function CustomCursor() {
   const isCrosshair = cursorState === "crosshair";
   const isLink = cursorState === "link" || cursorState === "text";
   
+  if (!mounted || isTouch) return null;
+
   return (
     <>
       <style>{`

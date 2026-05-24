@@ -316,7 +316,17 @@ function Terminal() {
         {done && (
           <div style={{ display: "flex", alignItems: "center", marginTop: "6px" }}>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--color-amber)", marginRight: "6px" }}>$</span>
-            <div style={{ position: "relative", flex: 1, display: "flex", alignItems: "center" }}>
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                setHasInteracted(true);
+                executeCommand(input);
+                setCmdHistory(prev => [input, ...prev]);
+                setCmdIndex(-1);
+                setInput("");
+              }}
+              style={{ position: "relative", flex: 1, display: "flex", alignItems: "center" }}
+            >
               <input
                 ref={inputRef}
                 type="text"
@@ -338,7 +348,7 @@ function Terminal() {
                 }}
                 spellCheck={false}
                 autoComplete="off"
-                autoFocus
+                autoCapitalize="off"
               />
               {/* Custom blinking cursor overlay */}
               <div style={{ 
@@ -350,7 +360,7 @@ function Terminal() {
               }}>
                 <span className="cursor-blink" />
               </div>
-            </div>
+            </form>
           </div>
         )}
       </div>
