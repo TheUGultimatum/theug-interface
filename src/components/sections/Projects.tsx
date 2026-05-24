@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ExternalLink, Code2 } from "lucide-react";
+import { ExternalLink, Code2, Lock } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { TechTagGroup } from "@/components/ui/TechTag";
 import { SectionLabel } from "@/components/ui/SectionLabel";
@@ -23,6 +23,8 @@ interface Project {
   accentRgb: string;
   category: string;
   year: string;
+  isPrivate?: boolean;
+  bannerUrl?: string;
 }
 
 const PROJECTS: Project[] = [
@@ -35,8 +37,9 @@ const PROJECTS: Project[] = [
     stack: ["Next.js", "Solidity", "Base SDK", "TypeScript", "Wagmi"],
     status: "live",
     deployTarget: "BASE MAINNET",
-    liveUrl: "#",
-    githubUrl: "https://github.com/TheUGultimatum",
+    liveUrl: "https://dinorunbase.vercel.app/",
+    isPrivate: true,
+    bannerUrl: "/images/dinorun.png",
     featured: true,
     accentColor: "var(--color-cyan)",
     accentRgb: "0,212,255",
@@ -135,6 +138,26 @@ function ProjectPreview({ project, large = false }: { project: Project; large?: 
         transform: "translate(-50%, -50%)",
         filter: "blur(2px)",
       }} />
+
+      {/* Banner Image */}
+      {project.bannerUrl && (
+        <img 
+          src={project.bannerUrl} 
+          alt={project.name}
+          style={{
+            position: "absolute", inset: 0, width: "100%", height: "100%",
+            objectFit: "cover", opacity: 0.9, mixBlendMode: "screen"
+          }}
+        />
+      )}
+
+      {/* Gradient overlay to ensure text readability */}
+      {project.bannerUrl && (
+        <div style={{
+          position: "absolute", inset: 0,
+          background: `linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)`
+        }} />
+      )}
 
       {/* Corner badge */}
       <div style={{
@@ -281,12 +304,16 @@ function FeaturedProject({ project }: { project: Project }) {
                 LIVE DEMO <ExternalLink size={10} />
               </a>
             )}
-            {project.githubUrl && (
+            {project.isPrivate ? (
+              <div className="btn-secondary" style={{ padding: "7px 16px", fontSize: "10px", opacity: 0.5, cursor: "not-allowed" }}>
+                <Lock size={11} /> PRIVATE REPO
+              </div>
+            ) : project.githubUrl ? (
               <a href={project.githubUrl} target="_blank" rel="noopener noreferrer"
                 className="btn-secondary" style={{ padding: "7px 16px", fontSize: "10px" }}>
                 <Code2 size={11} /> SOURCE
               </a>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
