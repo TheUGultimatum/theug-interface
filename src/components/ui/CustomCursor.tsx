@@ -194,7 +194,7 @@ export function CustomCursor() {
       document.removeEventListener("mouseup", onUp);
       cancelAnimationFrame(raf);
     };
-  }, [visible]);
+  }, [visible, mounted, isTouch]);
 
   const isCrosshair = cursorState === "crosshair";
   const isLink = cursorState === "link" || cursorState === "text";
