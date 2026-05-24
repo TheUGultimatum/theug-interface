@@ -123,7 +123,7 @@ export function CommandPalette() {
         <div className="max-h-[350px] overflow-y-auto py-2">
           {filtered.length === 0 ? (
             <div className="px-4 py-8 text-center font-mono text-[11px] text-[var(--color-text-muted)]">
-              No commands found for "{query}"
+              No commands found for &quot;{query}&quot;
             </div>
           ) : (
             filtered.map((cmd, idx) => {

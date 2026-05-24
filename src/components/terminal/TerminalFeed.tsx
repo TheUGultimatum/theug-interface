@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 
 /* ─── Types ─────────────────────────────────────────────── */
@@ -61,17 +61,17 @@ export function TerminalFeed({
   maxHeight = "160px",
   autoScroll = true,
 }: TerminalFeedProps) {
-  const [ref, setRef] = useState<HTMLDivElement | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (autoScroll && ref) {
-      ref.scrollTop = ref.scrollHeight;
+    if (autoScroll && ref.current) {
+      ref.current.scrollTop = ref.current.scrollHeight;
     }
-  }, [lines, autoScroll, ref]);
+  }, [lines, autoScroll]);
 
   return (
     <div
-      ref={setRef}
+      ref={ref}
       className={cn("overflow-y-auto", className)}
       style={{ maxHeight }}
     >

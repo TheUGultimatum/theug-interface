@@ -29,7 +29,7 @@ export function TerminalWindow({ title = "main.sh", className }: TerminalWindowP
   useEffect(() => {
     const timers: ReturnType<typeof setTimeout>[] = [];
 
-    BOOT_SEQUENCE.forEach((line, i) => {
+    BOOT_SEQUENCE.forEach((line) => {
       const t = setTimeout(() => {
         setVisibleLines((prev) => [...prev, line.text]);
         if (containerRef.current) {

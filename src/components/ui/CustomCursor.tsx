@@ -11,13 +11,13 @@ export function CustomCursor() {
   const particlesRef = useRef<(HTMLDivElement | null)[]>([]);
   
   const [visible, setVisible] = useState(false);
-  const [clicked, setClicked] = useState(false);
   const [cursorState, setCursorState] = useState<"default" | "link" | "crosshair" | "text">("default");
   const [cursorText, setCursorText] = useState("");
   const [mounted, setMounted] = useState(false);
   const [isTouch, setIsTouch] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line
     setMounted(true);
     if (window.matchMedia("(hover: none) and (pointer: coarse)").matches) {
       setIsTouch(true);
@@ -110,7 +110,6 @@ export function CustomCursor() {
     const onLeave = () => setVisible(false);
     
     const onDown = () => {
-      setClicked(true);
       // Glitch pulse effect
       if (dot) {
         dot.style.boxShadow = "0 0 20px var(--color-amber-bright), 0 0 40px var(--color-amber)";
@@ -124,7 +123,7 @@ export function CustomCursor() {
       }
     };
     
-    const onUp = () => setClicked(false);
+    const onUp = () => {};
 
     const checkHoverState = (e: MouseEvent) => {
       const el = e.target as HTMLElement;

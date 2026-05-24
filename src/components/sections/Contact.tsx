@@ -36,6 +36,7 @@ function Uptime() {
   const [days, setDays] = useState(0);
   useEffect(() => {
     const start = new Date("2021-01-01").getTime();
+    // eslint-disable-next-line
     setDays(Math.floor((Date.now() - start) / 86400000));
   }, []);
   return <span>{days}d</span>;

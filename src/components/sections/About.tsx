@@ -105,10 +105,10 @@ export function About() {
               </div>
               <div className="panel-body">
                 <p style={{ color: "var(--color-text-secondary)", fontSize: "14px", lineHeight: 1.8 }}>
-                  I'm an independent builder focused on AI agents, automation systems, and
+                  I&apos;m an independent builder focused on AI agents, automation systems, and
                   experimental software products. I work at the intersection of AI, blockchain,
-                  and developer tooling — building things that either didn't exist before or
-                  weren't done properly yet.
+                  and developer tooling — building things that either didn&apos;t exist before or
+                  weren&apos;t done properly yet.
                 </p>
                 <p style={{ color: "var(--color-text-secondary)", fontSize: "14px", lineHeight: 1.8, marginTop: "12px" }}>
                   I care about the craft — clean systems, sharp interfaces, and code that

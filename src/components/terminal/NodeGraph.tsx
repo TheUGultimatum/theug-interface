@@ -35,6 +35,10 @@ export function NodeGraph() {
   const mouseRef = useRef<{ x: number, y: number } | null>(null);
 
   useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return; // Abort physics on low-end devices or user preference
+    }
+
     const outerNodes = INITIAL_NODES.filter(n => !n.isCenter);
     
     const animate = () => {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { ExternalLink, Code2, Lock } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { TechTagGroup } from "@/components/ui/TechTag";
@@ -141,11 +142,11 @@ function ProjectPreview({ project, large = false }: { project: Project; large?: 
 
       {/* Banner Image */}
       {project.bannerUrl && (
-        <img 
+        <Image 
           src={project.bannerUrl} 
           alt={project.name}
+          fill
           style={{
-            position: "absolute", inset: 0, width: "100%", height: "100%",
             objectFit: "cover", opacity: 0.9, mixBlendMode: "screen"
           }}
         />

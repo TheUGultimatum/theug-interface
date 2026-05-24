@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef } from "react";
 import { NodeGraph } from "@/components/terminal/NodeGraph";
 
 /* ─── Typewriter hook ────────────────────────────────────── */
@@ -77,16 +77,6 @@ const BOOT_SEQUENCE = [
   "  usmaan.gani // theUG",
   "  role: independent builder",
   "  focus: ai·automation·web3",
-];
-
-const LIVE_LOGS = [
-  "agent:content_pipeline     RUNNING  3h42m",
-  "deploy:vercel/portfolio    OK       2m ago",
-  "model:gpt4o inference      142ms    avg",
-  "webhook:github.push        RECV     just now",
-  "daemon:scheduler           TICK     15s",
-  "cache:redis                HIT      97.2%",
-  "build:next.js              PASS     1.4s",
 ];
 
 function Terminal() {
@@ -452,6 +442,7 @@ function ScrambleText({ text, trigger }: { text: string, trigger: boolean }) {
   
   useEffect(() => {
     if (!trigger) {
+      // eslint-disable-next-line
       setDisplay("");
       return;
     }

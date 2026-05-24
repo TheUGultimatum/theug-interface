@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, IBM_Plex_Mono, Bebas_Neue } from "next/font/google";
+import { GlobalLoader } from "@/components/ui/GlobalLoader";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -24,14 +25,32 @@ const bebasNeue = Bebas_Neue({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://theug.dev"),
   title: "theUG · AI & Automation Engineer",
   description:
     "Portfolio of theUG — building AI agents, automation tools, and experimental products. Enter the workspace.",
-  keywords: ["AI", "Automation", "Developer", "Portfolio", "Next.js", "TypeScript"],
+  keywords: ["AI", "Automation", "Developer", "Portfolio", "Next.js", "TypeScript", "Web3", "Smart Contracts", "Infrastructure", "Software Engineer"],
+  authors: [{ name: "theUG" }],
   openGraph: {
     title: "theUG · AI & Automation Engineer",
     description: "Building intelligent systems. Enter the workspace.",
+    url: "/",
+    siteName: "theUG Portfolio",
+    images: [
+      {
+        url: "/opengraph-image.png",
+        width: 1200,
+        height: 630,
+        alt: "theUG Portfolio Preview",
+      },
+    ],
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "theUG · AI & Automation Engineer",
+    description: "Building intelligent systems. Enter the workspace.",
+    images: ["/opengraph-image.png"],
   },
 };
 
@@ -46,7 +65,10 @@ export default function RootLayout({
       className={`${spaceGrotesk.variable} ${ibmPlexMono.variable} ${bebasNeue.variable}`}
       suppressHydrationWarning
     >
-      <body suppressHydrationWarning>{children}</body>
+      <body suppressHydrationWarning>
+        <GlobalLoader />
+        {children}
+      </body>
     </html>
   );
 }
