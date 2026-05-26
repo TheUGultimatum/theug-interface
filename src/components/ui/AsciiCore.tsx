@@ -187,13 +187,13 @@ function AsciiCoreComponent() {
       particlesRef.current = particles;
     };
 
+    let isFirstResize = true;
     let resizeTimeout: ReturnType<typeof setTimeout>;
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
         if (width > 0 && height > 0) {
-          clearTimeout(resizeTimeout);
-          resizeTimeout = setTimeout(() => {
+          const runSetup = () => {
             const dpr = Math.min(window.devicePixelRatio || 1, 2);
             if (canvasRef.current) {
               canvasRef.current.width = width * dpr;
@@ -203,7 +203,15 @@ function AsciiCoreComponent() {
             }
             dimRef.current = { w: width * dpr, h: height * dpr, dpr };
             generateButterfly();
-          }, 100);
+          };
+
+          if (isFirstResize) {
+            isFirstResize = false;
+            runSetup();
+          } else {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(runSetup, 100);
+          }
         }
       }
     });
@@ -329,6 +337,8 @@ function AsciiCoreComponent() {
         ctx.stroke();
       }
     };
+
+    render();
 
     return () => {
       cancelAnimationFrame(rafRef.current);
