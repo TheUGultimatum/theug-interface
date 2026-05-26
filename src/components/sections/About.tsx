@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { MetricBar } from "@/components/ui/MetricBar";
 import { TechTagGroup } from "@/components/ui/TechTag";
 import { SectionLabel } from "@/components/ui/SectionLabel";
-import { IdentityHologram } from "@/components/ui/IdentityHologram";
+import { IdentityPortrait } from "@/components/ui/IdentityPortrait";
 
 const SKILLS = [
   { label: "AI / LLM Engineering",  value: 90, variant: "electric" as const },
@@ -72,12 +72,15 @@ export function About() {
           className="about-grid"
         >
 
-          {/* ── LEFT: Cinematic ASCII Identity Scanner + Bio ── */}
+          {/* ── LEFT: Cinematic Biometric Profile Anchor ── */}
           <div className={`flex flex-col gap-6 ${inView ? "animate-fade-in-up delay-100" : "anim-hidden"}`}>
-            {/* Neural Hologram Canvas */}
-            <IdentityHologram />
+            <IdentityPortrait />
+          </div>
 
-            {/* Bio */}
+          {/* ── RIGHT: Biometrics Terminal + Bio + Skills + Stack ── */}
+          <div className={`flex flex-col gap-6 ${inView ? "animate-fade-in-up delay-200" : "anim-hidden"}`}>
+            
+            {/* Bio (Moved from Left Column) */}
             <div className="panel hover-glow-edge" data-cursor="VIEW">
               <div className="panel-header">
                 <span className="panel-title">bio.md</span>
@@ -95,12 +98,8 @@ export function About() {
                 </p>
               </div>
             </div>
-          </div>
 
-          {/* ── RIGHT: Biometrics Terminal + Skills + Stack ── */}
-          <div className={`flex flex-col gap-6 ${inView ? "animate-fade-in-up delay-200" : "anim-hidden"}`}>
-            
-            {/* Identity Terminal Panel */}
+            {/* Identity Terminal Panel (whoami.sh) */}
             <div className="panel hover-glow-edge" data-cursor="VIEW">
               <div className="panel-header flex items-center justify-between">
                 <div className="panel-controls">
@@ -124,7 +123,7 @@ export function About() {
               </div>
             </div>
 
-            {/* Skills */}
+            {/* Skills (skills.json) */}
             <div className="panel hover-glow-edge" data-cursor="VIEW">
               <div className="panel-header">
                 <span className="panel-title">skills.json</span>
@@ -143,7 +142,7 @@ export function About() {
               </div>
             </div>
 
-            {/* Tech stack */}
+            {/* Tech Stack (tech_stack.config) */}
             <div className="panel hover-glow-edge" data-cursor="VIEW">
               <div className="panel-header">
                 <span className="panel-title">tech_stack.config</span>
