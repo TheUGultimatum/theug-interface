@@ -78,17 +78,6 @@ function AsciiCoreComponent() {
     );
     observer.observe(container);
 
-    const setupSize = () => {
-      if (!containerRef.current || !canvasRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      canvasRef.current.width = rect.width * dpr;
-      canvasRef.current.height = rect.height * dpr;
-      canvasRef.current.style.width = `${rect.width}px`;
-      canvasRef.current.style.height = `${rect.height}px`;
-      dimRef.current = { w: rect.width * dpr, h: rect.height * dpr, dpr };
-      generateButterfly();
-    };
 
     const generateButterfly = () => {
       const { w, h } = dimRef.current;
@@ -198,15 +187,27 @@ function AsciiCoreComponent() {
       particlesRef.current = particles;
     };
 
-    setupSize();
-    
-    // Debounced/Throttled resize observer
     let resizeTimeout: ReturnType<typeof setTimeout>;
-    const onResize = () => {
-      clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(setupSize, 120);
-    };
-    window.addEventListener("resize", onResize);
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        if (width > 0 && height > 0) {
+          clearTimeout(resizeTimeout);
+          resizeTimeout = setTimeout(() => {
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            if (canvasRef.current) {
+              canvasRef.current.width = width * dpr;
+              canvasRef.current.height = height * dpr;
+              canvasRef.current.style.width = `${width}px`;
+              canvasRef.current.style.height = `${height}px`;
+            }
+            dimRef.current = { w: width * dpr, h: height * dpr, dpr };
+            generateButterfly();
+          }, 100);
+        }
+      }
+    });
+    resizeObserver.observe(container);
 
     // ── RENDER LOOP ──
     const render = () => {
@@ -331,7 +332,8 @@ function AsciiCoreComponent() {
 
     return () => {
       cancelAnimationFrame(rafRef.current);
-      window.removeEventListener("resize", onResize);
+      clearTimeout(resizeTimeout);
+      resizeObserver.disconnect();
       observer.disconnect();
     };
   }, []);
@@ -358,7 +360,7 @@ function AsciiCoreComponent() {
             letterSpacing: "0.06em",
           }}
         >
-          PARTICLE_SIM // {particlesRef.current.length || "ADAPTIVE"} NODES
+          PARTICLE_SIM // 650 NODES
         </span>
       </div>
 

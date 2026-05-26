@@ -624,7 +624,7 @@ export function Hero() {
 
   return (
     <section id="home" style={{
-      minHeight: "100vh",
+      minHeight: "100dvh",
       paddingTop: "clamp(80px, 11vh, 130px)",
       paddingBottom: "clamp(48px, 7vh, 90px)",
       paddingLeft: "clamp(28px, 4vw, 60px)",

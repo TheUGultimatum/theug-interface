@@ -125,15 +125,12 @@
   inset: 0;
   z-index: 99999;
   pointer-events: none;
-  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.025) 50%), 
-              linear-gradient(90deg, rgba(255, 0, 0, 0.003), rgba(0, 255, 0, 0.001), rgba(0, 0, 255, 0.003));
-  background-size: 100% 4px, 12px 100%;
+  background: radial-gradient(circle at center, transparent 60%, rgba(0, 0, 0, 0.22) 100%);
 }
 
 .day-mode .crt-overlay {
-  background: linear-gradient(rgba(0, 0, 0, 0.008) 50%, transparent 50%);
-  background-size: 100% 3px;
-  opacity: 0.3;
+  background: radial-gradient(circle at center, transparent 70%, rgba(0, 0, 0, 0.06) 100%);
+  opacity: 0.6;
 }
 
 @keyframes screen-flicker {
@@ -266,6 +263,7 @@ body {
 .workspace-layout {
   display: flex;
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--color-void);
 }
 
@@ -315,12 +313,12 @@ body {
   background: linear-gradient(
     to bottom,
     transparent 50%,
-    rgba(0, 0, 0, 0.2) 51%
+    rgba(0, 0, 0, 0.04) 51%
   );
   background-size: 100% 4px;
-  opacity: 0.3;
+  opacity: 0.15;
   pointer-events: none;
-  animation: scanline-drift 10s linear infinite;
+  animation: scanline-drift 20s linear infinite;
 }
 
 @keyframes scanline-drift {
@@ -392,6 +390,7 @@ body {
   display: flex;
   flex-direction: column;
   transition: transform var(--transition-slow), border-color var(--transition-base), box-shadow var(--transition-base);
+  contain: layout paint style;
 }
 
 .hover-glow-edge:hover {
@@ -777,4 +776,9 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+.portrait-image {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }

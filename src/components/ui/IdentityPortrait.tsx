@@ -13,6 +13,7 @@ export function IdentityPortrait() {
   const imageWrapperRef = useRef<HTMLDivElement>(null);
 
   const [dots, setDots] = useState("");
+  const [isHovered, setIsHovered] = useState(false);
   const frameRef = useRef(0);
 
   // Parallax / Spring Dynamics Refs
@@ -111,6 +112,7 @@ export function IdentityPortrait() {
   }, []);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    setIsHovered(true);
     if (reducedMotionRef.current) return;
     const container = containerRef.current;
     if (!container) return;
@@ -127,6 +129,7 @@ export function IdentityPortrait() {
   };
 
   const handleMouseLeave = () => {
+    setIsHovered(false);
     targetX.current = 0;
     targetY.current = 0;
   };
@@ -136,7 +139,7 @@ export function IdentityPortrait() {
       ref={containerRef}
       className="relative w-full overflow-hidden select-none group flex items-center justify-center p-6"
       style={{
-        height: "clamp(300px, 48vh, 600px)", // Adjusted minimum to 300px to prevent viewport spilling on mobile screens (320px/375px)
+        height: "clamp(320px, 45vw, 680px)",
         background: "transparent",
         perspective: "1200px",
         cursor: "crosshair",
@@ -159,13 +162,13 @@ export function IdentityPortrait() {
         className="relative aspect-[3/4] h-[92%] max-h-[92%] w-auto overflow-hidden transition-all duration-700 ease-out"
         style={{
           transformStyle: "preserve-3d",
-          willChange: reducedMotionRef.current ? "auto" : "transform",
+          willChange: isHovered && !reducedMotionRef.current ? "transform" : "auto",
           transition: "box-shadow 0.6s ease",
           maskImage: "linear-gradient(to bottom, black 62%, rgba(0,0,0,0.8) 72%, rgba(0,0,0,0.1) 90%, transparent 100%)",
           WebkitMaskImage: "linear-gradient(to bottom, black 62%, rgba(0,0,0,0.8) 72%, rgba(0,0,0,0.1) 90%, transparent 100%)",
         }}
       >
-        <div className="absolute inset-0 grayscale contrast-[1.12] brightness-[0.93] transition-all duration-700 ease-out group-hover:scale-101 group-hover:brightness-[0.97] group-hover:contrast-[1.14]">
+        <div className="absolute inset-0 grayscale contrast-[1.12] brightness-[0.93] transition-all duration-700 ease-out group-hover:scale-101 group-hover:brightness-[0.97] group-hover:contrast-[1.14] portrait-image">
           <Image
             src="/images/portrait.png"
             alt="Usmaan Gani - Editorial Portrait"
@@ -214,7 +217,7 @@ export function IdentityPortrait() {
           className="absolute inset-0 pointer-events-none z-10 transition-opacity duration-500 opacity-[0.12] group-hover:opacity-[0.24]"
           style={{
             background: "linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.06) 45%, transparent 45%, transparent 100%)",
-            willChange: reducedMotionRef.current ? "auto" : "transform",
+            willChange: isHovered && !reducedMotionRef.current ? "transform" : "auto",
           }}
         />
       </div>

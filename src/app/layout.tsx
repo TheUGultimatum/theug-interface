@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Space_Grotesk, IBM_Plex_Mono, Bebas_Neue } from "next/font/google";
 import { GlobalLoader } from "@/components/ui/GlobalLoader";
 import "./globals.css";
@@ -52,6 +52,13 @@ export const metadata: Metadata = {
     description: "Building intelligent systems. Enter the workspace.",
     images: ["/opengraph-image.png"],
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

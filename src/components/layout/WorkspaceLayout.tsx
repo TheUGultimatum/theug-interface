@@ -10,7 +10,7 @@ interface WorkspaceLayoutProps {
 
 export function WorkspaceLayout({ children }: WorkspaceLayoutProps) {
   return (
-    <div className="workspace-layout animate-screen-flicker">
+    <div className="workspace-layout">
       {/* Global CRT scanline filter layer */}
       <div className="crt-overlay" />
 
