@@ -10,13 +10,19 @@ import {
   Code2,
   X,
   Link2,
+  Activity,
+  Flame,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
   { href: "#home", label: "HOME", icon: Home },
   { href: "#about", label: "ABOUT", icon: User },
+  { href: "#now", label: "NOW", icon: Activity },
   { href: "#projects", label: "PROJECTS", icon: FolderOpen },
+  { href: "#labs", label: "LABS", icon: Flame },
   { href: "#timeline", label: "TIMELINE", icon: Clock },
   { href: "#contact", label: "CONTACT", icon: Mail },
 ];
@@ -28,6 +34,31 @@ const SOCIAL_LINKS = [
 ];
 
 function DesktopSidebar({ active }: { active: string }) {
+  const [dayMode, setDayMode] = useState(false);
+
+  useEffect(() => {
+    const isDay = document.documentElement.classList.contains("day-mode");
+    setDayMode(isDay);
+
+    const observer = new MutationObserver(() => {
+      const currentIsDay = document.documentElement.classList.contains("day-mode");
+      setDayMode(currentIsDay);
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+
+    return () => observer.disconnect();
+  }, []);
+
+  const toggleTheme = () => {
+    const nextMode = !dayMode;
+    setDayMode(nextMode);
+    if (nextMode) {
+      document.documentElement.classList.add("day-mode");
+    } else {
+      document.documentElement.classList.remove("day-mode");
+    }
+  };
+
   return (
     <aside
       className="fixed left-0 top-0 h-full z-50 hidden lg:flex flex-col"
@@ -64,8 +95,21 @@ function DesktopSidebar({ active }: { active: string }) {
         </div>
       </div>
 
+      {/* Theme Switcher in Sidebar */}
+      <div className="px-6 py-3.5 flex items-center justify-between border-b border-[var(--color-border)]">
+        <span className="font-mono text-[9px] text-[var(--color-text-muted)] tracking-wider">INTERFACE THEME</span>
+        <button
+          onClick={toggleTheme}
+          className="p-1.5 rounded-md border border-[var(--color-border)] hover:border-[var(--color-amber)] transition-colors flex items-center justify-center cursor-pointer"
+          style={{ color: "var(--color-text-secondary)", background: "transparent" }}
+          title={dayMode ? "Switch to Night Mode" : "Switch to Day Mode"}
+        >
+          {dayMode ? <Sun size={13} className="text-[var(--color-amber-bright)]" /> : <Moon size={13} />}
+        </button>
+      </div>
+
       {/* Navigation */}
-      <nav className="flex flex-col gap-1.5 px-4 py-8 flex-1">
+      <nav className="flex flex-col gap-1 px-4 py-6 flex-1 overflow-y-auto">
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
           const isActive = active === href;
           return (
@@ -73,7 +117,7 @@ function DesktopSidebar({ active }: { active: string }) {
               key={href}
               href={href}
               className={cn(
-                "flex items-center gap-4 px-5 py-4 rounded-md transition-all duration-200 group relative",
+                "flex items-center gap-3.5 px-4 py-3 rounded-md transition-all duration-200 group relative",
                 isActive
                   ? "bg-[rgba(0,212,255,0.08)]"
                   : "hover:bg-[rgba(255,255,255,0.03)]"
@@ -91,13 +135,13 @@ function DesktopSidebar({ active }: { active: string }) {
                 />
               )}
               <Icon
-                size={18}
+                size={16}
                 className="shrink-0 transition-colors"
                 style={{
                   color: isActive ? "var(--color-amber)" : "var(--color-text-muted)",
                 }}
               />
-              <span className="font-mono text-[12px] tracking-widest transition-colors group-hover:text-[color:var(--color-text-secondary)]">
+              <span className="font-mono text-[11px] tracking-widest transition-colors group-hover:text-[color:var(--color-text-secondary)]">
                 {label}
               </span>
             </a>
@@ -107,10 +151,10 @@ function DesktopSidebar({ active }: { active: string }) {
 
       {/* Social + footer */}
       <div
-        className="px-6 py-6"
+        className="px-6 py-5"
         style={{ borderTop: "1px solid var(--color-border)" }}
       >
-        <div className="flex items-center gap-4 mb-4">
+        <div className="flex items-center gap-4 mb-3">
           {SOCIAL_LINKS.map(({ href, label, icon: Icon }) => (
             <a
               key={label}
@@ -127,12 +171,12 @@ function DesktopSidebar({ active }: { active: string }) {
                 (e.currentTarget.style.color = "var(--color-text-muted)")
               }
             >
-              <Icon size={16} />
+              <Icon size={15} />
             </a>
           ))}
         </div>
         <p
-          className="font-mono text-[10px] leading-relaxed"
+          className="font-mono text-[9px] leading-relaxed"
           style={{ color: "var(--color-text-muted)" }}
         >
           © 2025 theUG
@@ -145,7 +189,15 @@ function DesktopSidebar({ active }: { active: string }) {
 }
 
 function MobileNav({ active }: { active: string }) {
-  const mobileItems = NAV_ITEMS.slice(0, 5);
+  // Mobile needs standard items. Let's slice the most critical ones: Home, About, Now, Labs, Contact
+  const mobileItems = [
+    NAV_ITEMS[0], // Home
+    NAV_ITEMS[1], // About
+    NAV_ITEMS[2], // Now
+    NAV_ITEMS[4], // Labs
+    NAV_ITEMS[6], // Contact
+  ];
+
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 z-50 flex lg:hidden"
@@ -190,7 +242,7 @@ export function Sidebar() {
         ([entry]) => {
           if (entry.isIntersecting) setActive(`#${id}`);
         },
-        { threshold: 0.4 }
+        { threshold: 0.25 }
       );
       obs.observe(el);
       observers.push(obs);

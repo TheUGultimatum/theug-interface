@@ -89,6 +89,7 @@ function Terminal() {
   const [cmdIndex, setCmdIndex] = useState(-1);
   const [cmdHistory, setCmdHistory] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+  const sessionStartRef = useRef(Date.now());
   
   // Auto-demo state
   const [hasInteracted, setHasInteracted] = useState(false);
@@ -111,7 +112,7 @@ function Terminal() {
             setHistory(prev => [
               ...prev,
               { type: "cmd", text: demoCmd },
-              { type: "out", text: "about\\nprojects\\ncontact\\nstack\\nresume" }
+              { type: "out", text: "Available commands:\nhelp, whoami, skills, projects, socials, contact, clear, date, uptime, stack" }
             ]);
             setInput("");
             setIsAutoTyping(false);
@@ -144,20 +145,21 @@ function Terminal() {
     
     switch(lowerCmd) {
       case "help":
-        output = "about\\nprojects\\ncontact\\nstack\\nresume";
+        output = "Available commands:\n  help     - List all available terminal commands\n  whoami   - Display active engineer identification\n  skills   - Output diagnostic skill visual metrics\n  projects - Show portfolio products & details\n  socials  - Link outbound transmission vectors\n  contact  - Open immediate communications link\n  clear    - Clear console screen buffer\n  date     - Show current standard system date\n  uptime   - Fetch host active runtime timer\n  stack    - Output active engineering stack details\n  matrix   - Sync binary translation streams\n  neocore  - Test active core thermal loads\n  glitch   - Trigger interface theme calibration";
         break;
       case "about":
         output = "Scrolling to about section...";
         document.getElementById("about")?.scrollIntoView({ behavior: "smooth" });
         break;
       case "projects":
-        output = "Initializing project matrix...";
+        output = "Loading active project matrix...\n- Agentic Workflows Sandbox: Python / LangChain / Docker\n- DeFi Liquidity Matrix     : Solidity / Hardhat / React\n- Industrial Telemetry Board: Go / InfluxDB / Next.js\n- Frictional AI Core Node   : Python / PyTorch / WASM\n(Use standard anchor navigation or scroll to explore details)";
         document.getElementById("projects")?.scrollIntoView({ behavior: "smooth" });
         break;
       case "skills":
+        output = "Executing core diagnostics:\nAI/LLM Engineering    [██████████████████░░] 90%\nBackend / APIs        [█████████████████░░░] 85%\nFrontend / Systems UI [████████████████░░░░] 80%\nWeb3 / Contracts      [███████████████░░░░░] 78%\nDevOps / Infrastructure [██████████████░░░░░░] 72%";
+        break;
       case "stack":
-        output = "Executing skill breakdown...";
-        document.getElementById("about")?.scrollIntoView({ behavior: "smooth" });
+        output = "Active Engineering Stack:\n  Languages   : Python, TypeScript, Node.js, Solidity, HTML/CSS\n  Libraries   : OpenAI SDK, LangChain, Next.js, React, Framer Motion\n  Deployment  : Docker, AWS, PostgreSQL, Redis, Linux Core, Git";
         break;
       case "contact":
         output = "Opening comms channel...";
@@ -167,22 +169,60 @@ function Terminal() {
         output = new Date().toLocaleTimeString();
         break;
       case "date":
-        output = new Date().toLocaleDateString();
+        output = new Date().toDateString();
         break;
       case "clear":
         setHistory([]);
         return;
       case "whoami":
-        output = "usmaan.gani // theUG\\nindependent builder \\nfocus: ai·automation·web3";
+        output = "usmaan.gani // theUG\n---------------------------------------\nrole  : independent builder & systems engineer\nfocus : artificial intelligence · automation · web3\nbase  : India · UTC+5:30\nstatus: active workspace / client operations";
         break;
       case "socials":
-        output = "GitHub:   https://github.com/TheUGultimatum\\nTwitter:  https://x.com/Usmaangani252\\nLinkedIn: https://www.linkedin.com/in/usmaan-gani/";
+        output = "Outbound Vectors:\n  GitHub   : https://github.com/TheUGultimatum\n  X        : https://x.com/Usmaangani252\n  LinkedIn : https://www.linkedin.com/in/usmaan-gani/";
         break;
+      case "uptime": {
+        const diffMs = Date.now() - sessionStartRef.current;
+        const totalSecs = Math.floor(diffMs / 1000);
+        const mins = Math.floor(totalSecs / 60);
+        const secs = totalSecs % 60;
+        output = `portfolio uptime: 247d 18h 32m ${mins}m ${secs}s (session active)`;
+        break;
+      }
       case "resume":
         output = "Initiating resume download sequence... (simulated)";
         break;
+      case "matrix":
+        output = "› INITIATING NEURAL CODES TRANSLATION MATRIX:\n  10101100101010110101011011001010101101\n  01101001100110110010101011010101101100\n  10110010101011010101101100101010110101\n  00101010110101011011001010101101010110\n  › BINARY DATA STREAM NOMINAL. SYSTEM SECURE.";
+        break;
+      case "neocore":
+        output = "› [SYS.OVERLOAD: ACTIVE TRIGGER DETECTED]\n  › Rerouting thread metrics to sub-clusters...\n  › Compacting local caches: 2.1GB virtual space index freed.\n  › Diagnostics frequency stable at 4.2 GHz. Cores nominal.";
+        break;
+      case "glitch": {
+        output = "› [DIAGNOSTIC CRITICAL FLASH DETECTED]\n  › Flickering interface theme parameters for color calibration...";
+        const el = document.documentElement;
+        const currentIsDay = el.classList.contains("day-mode");
+        const flashTheme = (delayMs: number) => {
+          setTimeout(() => {
+            el.classList.toggle("day-mode");
+          }, delayMs);
+        };
+        flashTheme(100);
+        flashTheme(250);
+        flashTheme(400);
+        flashTheme(600);
+        flashTheme(800);
+        flashTheme(1050);
+        setTimeout(() => {
+          if (currentIsDay) {
+            el.classList.add("day-mode");
+          } else {
+            el.classList.remove("day-mode");
+          }
+        }, 1300);
+        break;
+      }
       default:
-        output = `command not found: ${trimmed}`;
+        output = `command not found: '${trimmed}'. Type 'help' for options.`;
     }
 
     setHistory(prev => [
@@ -431,8 +471,9 @@ function Stat({ label, value, highlight = false }: { label: string; value: strin
 const ROLES = ["independent builder", "ai systems", "automation", "web3", "infrastructure"];
 const HERO_TITLES = [
   { line1: "USMAAN", line2: "GANI" },
+  { line1: "theUG", line2: "WORKSPACE" },
+  { line1: "AI • AUTOMATION", line2: "WEB3" },
   { line1: "BUILDING", line2: "INTELLIGENT SYSTEMS" },
-  { line1: "AI · AUTOMATION", line2: "WEB3" },
   { line1: "INDEPENDENT", line2: "BUILDER" }
 ];
 

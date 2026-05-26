@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Sun, Moon } from "lucide-react";
 
 function LiveClock({ align = "right" }: { align?: "left" | "right" }) {
   const [time, setTime] = useState("");
@@ -25,6 +26,32 @@ function LiveClock({ align = "right" }: { align?: "left" | "right" }) {
 }
 
 export function TopBar() {
+  const [dayMode, setDayMode] = useState(false);
+
+  useEffect(() => {
+    const isDay = document.documentElement.classList.contains("day-mode");
+    setDayMode(isDay);
+
+    // Watch for class changes on documentElement
+    const observer = new MutationObserver(() => {
+      const currentIsDay = document.documentElement.classList.contains("day-mode");
+      setDayMode(currentIsDay);
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+
+    return () => observer.disconnect();
+  }, []);
+
+  const toggleTheme = () => {
+    const nextMode = !dayMode;
+    setDayMode(nextMode);
+    if (nextMode) {
+      document.documentElement.classList.add("day-mode");
+    } else {
+      document.documentElement.classList.remove("day-mode");
+    }
+  };
+
   return (
     <header
       className="fixed top-0 right-0 z-40 flex flex-col md:flex-row md:items-center topbar-responsive"
@@ -65,15 +92,33 @@ export function TopBar() {
       {/* Right side / Bottom Row on mobile */}
       <div className="flex md:hidden items-center justify-between w-full" style={{ height: "42px", borderTop: "1px solid var(--color-border)" }}>
         <LiveClock align="left" />
-        <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-          <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "var(--color-online)", animation: "pulse-dot 2.4s ease-in-out infinite", flexShrink: 0 }} />
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "8px", color: "var(--color-online)", letterSpacing: "0.1em" }}>SYS.ONLINE</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+          <button
+            onClick={toggleTheme}
+            className="p-1.5 rounded-md border border-[var(--color-border)] flex items-center justify-center cursor-pointer"
+            style={{ color: "var(--color-text-secondary)", background: "transparent" }}
+            aria-label="Toggle Theme"
+          >
+            {dayMode ? <Sun size={12} className="text-[var(--color-amber-bright)]" /> : <Moon size={12} />}
+          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+            <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "var(--color-online)", animation: "pulse-dot 2.4s ease-in-out infinite", flexShrink: 0 }} />
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "8px", color: "var(--color-online)", letterSpacing: "0.1em" }}>SYS.ONLINE</span>
+          </div>
         </div>
       </div>
       
       {/* Right side on Desktop */}
       <div className="hidden md:flex items-center gap-5 shrink-0" style={{ height: "52px" }}>
         <LiveClock />
+        <button
+          onClick={toggleTheme}
+          className="p-1.5 rounded-md border border-[var(--color-border)] hover:border-[var(--color-amber)] transition-colors flex items-center justify-center cursor-pointer"
+          style={{ color: "var(--color-text-secondary)", background: "transparent" }}
+          title={dayMode ? "Switch to Night Mode" : "Switch to Day Mode"}
+        >
+          {dayMode ? <Sun size={14} className="text-[var(--color-amber-bright)]" /> : <Moon size={14} />}
+        </button>
         <div style={{
           display: "flex", alignItems: "center", gap: "5px",
           paddingLeft: "16px", borderLeft: "1px solid var(--color-border)", height: "24px"

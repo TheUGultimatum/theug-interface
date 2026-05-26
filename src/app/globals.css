@@ -37,6 +37,7 @@
   --glow-ambient: 0 0 24px rgba(255, 94, 58, 0.04);
   --glow-active: 0 0 32px rgba(255, 94, 58, 0.12);
   --glow-focus: 0 0 48px rgba(255, 94, 58, 0.20);
+  --color-pulse-glow: rgba(255, 94, 58, 0.22);
 
   /* Spacing */
   --space-xs: 4px;
@@ -56,6 +57,103 @@
   --transition-slow: 380ms ease;
 }
 
+/* Industrial Lab Day Mode variables */
+.day-mode {
+  --color-void: #fbfbfa;
+  --color-abyss: #f2f3f6;
+  --color-surface: #ffffff;
+  --color-elevated: #eaecef;
+  --color-border: #dcdfe6;
+  --color-border-bright: #adb5be;
+
+  --color-text-primary: #121417;
+  --color-text-secondary: #3e434f;
+  --color-text-muted: #787e8d;
+  --color-text-ghost: #cbd0d8;
+
+  --color-amber: #d84315;
+  --color-amber-bright: #ff5722;
+  --color-amber-dim: #fbe9e7;
+  --color-amber-glow: rgba(216, 67, 21, 0.05);
+  --color-cyan: #007787;
+  --color-cyan-dim: #e0f7fa;
+  --color-cyan-glow: rgba(0, 119, 135, 0.04);
+
+  --color-online: #007787;
+  --color-online-bright: #00acc1;
+
+  --glow-ambient: 0 4px 20px rgba(216, 67, 21, 0.02);
+  --glow-active: 0 6px 28px rgba(216, 67, 21, 0.05);
+  --glow-focus: 0 10px 36px rgba(216, 67, 21, 0.08);
+  --color-pulse-glow: rgba(216, 67, 21, 0.25);
+}
+
+.day-mode .bg-grid {
+  background-image: linear-gradient(rgba(0, 0, 0, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.025) 1px, transparent 1px);
+  background-size: 24px 24px;
+  mask-image: radial-gradient(circle at center, black 40%, transparent 95%);
+}
+
+.day-mode .bg-vignette {
+  background: radial-gradient(ellipse 100% 100% at 50% 50%, rgba(251,251,250,0.1) 40%, rgba(216,67,21,0.02) 100%);
+}
+
+.day-mode .bg-noise {
+  opacity: 0.035;
+  mix-blend-mode: multiply;
+}
+
+.day-mode .bg-glow-left {
+  background: radial-gradient(circle, rgba(216, 67, 21, 0.022) 0%, transparent 70%);
+}
+
+.day-mode .bg-glow-right {
+  background: radial-gradient(circle, rgba(0, 119, 135, 0.016) 0%, transparent 70%);
+}
+
+.day-mode ::selection {
+  background: rgba(216, 67, 21, 0.12);
+  color: var(--color-text-primary);
+}
+
+/* Fine CRT Overlay & Screen Flicker styles for futuristic OS feel */
+.crt-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  pointer-events: none;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.025) 50%), 
+              linear-gradient(90deg, rgba(255, 0, 0, 0.003), rgba(0, 255, 0, 0.001), rgba(0, 0, 255, 0.003));
+  background-size: 100% 4px, 12px 100%;
+}
+
+.day-mode .crt-overlay {
+  background: linear-gradient(rgba(0, 0, 0, 0.015) 50%, transparent 50%);
+  background-size: 100% 3px;
+  opacity: 0.85;
+}
+
+@keyframes screen-flicker {
+  0%, 100% { opacity: 0.995; }
+  50% { opacity: 0.985; }
+  85% { opacity: 0.992; }
+}
+
+.animate-screen-flicker {
+  animation: screen-flicker 0.15s infinite;
+}
+
+/* Subtle breathing glow effect on panels using variables */
+@keyframes breathing-panel {
+  0%, 100% { border-color: var(--color-border); }
+  50% { border-color: var(--color-pulse-glow); }
+}
+
+.panel-breathing {
+  animation: breathing-panel 4s ease-in-out infinite;
+}
+
 /* ============================================
    RESET & BASE
 ============================================ */
@@ -63,6 +161,14 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+body {
+  transition: background-color var(--transition-slow), color var(--transition-slow);
+}
+
+.panel, aside, nav, header, button, a, div, span, line, circle {
+  transition: background-color var(--transition-slow), border-color var(--transition-base), color var(--transition-base), box-shadow var(--transition-base);
 }
 
 html {
@@ -605,6 +711,11 @@ body {
 
 .animate-fade-in-up { animation: fade-in-up 0.55s ease-out forwards; }
 .animate-fade-in    { animation: fade-in    0.4s  ease-out forwards; }
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
 
 /* Stagger delays */
 .delay-100 { animation-delay: 100ms; }

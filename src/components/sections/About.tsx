@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { MetricBar } from "@/components/ui/MetricBar";
 import { TechTagGroup } from "@/components/ui/TechTag";
 import { SectionLabel } from "@/components/ui/SectionLabel";
+import { IdentityHologram } from "@/components/ui/IdentityHologram";
 
 const SKILLS = [
   { label: "AI / LLM Engineering",  value: 90, variant: "electric" as const },
@@ -71,32 +72,10 @@ export function About() {
           className="about-grid"
         >
 
-          {/* ── LEFT: Identity + Bio ── */}
+          {/* ── LEFT: Cinematic ASCII Identity Scanner + Bio ── */}
           <div className={`flex flex-col gap-6 ${inView ? "animate-fade-in-up delay-100" : "anim-hidden"}`}>
-
-            {/* Identity terminal panel */}
-            <div className="panel hover-glow-edge" data-cursor="VIEW">
-              <div className="panel-header">
-                <div className="panel-controls">
-                  <span className="panel-dot panel-dot-red" />
-                  <span className="panel-dot panel-dot-yellow" />
-                  <span className="panel-dot panel-dot-green" />
-                </div>
-                <span className="panel-title">whoami.sh</span>
-              </div>
-              <div className="panel-body">
-                <div className="flex flex-col gap-2">
-                  {IDENTITY_LINES.map(({ prompt, value }) => (
-                    <div key={prompt} className="terminal-line">
-                      <span className="terminal-prompt" style={{ fontSize: "11px" }}>
-                        {prompt}:
-                      </span>
-                      <span className="terminal-text">{value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            {/* Neural Hologram Canvas */}
+            <IdentityHologram />
 
             {/* Bio */}
             <div className="panel hover-glow-edge" data-cursor="VIEW">
@@ -118,8 +97,32 @@ export function About() {
             </div>
           </div>
 
-          {/* ── RIGHT: Skills + Stack ── */}
+          {/* ── RIGHT: Biometrics Terminal + Skills + Stack ── */}
           <div className={`flex flex-col gap-6 ${inView ? "animate-fade-in-up delay-200" : "anim-hidden"}`}>
+            
+            {/* Identity Terminal Panel */}
+            <div className="panel hover-glow-edge" data-cursor="VIEW">
+              <div className="panel-header flex items-center justify-between">
+                <div className="panel-controls">
+                  <span className="panel-dot panel-dot-red" />
+                  <span className="panel-dot panel-dot-yellow" />
+                  <span className="panel-dot panel-dot-green" />
+                </div>
+                <span className="panel-title">whoami.sh</span>
+              </div>
+              <div className="panel-body">
+                <div className="flex flex-col gap-2">
+                  {IDENTITY_LINES.map(({ prompt, value }) => (
+                    <div key={prompt} className="terminal-line">
+                      <span className="terminal-prompt" style={{ fontSize: "11px" }}>
+                        {prompt}:
+                      </span>
+                      <span className="terminal-text">{value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
 
             {/* Skills */}
             <div className="panel hover-glow-edge" data-cursor="VIEW">

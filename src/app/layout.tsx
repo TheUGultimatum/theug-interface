@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, IBM_Plex_Mono, Bebas_Neue } from "next/font/google";
 import { GlobalLoader } from "@/components/ui/GlobalLoader";
+import { SmoothScrollProvider } from "@/components/layout/SmoothScrollProvider";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -67,7 +68,9 @@ export default function RootLayout({
     >
       <body suppressHydrationWarning>
         <GlobalLoader />
-        {children}
+        <SmoothScrollProvider>
+          {children}
+        </SmoothScrollProvider>
       </body>
     </html>
   );
