@@ -64,9 +64,8 @@ function DesktopSidebar({ active }: { active: string }) {
       className="fixed left-0 top-0 h-full z-50 hidden lg:flex flex-col"
       style={{
         width: "var(--sidebar-width)",
-        background: "rgba(8,8,7,0.95)",
+        background: dayMode ? "rgba(252, 250, 247, 0.98)" : "rgba(8,8,7,0.98)",
         borderRight: "1px solid var(--color-border)",
-        backdropFilter: "blur(16px)",
       }}
     >
       {/* Brand */}
@@ -189,7 +188,21 @@ function DesktopSidebar({ active }: { active: string }) {
 }
 
 function MobileNav({ active }: { active: string }) {
-  // Mobile needs standard items. Let's slice the most critical ones: Home, About, Now, Labs, Contact
+  const [dayMode, setDayMode] = useState(false);
+
+  useEffect(() => {
+    const isDay = document.documentElement.classList.contains("day-mode");
+    setDayMode(isDay);
+
+    const observer = new MutationObserver(() => {
+      const currentIsDay = document.documentElement.classList.contains("day-mode");
+      setDayMode(currentIsDay);
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+
+    return () => observer.disconnect();
+  }, []);
+
   const mobileItems = [
     NAV_ITEMS[0], // Home
     NAV_ITEMS[1], // About
@@ -202,9 +215,8 @@ function MobileNav({ active }: { active: string }) {
     <nav
       className="fixed bottom-0 left-0 right-0 z-50 flex lg:hidden"
       style={{
-        background: "rgba(8,8,7,0.97)",
+        background: dayMode ? "rgba(252, 250, 247, 0.98)" : "rgba(8,8,7,0.98)",
         borderTop: "1px solid var(--color-border)",
-        backdropFilter: "blur(16px)",
         height: "64px",
       }}
     >

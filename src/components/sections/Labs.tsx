@@ -14,12 +14,22 @@ interface LabExperiment {
 // Waveform drawing helper component
 function LabWaveform({ active = false, frequency = 1.0, speed = 1.0 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const isIntersectingRef = useRef(true);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+
+    // Viewport Intersection observer to pause frames when offscreen
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        isIntersectingRef.current = entry.isIntersecting;
+      },
+      { threshold: 0.05 }
+    );
+    observer.observe(canvas);
 
     let width = (canvas.width = canvas.clientWidth);
     let height = (canvas.height = 70);
@@ -36,10 +46,15 @@ function LabWaveform({ active = false, frequency = 1.0, speed = 1.0 }) {
     let offset = 0;
 
     const render = () => {
+      rafId = requestAnimationFrame(render);
+
+      // Freeze execution if tab is inactive OR canvas is offscreen
+      if (document.hidden || !isIntersectingRef.current) return;
+
       ctx.clearRect(0, 0, width, height);
       offset += active ? 0.08 * speed : 0.02 * speed;
 
-      // Draw horizontal grid lines underneath
+      // Draw horizontal grid lines
       ctx.strokeStyle = "rgba(128, 128, 128, 0.06)";
       ctx.lineWidth = 0.5;
       for (let i = 10; i < height; i += 15) {
@@ -49,13 +64,12 @@ function LabWaveform({ active = false, frequency = 1.0, speed = 1.0 }) {
         ctx.stroke();
       }
 
-      // Overlapping sine waves for high-tech oscilloscope visualization
+      // Overlapping sine waves
       const drawSine = (amp: number, freq: number, phase: number, color: string, thickness: number) => {
         ctx.strokeStyle = color;
         ctx.lineWidth = thickness;
         ctx.beginPath();
         for (let x = 0; x < width; x++) {
-          // Complex mathematical compound waves
           const y = height / 2 + 
                     Math.sin(x * 0.015 * freq * frequency + offset + phase) * amp + 
                     Math.sin(x * 0.005 * freq + offset * 0.5) * (amp * 0.25);
@@ -68,32 +82,16 @@ function LabWaveform({ active = false, frequency = 1.0, speed = 1.0 }) {
         ctx.stroke();
       };
 
-      // Orange wave
-      drawSine(
-        active ? 18 : 6,
-        1.5,
-        0,
-        "rgba(255, 94, 58, 0.6)",
-        1.2
-      );
-
-      // Cyan second overlay wave
-      drawSine(
-        active ? 10 : 3,
-        2.5,
-        Math.PI / 2,
-        "rgba(0, 217, 255, 0.4)",
-        0.8
-      );
-
-      rafId = requestAnimationFrame(render);
+      drawSine(active ? 18 : 6, 1.5, 0, "rgba(255, 94, 58, 0.6)", 1.2);
+      drawSine(active ? 10 : 3, 2.5, Math.PI / 2, "rgba(0, 217, 255, 0.4)", 0.8);
     };
 
-    render();
+    rafId = requestAnimationFrame(render);
 
     return () => {
       cancelAnimationFrame(rafId);
       window.removeEventListener("resize", handleResize);
+      observer.disconnect();
     };
   }, [active, frequency, speed]);
 

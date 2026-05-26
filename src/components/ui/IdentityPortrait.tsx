@@ -5,12 +5,6 @@ import Image from "next/image";
 
 /* ─────────────────────────────────────────────────────────────────
    IdentityPortrait: Frameless, Floating Holographic Visualizer
-   Features:
-   - Damped Spring-Inertial Parallax (expensive camera-rig inertia)
-   - Continuous Micro-Breathing Camera Drift (idle float)
-   - Seamless Bottom Gradient Masking (shoulders fade into page)
-   - Procedural Dynamic Film Grain & Scanlines
-   - Sparse, Authentic System HUD Telemetry
    ───────────────────────────────────────────────────────────────── */
 
 export function IdentityPortrait() {
@@ -29,6 +23,9 @@ export function IdentityPortrait() {
   const vx = useRef(0);
   const vy = useRef(0);
 
+  const isIntersectingRef = useRef(true);
+  const reducedMotionRef = useRef(false);
+
   // Status indicator pulsing dots
   useEffect(() => {
     const interval = setInterval(() => {
@@ -37,17 +34,45 @@ export function IdentityPortrait() {
     return () => clearInterval(interval);
   }, []);
 
-  // 120Hz Damped Spring Parallax & Idle Float Loop
+  // 120Hz Damped Spring Parallax & Idle Float Loop with Intersection Observer & Tab Freezing
   useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    // media query check for reduced motion
+    reducedMotionRef.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // Viewport observer to pause loops when scrolled offscreen
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        isIntersectingRef.current = entry.isIntersecting;
+      },
+      { threshold: 0.05 }
+    );
+    observer.observe(container);
+
     let rafId: number;
 
     const update = () => {
+      rafId = requestAnimationFrame(update);
+
+      // Freeze execution if tab is inactive OR component is offscreen
+      if (document.hidden || !isIntersectingRef.current) return;
+
+      // Skip dynamic coordinate physics under prefers-reduced-motion
+      if (reducedMotionRef.current) {
+        if (imageWrapperRef.current && reflectionRef.current) {
+          imageWrapperRef.current.style.transform = "none";
+          reflectionRef.current.style.transform = "none";
+        }
+        return;
+      }
+
       frameRef.current++;
       const time = frameRef.current;
 
-      // 1. Spring physics (lerp with inertia for a heavy, expensive look)
-      const springK = 0.05; // spring constant
-      const damping = 0.86;  // damping coefficient
+      const springK = 0.05; 
+      const damping = 0.86;  
 
       const forceX = (targetX.current - currentX.current) * springK;
       const forceY = (targetY.current - currentY.current) * springK;
@@ -58,37 +83,35 @@ export function IdentityPortrait() {
       currentX.current += vx.current;
       currentY.current += vy.current;
 
-      // 2. Micro-Breathing camera float (idle movement)
       const breatheTime = time * 0.012;
       const breatheX = Math.sin(breatheTime) * 1.2;
       const breatheY = Math.cos(breatheTime * 0.8) * 1.2;
 
-      // Combine parallax and breathe
       const finalX = currentX.current + breatheX;
       const finalY = currentY.current + breatheY;
 
       if (imageWrapperRef.current && reflectionRef.current) {
-        // Direct DOM transforms avoid React rendering overhead for absolute 120Hz fluid movement
         imageWrapperRef.current.style.transform = `
           rotateX(${finalY}deg)
           rotateY(${finalX}deg)
           scale3d(1.02, 1.02, 1.02)
         `;
 
-        // Shift reflection glare in the opposite direction
         reflectionRef.current.style.transform = `
           translate3d(${-finalX * 3.5}px, ${-finalY * 3.5}px, 0)
         `;
       }
-
-      rafId = requestAnimationFrame(update);
     };
 
     rafId = requestAnimationFrame(update);
-    return () => cancelAnimationFrame(rafId);
+    return () => {
+      cancelAnimationFrame(rafId);
+      observer.disconnect();
+    };
   }, []);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (reducedMotionRef.current) return;
     const container = containerRef.current;
     if (!container) return;
 
@@ -96,17 +119,14 @@ export function IdentityPortrait() {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    // Normalized coords (-1 to 1)
     const px = (x / rect.width) * 2 - 1;
     const py = (y / rect.height) * 2 - 1;
 
-    // Maximum tilt angles (6 deg for extremely premium, elegant feeling)
     targetX.current = px * 6;
     targetY.current = -py * 6;
   };
 
   const handleMouseLeave = () => {
-    // Smoothely spring back to center
     targetX.current = 0;
     targetY.current = 0;
   };
@@ -116,7 +136,7 @@ export function IdentityPortrait() {
       ref={containerRef}
       className="relative w-full overflow-hidden select-none group flex items-center justify-center p-6"
       style={{
-        height: "clamp(500px, 52vw, 640px)",
+        height: "clamp(300px, 48vh, 600px)", // Adjusted minimum to 300px to prevent viewport spilling on mobile screens (320px/375px)
         background: "transparent",
         perspective: "1200px",
         cursor: "crosshair",
@@ -124,7 +144,7 @@ export function IdentityPortrait() {
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
     >
-      {/* ── AMBIENT PROJECTING GLOW (VOLUMETRIC BREATHING SOURCE) ── */}
+      {/* AMBIENT PROJECTING GLOW */}
       <div 
         className="absolute inset-0 pointer-events-none rounded-full blur-[80px] opacity-[0.06] group-hover:opacity-[0.09] transition-opacity duration-1000 animate-pulse"
         style={{
@@ -133,20 +153,18 @@ export function IdentityPortrait() {
         }}
       />
 
-      {/* ── CINEMATIC SEAMLESS PORTRAIT CONTAINER ── */}
+      {/* PORTRAIT CONTAINER */}
       <div
         ref={imageWrapperRef}
         className="relative aspect-[3/4] h-[92%] max-h-[92%] w-auto overflow-hidden transition-all duration-700 ease-out"
         style={{
           transformStyle: "preserve-3d",
-          willChange: "transform",
+          willChange: reducedMotionRef.current ? "auto" : "transform",
           transition: "box-shadow 0.6s ease",
-          // Gradients and mask-image seamlessly dissolve shoulders/posture into the background void
           maskImage: "linear-gradient(to bottom, black 62%, rgba(0,0,0,0.8) 72%, rgba(0,0,0,0.1) 90%, transparent 100%)",
           WebkitMaskImage: "linear-gradient(to bottom, black 62%, rgba(0,0,0,0.8) 72%, rgba(0,0,0,0.1) 90%, transparent 100%)",
         }}
       >
-        {/* Next.js Image component with monochrome grading and object-contain to protect composition */}
         <div className="absolute inset-0 grayscale contrast-[1.12] brightness-[0.93] transition-all duration-700 ease-out group-hover:scale-101 group-hover:brightness-[0.97] group-hover:contrast-[1.14]">
           <Image
             src="/images/portrait.png"
@@ -158,7 +176,7 @@ export function IdentityPortrait() {
           />
         </div>
 
-        {/* ── VOLUMETRIC VIGNETTE OVERLAY ── */}
+        {/* VIGNETTE OVERLAY */}
         <div
           className="absolute inset-0 pointer-events-none mix-blend-multiply opacity-80"
           style={{
@@ -166,7 +184,7 @@ export function IdentityPortrait() {
           }}
         />
 
-        {/* ── SOFT OPERATING SYSTEM SCANLINES ── */}
+        {/* SOFT OPERATING SYSTEM SCANLINES */}
         <div
           className="absolute inset-0 pointer-events-none opacity-[0.04] dark:opacity-[0.05]"
           style={{
@@ -174,7 +192,7 @@ export function IdentityPortrait() {
           }}
         />
 
-        {/* ── BROWSER-NATIVE procedural film grain ── */}
+        {/* Film grain noise */}
         <div
           className="absolute inset-0 pointer-events-none opacity-[0.05] animate-grain"
           style={{
@@ -182,7 +200,7 @@ export function IdentityPortrait() {
           }}
         />
 
-        {/* ── SLOW CYBERNETIC scanning beam ── */}
+        {/* SCANNING BEAM */}
         <div
           className="absolute left-0 w-full h-[1.5px] bg-gradient-to-r from-transparent via-[var(--color-amber)] to-transparent opacity-[0.35] pointer-events-none animate-scan-sweep"
           style={{
@@ -190,21 +208,21 @@ export function IdentityPortrait() {
           }}
         />
 
-        {/* ── GLASS reflection GLARE ── */}
+        {/* reflection GLARE */}
         <div
           ref={reflectionRef}
           className="absolute inset-0 pointer-events-none z-10 transition-opacity duration-500 opacity-[0.12] group-hover:opacity-[0.24]"
           style={{
             background: "linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.06) 45%, transparent 45%, transparent 100%)",
-            willChange: "transform",
+            willChange: reducedMotionRef.current ? "auto" : "transform",
           }}
         />
       </div>
 
-      {/* ── FLOATING TECHNICAL METADATA (NO BOXES, DIRECTLY EMBEDDED IN SPACE) ── */}
+      {/* FLOATING TECHNICAL METADATA */}
       <div className="absolute inset-x-2 inset-y-6 pointer-events-none z-20 font-mono text-[8px] tracking-wider text-[var(--color-text-muted)] opacity-60 group-hover:opacity-85 transition-opacity duration-500">
         
-        {/* Top-Left: Active Lock Tracker */}
+        {/* Top-Left */}
         <div className="absolute top-0 left-0 flex items-center gap-2">
           <span
             className="w-1.5 h-1.5 rounded-full"
@@ -216,46 +234,46 @@ export function IdentityPortrait() {
           <span>SYS.LOCK // SECURED{dots}</span>
         </div>
 
-        {/* Top-Right: Scan Frequency telemetry */}
+        {/* Top-Right */}
         <div className="absolute top-0 right-0 text-right flex flex-col gap-0.5">
           <span>SCAN_FREQ // 120.00Hz</span>
           <span>LATENCY // 1.2ms</span>
         </div>
 
-        {/* Bottom-Left: Coordinates */}
+        {/* Bottom-Left */}
         <div className="absolute bottom-6 left-0 flex flex-col gap-0.5">
           <span>LOC // IND.IST.530</span>
           <span>NEURAL.SYNC // 0.9982</span>
         </div>
 
-        {/* Bottom-Right: OS Build ID */}
+        {/* Bottom-Right */}
         <div className="absolute bottom-6 right-0 text-right flex flex-col gap-0.5">
           <span>IDENTITY_SCAN.EXE</span>
           <span>SYS_VER // v2.01</span>
         </div>
       </div>
 
-      {/* ── DUST PARTICLES (LIGHTWEIGHT TRANSITION EFFECT) ── */}
-      <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
-        <span className="particle absolute bottom-8 left-16 w-[1.5px] h-[1.5px] bg-[var(--color-amber)] rounded-full opacity-20 animate-particle-float-slow" />
-        <span className="particle absolute top-12 right-24 w-[1px] h-[1px] bg-[var(--color-amber)] rounded-full opacity-15 animate-particle-float-fast" />
-        <span className="particle absolute bottom-28 right-20 w-[1.5px] h-[1.5px] bg-[var(--color-amber)] rounded-full opacity-25 animate-particle-float-medium" />
-      </div>
+      {/* DUST PARTICLES */}
+      {!reducedMotionRef.current && (
+        <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
+          <span className="particle absolute bottom-8 left-16 w-[1.5px] h-[1.5px] bg-[var(--color-amber)] rounded-full opacity-20 animate-particle-float-slow" />
+          <span className="particle absolute top-12 right-24 w-[1px] h-[1px] bg-[var(--color-amber)] rounded-full opacity-15 animate-particle-float-fast" />
+          <span className="particle absolute bottom-28 right-20 w-[1.5px] h-[1.5px] bg-[var(--color-amber)] rounded-full opacity-25 animate-particle-float-medium" />
+        </div>
+      )}
 
-      {/* ── TECHNICAL SINGLE PIXEL INDICATOR TICK MARKS ── */}
+      {/* TECHNICAL TICK MARKS */}
       <div className="absolute inset-x-0 inset-y-12 pointer-events-none z-10 opacity-30 group-hover:opacity-60 transition-opacity duration-500">
-        {/* Ticks on margins */}
         <span className="absolute top-0 left-12 w-2 h-[1px] bg-[var(--color-border)]" />
         <span className="absolute top-0 right-12 w-2 h-[1px] bg-[var(--color-border)]" />
         <span className="absolute bottom-6 left-12 w-2 h-[1px] bg-[var(--color-border)]" />
         <span className="absolute bottom-6 right-12 w-2 h-[1px] bg-[var(--color-border)]" />
         
-        {/* Center alignment thin crosshairs */}
         <span className="absolute top-[48%] left-4 w-2 h-[1px] bg-[var(--color-border)]" />
         <span className="absolute top-[48%] right-4 w-2 h-[1px] bg-[var(--color-border)]" />
       </div>
 
-      {/* ── COMPONENT-SPECIFIC ANIMATIONS ── */}
+      {/* COMPONENT-SPECIFIC ANIMATIONS */}
       <style>{`
         @keyframes scan-sweep {
           0% { top: -2%; }
@@ -263,10 +281,9 @@ export function IdentityPortrait() {
           100% { top: 102%; }
         }
         .animate-scan-sweep {
-          animation: scan-sweep 15s infinite cubic-bezier(0.25, 0.46, 0.45, 0.94);
+          animation: ${reducedMotionRef.current ? "none" : "scan-sweep 15s infinite cubic-bezier(0.25, 0.46, 0.45, 0.94)"};
         }
         
-        /* Cinematic film grain noise translation loop */
         @keyframes grain-shift {
           0%, 100% { transform: translate3d(0, 0, 0); }
           10% { transform: translate3d(-1.5%, -1.5%, 0); }
@@ -281,7 +298,7 @@ export function IdentityPortrait() {
           top: -15%;
           left: -15%;
           background-size: 110px;
-          animation: grain-shift 10s steps(8) infinite;
+          animation: ${reducedMotionRef.current ? "none" : "grain-shift 10s steps(8) infinite"};
         }
 
         /* Particle drifts */

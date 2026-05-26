@@ -57,9 +57,9 @@ export function TopBar() {
       className="fixed top-0 right-0 z-40 flex flex-col md:flex-row md:items-center topbar-responsive"
       style={{
         left: "var(--sidebar-width)",
-        background: "color-mix(in srgb, var(--color-void) 92%, transparent)",
+        background: "var(--color-surface)",
+        opacity: 0.98,
         borderBottom: "1px solid var(--color-border)",
-        backdropFilter: "blur(20px)",
         padding: "0 clamp(20px, 3vw, 40px)",
         gap: "0",
       }}

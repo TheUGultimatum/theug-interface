@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, memo } from "react";
 import { NodeGraph } from "@/components/terminal/NodeGraph";
 
 /* ─── Typewriter hook ────────────────────────────────────── */
@@ -407,7 +407,7 @@ const METRICS: Metric[] = [
   { label: "AI",   base: 63, color: "var(--color-amber)" },
 ];
 
-function LiveMetric({ metric }: { metric: Metric }) {
+const LiveMetric = memo(function LiveMetricComponent({ metric }: { metric: Metric }) {
   const [val, setVal] = useState(metric.base);
   const [animated, setAnimated] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
@@ -424,11 +424,13 @@ function LiveMetric({ metric }: { metric: Metric }) {
   }, [val]);
 
   useEffect(() => {
+    // Throttled to fluctuate every 6-8 seconds instead of ~3 seconds to save re-renders
     const id = setInterval(() => {
+      if (document.hidden) return; // Skip updating value if browser tab is inactive!
       const next = Math.max(5, Math.min(96, metric.base + (Math.random() - 0.5) * 18));
       setVal(Math.round(next));
       setAnimated(Math.round(next));
-    }, 2800 + Math.random() * 800);
+    }, 6000 + Math.random() * 2000);
     return () => clearInterval(id);
   }, [metric.base]);
 
@@ -449,10 +451,10 @@ function LiveMetric({ metric }: { metric: Metric }) {
       </div>
     </div>
   );
-}
+});
 
 /* ─── Stat block ─────────────────────────────────────────── */
-function Stat({ label, value, highlight = false }: { label: string; value: string; highlight?: boolean }) {
+const Stat = memo(function StatComponent({ label, value, highlight = false }: { label: string; value: string; highlight?: boolean }) {
   return (
     <div style={{
       flex: 1, padding: "10px 14px",
@@ -465,7 +467,7 @@ function Stat({ label, value, highlight = false }: { label: string; value: strin
       <span style={{ fontFamily: "var(--font-mono)", fontSize: "12px", color: highlight ? "var(--color-amber-bright)" : "var(--color-text-secondary)", letterSpacing: "0.03em" }}>{value}</span>
     </div>
   );
-}
+});
 
 /* ─── Hero Identity Animation ──────────────────────────────── */
 const ROLES = ["independent builder", "ai systems", "automation", "web3", "infrastructure"];

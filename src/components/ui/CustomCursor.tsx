@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const NUM_PARTICLES = 6; // Reduced particle count for a tighter, highly optimized trail
+const NUM_PARTICLES = 6; 
 
 export function CustomCursor() {
   const dotRef = useRef<HTMLDivElement>(null);
@@ -17,8 +17,8 @@ export function CustomCursor() {
   const [cursorText, setCursorText] = useState("");
   const [mounted, setMounted] = useState(false);
   const [isTouch, setIsTouch] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
 
-  // Gating refs to prevent continuous 60fps state updates during mousemove
   const stateRef = useRef<"default" | "link" | "crosshair" | "text" | "terminal">("default");
   const textValRef = useRef("");
 
@@ -27,6 +27,13 @@ export function CustomCursor() {
     if (window.matchMedia("(hover: none) and (pointer: coarse)").matches) {
       setIsTouch(true);
     }
+    
+    // prefers-reduced-motion check
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReducedMotion(mediaQuery.matches);
+    const listener = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
+    mediaQuery.addEventListener("change", listener);
+    return () => mediaQuery.removeEventListener("change", listener);
   }, []);
 
   useEffect(() => {
@@ -39,7 +46,6 @@ export function CustomCursor() {
 
     let mx = 0, my = 0;
     
-    // History queue for trailing particles
     const history: {x: number, y: number}[] = [];
     const HISTORY_SIZE = 16; 
     
@@ -52,33 +58,41 @@ export function CustomCursor() {
     let magneticRadius = 0;
     let isMagnetic = false;
 
-    // ── GPU-ACCELERATED RAF LOOP ( translate3d ) ──
+    // ── GPU-ACCELERATED RAF LOOP with Inactive Tab Freeze ──
     const animate = () => {
-      const tx = isMagnetic ? targetX : mx;
-      const ty = isMagnetic ? targetY : my;
+      // Pause completely if tab is inactive
+      if (document.hidden) {
+        raf = requestAnimationFrame(animate);
+        return;
+      }
 
-      // 1. Center dot translate3d GPU positioning
+      const tx = isMagnetic && !reducedMotion ? targetX : mx;
+      const ty = isMagnetic && !reducedMotion ? targetY : my;
+
+      // 1. Center dot translate3d position
       dot.style.transform = `translate3d(${tx - 3}px, ${ty - 3}px, 0)`;
       
-      // 2. Smooth Ring spring follow
-      ringX += (tx - ringX) * (isMagnetic ? 0.32 : 0.18);
-      ringY += (ty - ringY) * (isMagnetic ? 0.32 : 0.18);
-      
-      ringRotation = (ringRotation + 1.2) % 360;
+      // 2. Smooth Ring spring follow (skip if reduced motion)
+      if (!reducedMotion) {
+        ringX += (tx - ringX) * (isMagnetic ? 0.32 : 0.18);
+        ringY += (ty - ringY) * (isMagnetic ? 0.32 : 0.18);
+        
+        ringRotation = (ringRotation + 1.0) % 360;
 
-      const ringSize = isMagnetic ? (magneticRadius + 14) : 34;
-      const ringOffset = ringSize / 2;
-      
-      ring.style.transform = `translate3d(${ringX - ringOffset}px, ${ringY - ringOffset}px, 0) rotate(${ringRotation}deg)`;
-      
-      if (isMagnetic) {
-        ring.style.width = `${ringSize}px`;
-        ring.style.height = `${ringSize}px`;
-        ring.style.borderRadius = "4px";
-      } else {
-        ring.style.width = "34px";
-        ring.style.height = "34px";
-        ring.style.borderRadius = "50%";
+        const ringSize = isMagnetic ? (magneticRadius + 14) : 34;
+        const ringOffset = ringSize / 2;
+        
+        ring.style.transform = `translate3d(${ringX - ringOffset}px, ${ringY - ringOffset}px, 0) rotate(${ringRotation}deg)`;
+        
+        if (isMagnetic) {
+          ring.style.width = `${ringSize}px`;
+          ring.style.height = `${ringSize}px`;
+          ring.style.borderRadius = "4px";
+        } else {
+          ring.style.width = "34px";
+          ring.style.height = "34px";
+          ring.style.borderRadius = "50%";
+        }
       }
       
       // 3. Update Trail History
@@ -92,16 +106,18 @@ export function CustomCursor() {
         txt.style.transform = `translate3d(${history[0].x}px, ${history[0].y - 28}px, 0) translate3d(-50%, -100%, 0)`;
       }
 
-      // 5. Trailing particle coordinate shifts
-      for (let i = 0; i < NUM_PARTICLES; i++) {
-        const particle = particlesRef.current[i];
-        if (!particle) continue;
+      // 5. Trailing particle coordinate shifts (disabled under reducedMotion)
+      if (!reducedMotion) {
+        for (let i = 0; i < NUM_PARTICLES; i++) {
+          const particle = particlesRef.current[i];
+          if (!particle) continue;
 
-        const historyIdx = Math.min((i + 1) * 2, history.length - 1);
-        const pos = history[historyIdx] || history[history.length - 1] || { x: tx, y: ty };
-        
-        const offset = isMagnetic ? (i * magneticRadius * 0.08) : 0;
-        particle.style.transform = `translate3d(${pos.x - 2}px, ${pos.y - 2 + offset}px, 0)`;
+          const historyIdx = Math.min((i + 1) * 2, history.length - 1);
+          const pos = history[historyIdx] || history[history.length - 1] || { x: tx, y: ty };
+          
+          const offset = isMagnetic ? (i * magneticRadius * 0.08) : 0;
+          particle.style.transform = `translate3d(${pos.x - 2}px, ${pos.y - 2 + offset}px, 0)`;
+        }
       }
 
       raf = requestAnimationFrame(animate);
@@ -113,11 +129,24 @@ export function CustomCursor() {
       if (!visible) setVisible(true);
     };
 
+    let lastCheck = 0;
+    const onMoveThrottled = (e: MouseEvent) => {
+      onMove(e);
+      
+      const now = performance.now();
+      // Throttle interactive hover scanners to max ~25fps (once every 40ms)
+      if (now - lastCheck > 40) {
+        checkHoverState(e);
+        lastCheck = now;
+      }
+    };
+
     const onEnter = () => setVisible(true);
     const onLeave = () => setVisible(false);
     
     // Mousedown click ripple trigger (0% React re-render, native DOM class toggling)
     const onDown = (e: MouseEvent) => {
+      if (reducedMotion) return;
       if (dot) {
         dot.style.boxShadow = "0 0 24px var(--color-amber-bright), 0 0 48px var(--color-amber)";
         dot.style.transform = `translate3d(${mx - 3}px, ${my - 3}px, 0) scale(2.2)`;
@@ -129,21 +158,18 @@ export function CustomCursor() {
         }, 180);
       }
 
-      // Trigger next ripple div in the pre-rendered pool
       const idx = nextRippleIdx.current;
       const ripple = rippleRefs.current[idx];
       if (ripple) {
         ripple.style.left = `${e.clientX}px`;
         ripple.style.top = `${e.clientY}px`;
         ripple.classList.remove("run-ripple");
-        // Force DOM reflow to restart CSS animation
-        void ripple.offsetWidth;
+        void ripple.offsetWidth; // Force reflow
         ripple.classList.add("run-ripple");
       }
-      nextRippleIdx.current = (idx + 1) % 3; // Cycle pool size (3)
+      nextRippleIdx.current = (idx + 1) % 3; 
     };
 
-    // Throttled Hover state scanner (Gates state updates inside refs to eliminate DOM re-renders)
     const checkHoverState = (e: MouseEvent) => {
       const el = e.target as HTMLElement;
       if (!el) return;
@@ -154,12 +180,11 @@ export function CustomCursor() {
       let nextState: typeof cursorState = "default";
       let nextText = "";
 
-      if (interactiveNode) {
+      if (interactiveNode && !reducedMotion) {
         const rect = interactiveNode.getBoundingClientRect();
         targetX = rect.left + rect.width / 2;
         targetY = rect.top + rect.height / 2;
         
-        // Magnetize to smaller buttons and icons
         if (rect.width < 120 && rect.height < 120) {
           isMagnetic = true;
           magneticRadius = Math.max(rect.width, rect.height);
@@ -191,8 +216,6 @@ export function CustomCursor() {
         nextState = "link";
       }
 
-      // ── CRITICAL GATING ──
-      // State is strictly only updated in React if it has actually changed, blocking 60fps re-renders
       if (nextState !== stateRef.current) {
         stateRef.current = nextState;
         setCursorState(nextState);
@@ -203,8 +226,7 @@ export function CustomCursor() {
       }
     };
 
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mousemove", checkHoverState);
+    document.addEventListener("mousemove", onMoveThrottled);
     document.addEventListener("mouseenter", onEnter);
     document.addEventListener("mouseleave", onLeave);
     document.addEventListener("mousedown", onDown);
@@ -216,14 +238,13 @@ export function CustomCursor() {
     raf = requestAnimationFrame(animate);
 
     return () => {
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mousemove", checkHoverState);
+      document.removeEventListener("mousemove", onMoveThrottled);
       document.removeEventListener("mouseenter", onEnter);
       document.removeEventListener("mouseleave", onLeave);
       document.removeEventListener("mousedown", onDown);
       cancelAnimationFrame(raf);
     };
-  }, [visible, mounted, isTouch]);
+  }, [visible, mounted, isTouch, reducedMotion]);
 
   const isCrosshair = cursorState === "crosshair";
   const isTerminal = cursorState === "terminal";
@@ -279,8 +300,8 @@ export function CustomCursor() {
         {cursorText}
       </div>
 
-      {/* 1. Pre-rendered click ripples pool (strictly zero React re-renders on clicks) */}
-      {[...Array(3)].map((_, i) => (
+      {/* ripples pool */}
+      {!reducedMotion && [...Array(3)].map((_, i) => (
         <div
           key={`ripple-slot-${i}`}
           ref={el => { rippleRefs.current[i] = el; }}
@@ -288,8 +309,8 @@ export function CustomCursor() {
         />
       ))}
 
-      {/* 2. Trailing particles (COMPRESSED to 6 for GPU optimal trails) */}
-      {[...Array(NUM_PARTICLES)].map((_, i) => (
+      {/* Trailing particles */}
+      {!reducedMotion && [...Array(NUM_PARTICLES)].map((_, i) => (
         <div
           key={i}
           ref={el => { particlesRef.current[i] = el; }}
@@ -307,21 +328,23 @@ export function CustomCursor() {
         />
       ))}
 
-      {/* 3. Rotating Orbit Ring */}
-      <div
-        ref={ringRef}
-        style={{
-          position: "fixed", top: 0, left: 0,
-          border: isCrosshair || isTerminal ? "none" : (isLink ? "1.5px dashed var(--color-amber-bright)" : "1px solid var(--color-border)"),
-          borderRadius: "50%",
-          zIndex: 9998, pointerEvents: "none",
-          opacity: visible && !isCrosshair && !isTerminal ? (isLink ? 1 : 0.4) : 0,
-          boxShadow: isLink ? "0 0 8px var(--color-amber-glow)" : "none",
-          transition: "opacity 0.2s, border-color 0.2s, border-style 0.2s, box-shadow 0.2s",
-        }}
-      />
+      {/* Rotating Orbit Ring */}
+      {!reducedMotion && (
+        <div
+          ref={ringRef}
+          style={{
+            position: "fixed", top: 0, left: 0,
+            border: isCrosshair || isTerminal ? "none" : (isLink ? "1.5px dashed var(--color-amber-bright)" : "1px solid var(--color-border)"),
+            borderRadius: "50%",
+            zIndex: 9998, pointerEvents: "none",
+            opacity: visible && !isCrosshair && !isTerminal ? (isLink ? 1 : 0.4) : 0,
+            boxShadow: isLink ? "0 0 8px var(--color-amber-glow)" : "none",
+            transition: "opacity 0.2s, border-color 0.2s, border-style 0.2s, box-shadow 0.2s",
+          }}
+        />
+      )}
 
-      {/* 4. Center dot caret (using translate3d GPU scaling) */}
+      {/* Center dot caret */}
       <div
         ref={dotRef}
         style={{

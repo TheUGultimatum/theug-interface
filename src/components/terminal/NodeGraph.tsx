@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, memo } from "react";
 
 interface Node {
   id: string;
@@ -34,7 +34,7 @@ const INITIAL_NODES: Omit<Node, "vx" | "vy" | "pulseSize" | "targetPulse">[] = [
   { id: "exp",    label: "UNDERGROUND",   x: 20, y: 26, baseX: 20, baseY: 26 },
 ];
 
-export function NodeGraph() {
+function NodeGraphComponent() {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
@@ -524,3 +524,5 @@ export function NodeGraph() {
     </div>
   );
 }
+
+export const NodeGraph = memo(NodeGraphComponent);
