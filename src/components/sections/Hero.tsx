@@ -470,12 +470,9 @@ const Stat = memo(function StatComponent({ label, value, highlight = false }: { 
 });
 
 /* ─── Hero Identity Animation ──────────────────────────────── */
-const ROLES = ["independent builder", "ai systems", "automation", "web3", "infrastructure"];
+const ROLES = ["ai systems", "automation", "infrastructure", "web3"];
 const HERO_TITLES = [
   { line1: "USMAAN", line2: "GANI" },
-  { line1: "theUG", line2: "WORKSPACE" },
-  { line1: "AI • AUTOMATION", line2: "WEB3" },
-  { line1: "BUILDING", line2: "INTELLIGENT SYSTEMS" },
   { line1: "INDEPENDENT", line2: "BUILDER" }
 ];
 
@@ -646,7 +643,7 @@ export function Hero() {
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--color-text-muted)", letterSpacing: "0.1em" }}>INDEX.01</span>
             <span style={{ color: "var(--color-border)", fontSize: "10px" }}>—</span>
-            {["AI·AUTOMATION", "WEB3", "INFRA"].map((tag, i, arr) => (
+            {["AI SYSTEMS", "AUTOMATION", "INFRASTRUCTURE", "WEB3"].map((tag, i, arr) => (
               <span key={tag} style={{ display: "flex", alignItems: "center", gap: "16px" }}>
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: "9px", letterSpacing: "0.12em", color: "var(--color-text-muted)" }}>{tag}</span>
                 {i < arr.length - 1 && <span style={{ color: "var(--color-border)" }}>·</span>}
@@ -676,8 +673,8 @@ export function Hero() {
               lineHeight: 1.85, maxWidth: "380px",
               fontFamily: "var(--font-space-grotesk)",
             }}>
-              Independent engineer building AI agents, automation pipelines, and
-              experimental software at the intersection of intelligence and infrastructure.
+              Building experimental AI tooling, autonomous workflows,
+              blockchain infrastructure, and immersive system interfaces.
             </p>
 
             <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
@@ -716,13 +713,28 @@ export function Hero() {
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
               {/* Metrics */}
-              <div className="panel">
-                <div className="panel-header">
-                  <span className="panel-title">sys.metrics</span>
+              {/* Active Systems Operations Monitor */}
+              <div className="panel hover-glow-edge" style={{ contain: "layout paint style" }}>
+                <div className="panel-header flex items-center justify-between">
+                  <span className="panel-title">active_systems.log</span>
+                  <span style={{ fontSize: "7px", color: "var(--color-online)", fontFamily: "var(--font-mono)" }}>
+                    ● SYS_OK
+                  </span>
                 </div>
-                <div className="panel-body" style={{ padding: "12px 14px" }}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                    {METRICS.map(m => <LiveMetric key={m.label} metric={m} />)}
+                <div className="panel-body font-mono text-[9px]" style={{ padding: "12px 14px" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    {[
+                      { label: "LOCAL_LLM_CLUSTER",    value: "ONLINE", color: "var(--color-online)" },
+                      { label: "AUTOMATION_PIPELINES", value: "ACTIVE", color: "var(--color-amber)" },
+                      { label: "NODE_INFRASTRUCTURE",  value: "SYNCED", color: "var(--color-online)" },
+                      { label: "GPU_INFERENCE_CORE",   value: "READY",  color: "var(--color-cyan)" },
+                      { label: "CONTACT_UPLINK",       value: "STABLE", color: "var(--color-cyan)" }
+                    ].map((sys) => (
+                      <div key={sys.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ color: "var(--color-text-secondary)", fontSize: "8.5px" }}>{sys.label}</span>
+                        <span style={{ color: sys.color, fontWeight: "bold" }}>[{sys.value}]</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>

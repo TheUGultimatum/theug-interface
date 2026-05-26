@@ -120,17 +120,14 @@ export function Contact() {
 
     const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-    setLogs(prev => [...prev, "› establishing secure channel..."]);
-    await delay(350);
+    setLogs(prev => [...prev, "› secure channel established..."]);
+    await delay(400);
 
-    setLogs(prev => [...prev, "› encrypting payload..."]);
-    await delay(350);
+    setLogs(prev => [...prev, "› payload encrypted..."]);
+    await delay(400);
 
-    setLogs(prev => [...prev, "› uplink stable..."]);
-    await delay(350);
-
-    setLogs(prev => [...prev, "› transmitting telemetry..."]);
-    await delay(300);
+    setLogs(prev => [...prev, "› uplink transmitted..."]);
+    await delay(400);
 
     // Spam prevention: Check elapsed time since initial focus/load
     const elapsedSeconds = (Date.now() - startTimeRef.current) / 1000;

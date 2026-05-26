@@ -2,69 +2,29 @@
 
 import { useEffect, useState, useRef } from "react";
 import { SectionLabel } from "@/components/ui/SectionLabel";
-import { TerminalFeed, type LogLine } from "@/components/terminal/TerminalFeed";
-
-const STATUS_LOGS: Omit<LogLine, "id">[] = [
-  { timestamp: "11:21:40", text: "Initializing optimization sequence on neural subgraphs...", status: "info" },
-  { timestamp: "11:21:55", text: "Compiling WASM particle physics layout scripts...", status: "success" },
-  { timestamp: "11:22:10", text: "Model inference weights loaded successfully [2.4GB]", status: "success" },
-  { timestamp: "11:22:25", text: "Indexing local search vectors on portfolio core...", status: "info" },
-  { timestamp: "11:22:42", text: "Re-routing API gateways through edge cluster node-4...", status: "success" },
-  { timestamp: "11:23:02", text: "Performing telemetry health checks on autonomous daemons...", status: "ok" },
-  { timestamp: "11:23:18", text: "Session validated. Ambient warmth and scanlines nominal.", status: "ok" },
-  { timestamp: "11:23:35", text: "Compiling Day/Night swappable CSS custom variables...", status: "info" },
-];
-
-const EXPERIMENTS = [
-  { name: "Autonomous Agent Tasks Scheduler", status: "Active Run", progress: 84 },
-  { name: "Local WebGL ASCII Face Sampler", status: "Refining", progress: 95 },
-  { name: "Solidity Multi-sig Vault V2", status: "Auditing", progress: 68 },
-];
 
 export function Now() {
-  const [logs, setLogs] = useState<LogLine[]>([]);
-  const [logIndex, setLogIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState(false);
 
-  // Initialize first few logs
   useEffect(() => {
-    const initial = STATUS_LOGS.slice(0, 4).map((l, i) => ({
-      ...l,
-      id: `init-${i}`
-    }));
-    setLogs(initial);
-    setLogIndex(4);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setInView(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+    if (containerRef.current) observer.observe(containerRef.current);
+    return () => observer.disconnect();
   }, []);
-
-  // Cycle new live logs every 4 seconds
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const logTemplate = STATUS_LOGS[logIndex % STATUS_LOGS.length];
-      const now = new Date();
-      const timeStr = now.toTimeString().split(" ")[0];
-
-      setLogs((prev) => {
-        const nextLogs = [
-          ...prev,
-          {
-            id: `live-${Date.now()}`,
-            timestamp: timeStr,
-            text: logTemplate.text,
-            status: logTemplate.status
-          }
-        ];
-        return nextLogs.slice(-10); // Keep last 10 logs for performance
-      });
-
-      setLogIndex((prev) => prev + 1);
-    }, 4500);
-
-    return () => clearInterval(timer);
-  }, [logIndex]);
 
   return (
     <section
       id="now"
+      ref={containerRef}
       style={{
         padding: "clamp(64px, 8vh, 120px) clamp(24px, 4vw, 48px)",
         borderTop: "1px solid var(--color-border)",
@@ -73,10 +33,10 @@ export function Now() {
       <div style={{ maxWidth: "1300px", margin: "0 auto" }}>
         
         {/* Section Title */}
-        <div data-cursor="VIEW">
+        <div className={inView ? "animate-fade-in" : "anim-hidden"}>
           <SectionLabel label="NOW.EXE" />
           <p className="text-system" style={{ marginTop: "4px" }}>
-            REAL-TIME FEED · BUILDER STATUS · ACTIVE EXPERIMENTS
+            REAL-TIME FEED · BUILDER STATUS · ACTIVE SYSTEM TELEMETRY
           </p>
         </div>
 
@@ -85,94 +45,113 @@ export function Now() {
           style={{
             display: "grid",
             gridTemplateColumns: "7fr 5fr",
-            gap: "clamp(20px, 3vw, 36px)",
+            gap: "clamp(24px, 3.5vw, 48px)",
             marginTop: "clamp(28px, 4vh, 44px)",
+            alignItems: "start",
           }}
           className="now-grid"
         >
-          {/* Left panel: Live Console Feed */}
-          <div className="panel hover-glow-edge flex flex-col h-[340px]">
+          {/* Left Panel: now.exe Live Operations Feed (7 cols) */}
+          <div 
+            className={`panel hover-glow-edge ${inView ? "animate-fade-in-up delay-100" : "anim-hidden"}`}
+            style={{ contain: "layout paint style" }}
+          >
             <div className="panel-header flex items-center justify-between">
               <div className="panel-controls">
                 <span className="panel-dot panel-dot-red" />
                 <span className="panel-dot panel-dot-yellow" />
                 <span className="panel-dot panel-dot-green" />
               </div>
-              <span className="panel-title">builder_console_live.sh</span>
+              <span className="panel-title">now.exe</span>
               <span style={{ fontSize: "8px", color: "var(--color-online)", fontFamily: "var(--font-mono)", letterSpacing: "0.1em" }}>
-                ● STREAMING
+                ● OPERATOR // ONLINE
               </span>
             </div>
             
-            <div 
-              ref={containerRef}
-              className="panel-body overflow-y-auto flex-1 font-mono text-[11px]"
-              style={{
-                background: "var(--color-elevated)",
-                padding: "16px",
-              }}
-            >
-              <TerminalFeed lines={logs} maxHeight="270px" />
+            <div className="panel-body" style={{ padding: "20px 24px" }}>
+              <div className="flex flex-col gap-5 font-mono text-[11px]">
+                <div style={{ color: "var(--color-text-secondary)", lineHeight: 1.6 }}>
+                  CURRENT_OPS // Active tasks logged on server cluster:
+                </div>
+                
+                <div className="flex flex-col gap-3 pl-2">
+                  {[
+                    "building ai automation systems",
+                    "experimenting with local inference",
+                    "researching agentic workflows",
+                    "designing immersive system interfaces",
+                    "operating blockchain infrastructure"
+                  ].map((task, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <span 
+                        style={{ color: "var(--color-amber)", display: "inline-block" }} 
+                        className="animate-pulse"
+                      >
+                        &gt;
+                      </span>
+                      <span style={{ color: "var(--color-text-primary)" }}>{task}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ borderTop: "1px solid var(--color-border)", opacity: 0.3, marginTop: "8px" }} />
+
+                <div style={{ color: "var(--color-text-muted)", fontSize: "9px" }}>
+                  LAST_SYNC // {new Date().toISOString().slice(0, 10)} · CLUSTER_ID #48E
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Right panel: Active Status Board */}
-          <div className="flex flex-col gap-4">
-            
-            {/* Vibe / Focus */}
-            <div className="panel hover-glow-edge h-[160px]">
-              <div className="panel-header">
-                <span className="panel-title">active_focus.conf</span>
+          {/* Right Panel: active_systems.log Operations status board (5 cols) */}
+          <div 
+            className={`panel hover-glow-edge ${inView ? "animate-fade-in-up delay-200" : "anim-hidden"}`}
+            style={{ contain: "layout paint style" }}
+          >
+            <div className="panel-header flex items-center justify-between">
+              <div className="panel-controls">
+                <span className="panel-dot panel-dot-red" />
+                <span className="panel-dot panel-dot-yellow" />
+                <span className="panel-dot panel-dot-green" />
               </div>
-              <div className="panel-body flex flex-col gap-2.5 font-mono text-[11px]" style={{ padding: "12px 14px" }}>
-                <div className="flex justify-between items-center border-b border-[var(--color-border)] pb-1.5">
-                  <span style={{ color: "var(--color-text-muted)" }}>CURRENT PROJECT :</span>
-                  <span style={{ color: "var(--color-amber-bright)" }}>Portfolio Phase 2 Core</span>
-                </div>
-                <div className="flex justify-between items-center border-b border-[var(--color-border)] pb-1.5">
-                  <span style={{ color: "var(--color-text-muted)" }}>RESEARCH TOPIC :</span>
-                  <span style={{ color: "var(--color-cyan)" }}>Multi-Agent Orchestrations</span>
-                </div>
-                <div className="flex justify-between items-center border-b border-[var(--color-border)] pb-1.5">
-                  <span style={{ color: "var(--color-text-muted)" }}>READING BOOK   :</span>
-                  <span style={{ color: "var(--color-text-primary)" }}>Designing Data Systems</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span style={{ color: "var(--color-text-muted)" }}>PLAYLIST VIBE  :</span>
-                  <span style={{ color: "var(--color-text-secondary)" }}>Industrial Dark Ambient</span>
-                </div>
-              </div>
+              <span className="panel-title">active_systems.log</span>
+              <span style={{ fontSize: "8px", color: "var(--color-text-muted)", fontFamily: "var(--font-mono)" }}>
+                SYSTEM_MONITOR
+              </span>
             </div>
 
-            {/* Experiments Progress Panel */}
-            <div className="panel hover-glow-edge h-[164px]">
-              <div className="panel-header">
-                <span className="panel-title">experiments_status.bin</span>
-              </div>
-              <div className="panel-body flex flex-col gap-3" style={{ padding: "12px 14px" }}>
-                {EXPERIMENTS.map((exp) => (
-                  <div key={exp.name} className="flex flex-col gap-1 font-mono">
-                    <div className="flex justify-between text-[10px]">
-                      <span style={{ color: "var(--color-text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{exp.name}</span>
-                      <span style={{ color: "var(--color-cyan)" }} className="shrink-0">{exp.status} ({exp.progress}%)</span>
-                    </div>
-                    <div className="metric-bar-track w-full">
-                      <div 
-                        style={{
-                          height: "100%",
-                          width: `${exp.progress}%`,
-                          background: "var(--color-cyan)",
-                          opacity: 0.85,
-                          transition: "width 1s ease-out"
-                        }}
-                      />
-                    </div>
+            <div className="panel-body" style={{ padding: "20px 24px" }}>
+              <div className="flex flex-col gap-3 font-mono text-[11px]">
+                {[
+                  { label: "LOCAL_LLM_CLUSTER",    value: "ONLINE", color: "var(--color-online)" },
+                  { label: "AUTOMATION_PIPELINES", value: "ACTIVE", color: "var(--color-amber)" },
+                  { label: "NODE_INFRASTRUCTURE",  value: "SYNCED", color: "var(--color-online)" },
+                  { label: "GPU_INFERENCE_CORE",   value: "READY",  color: "var(--color-cyan)" },
+                  { label: "CONTACT_UPLINK",       value: "STABLE", color: "var(--color-cyan)" }
+                ].map((sys) => (
+                  <div key={sys.label} style={{ 
+                    display: "flex", 
+                    justifyContent: "space-between", 
+                    alignItems: "center",
+                    borderBottom: "1px solid var(--color-border)",
+                    paddingBottom: "8px"
+                  }}>
+                    <span style={{ color: "var(--color-text-secondary)" }}>{sys.label}</span>
+                    <span style={{ 
+                      color: sys.color, 
+                      fontWeight: "bold",
+                      border: `1px solid ${sys.color}33`,
+                      padding: "2px 8px",
+                      background: `${sys.color}08`,
+                      borderRadius: "1px",
+                      fontSize: "9px"
+                    }}>[ {sys.value} ]</span>
                   </div>
                 ))}
               </div>
             </div>
-
           </div>
+
         </div>
 
       </div>

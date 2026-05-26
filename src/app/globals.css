@@ -59,59 +59,59 @@
 
 /* Industrial Lab Day Mode variables */
 .day-mode {
-  /* Volumetric warm Japanese paper / Apple editorial palette */
-  --color-void: #FAF8F5;          
-  --color-abyss: #F4F1EA;         
-  --color-surface: #FCFAF7;       
-  --color-elevated: #F0ECE2;      
-  --color-border: #D6CFC1;        /* Crisp, sharper editorial border */
-  --color-border-bright: #C4BCAE; /* Visible Clay boundary lines */
+  /* Apple developer docs & Obsidian light theme clean editorial wash */
+  --color-void: #F9F9FB;          
+  --color-abyss: #F4F4F6;         
+  --color-surface: #FFFFFF;       
+  --color-elevated: #EDEDF0;      
+  --color-border: #E2E2E6;        /* Crisp, sharp Obsidian borders */
+  --color-border-bright: #D2D2D6; /* Defined boundaries */
 
   /* Text Layer - warm slate & charcoal for high premium contrast legibility */
-  --color-text-primary: #111215;  /* Deep rich warm charcoal-black */
-  --color-text-secondary: #353B47;/* Slate-gray for editorial reading */
-  --color-text-muted: #676F7E;    /* High contrast metadata */
-  --color-text-ghost: #D5CFC2;    
+  --color-text-primary: #1A1A1E;  /* Deep rich warm charcoal-black */
+  --color-text-secondary: #3C3C43;/* Slate-gray for editorial reading */
+  --color-text-muted: #6C6C73;    /* High contrast metadata */
+  --color-text-ghost: #E2E2E6;    
 
   --color-amber: #D84315;         
   --color-amber-bright: #FF5722;  
   --color-amber-dim: #FDF2EE;     
-  --color-amber-glow: rgba(216, 67, 21, 0.05);
-  --color-cyan: #006B7A;          
-  --color-cyan-dim: #E0F2F5;      
-  --color-cyan-glow: rgba(0, 107, 122, 0.04);
+  --color-amber-glow: rgba(216, 67, 21, 0.03);
+  --color-cyan: #0284C7;          
+  --color-cyan-dim: #E0F2F9;      
+  --color-cyan-glow: rgba(2, 132, 199, 0.02);
 
-  --color-online: #006B7A;
-  --color-online-bright: #008394;
+  --color-online: #0284C7;
+  --color-online-bright: #0369A1;
 
-  --glow-ambient: 0 4px 24px rgba(216, 67, 21, 0.02);
-  --glow-active: 0 6px 32px rgba(216, 67, 21, 0.04);
-  --glow-focus: 0 10px 48px rgba(216, 67, 21, 0.06);
-  --color-pulse-glow: rgba(216, 67, 21, 0.18);
+  --glow-ambient: 0 4px 16px rgba(0, 0, 0, 0.02);
+  --glow-active: 0 6px 20px rgba(0, 0, 0, 0.03);
+  --glow-focus: 0 10px 32px rgba(0, 0, 0, 0.04);
+  --color-pulse-glow: rgba(2, 132, 199, 0.12);
 }
 
 .day-mode .bg-grid {
-  background-image: linear-gradient(rgba(0, 0, 0, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.025) 1px, transparent 1px);
+  background-image: linear-gradient(rgba(0, 0, 0, 0.012) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.012) 1px, transparent 1px);
   background-size: 24px 24px;
   mask-image: radial-gradient(circle at center, black 40%, transparent 95%);
 }
 
 .day-mode .bg-vignette {
-  background: radial-gradient(ellipse 100% 100% at 50% 50%, rgba(251,251,250,0.1) 40%, rgba(216,67,21,0.02) 100%);
+  background: radial-gradient(ellipse 100% 100% at 50% 50%, transparent 60%, rgba(0,0,0,0.02) 100%);
 }
 
 .day-mode .bg-noise {
-  opacity: 0.035;
+  opacity: 0.02;
   mix-blend-mode: multiply;
 }
 
 .day-mode .bg-glow-left {
-  background: radial-gradient(circle, rgba(216, 67, 21, 0.022) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(216, 67, 21, 0.008) 0%, transparent 70%);
 }
 
 .day-mode .bg-glow-right {
-  background: radial-gradient(circle, rgba(0, 119, 135, 0.016) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(2, 132, 199, 0.005) 0%, transparent 70%);
 }
 
 .day-mode ::selection {

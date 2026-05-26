@@ -4,13 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { AsciiCore } from "@/components/ui/AsciiCore";
 
-interface LabExperiment {
-  id: string;
-  title: string;
-  status: "ONLINE" | "STANDBY" | "COMPILED" | "COMPILING";
-  desc: string;
-}
-
 // Waveform drawing helper component
 function LabWaveform({ active = false, frequency = 1.0, speed = 1.0 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -103,9 +96,9 @@ export function Labs() {
   const [coreFreq, setCoreFreq] = useState<number>(1.2);
   const [threadAlloc, setThreadAlloc] = useState<number>(4);
   const [sandboxLogs, setSandboxLogs] = useState<string[]>([
-    "› SYSTEM_STANDBY: R&D Core online.",
-    "› VIRTUAL_SANDBOX: Memory maps loaded successfully at segment #0x4E9A.",
-    "› READY: Core thread allocation structural diagnostics nominal."
+    "› SYSTEM_STANDBY: R&D Local Telemetry online.",
+    "› INFRA_SANDBOX: Segment registers pre-mapped successfully at segment #0x4E9A.",
+    "› READY: Inference thread core mapping diagnostics nominal."
   ]);
   const [txDeploying, setTxDeploying] = useState(false);
 
@@ -114,20 +107,20 @@ export function Labs() {
     setTxDeploying(true);
     setSandboxLogs(prev => [
       ...prev,
-      "› [0.0s] COMPILER: Initializing EVM compiler stack Solidity v0.8.24...",
-      `› [0.4s] CORE: Allocation of ${threadAlloc} threads established successfully.`,
-      `› [0.8s] OSCILLATOR: Scanning frequency profiles at ${coreFreq.toFixed(1)} GHz... [OK]`,
-      "› [1.2s] OPTIMIZER: Completed bytecode compaction passes (200 runs).",
-      "› [1.5s] TRANSMISSION: Broadcasting optimized sandbox payload..."
+      "› [0.0s] INFERENCE: Loading quantized Llama-3-8B model on GPU-0...",
+      `› [0.4s] TELEMETRY: Allocating ${threadAlloc} inference threads on local core.`,
+      `› [0.8s] OSCILLATOR: Adjusting inference sampling window at ${coreFreq.toFixed(1)} GHz...`,
+      "› [1.2s] PIPELINE: Routing workspace prompts through automated node routing...",
+      "› [1.5s] DEPLOY: Processing local attention vectors..."
     ]);
 
     setTimeout(() => {
       const txHash = "0x" + Array.from({length: 40}, () => Math.floor(Math.random()*16).toString(16)).join("");
       setSandboxLogs(prev => [
         ...prev,
-        `› [2.1s] TELEMETRY: Transaction mined on virtual block #8,142,089.`,
-        `› [2.3s] SUCCESS: Contract deployed at ${txHash.slice(0, 14)}... [Gas: 118,472]`,
-        `› [2.5s] DIAGNOSTICS: Thermal load nominal. Frequency stabilized.`
+        `› [2.1s] TELEMETRY: Processed input tokens in model segment #8,142,089.`,
+        `› [2.3s] SUCCESS: Vector query output successfully mapped at segment ${txHash.slice(0, 14)}...`,
+        `› [2.5s] DIAGNOSTICS: Local inference stable. Telemetry frequency nominal.`
       ]);
       setTxDeploying(false);
     }, 2800);
@@ -149,7 +142,7 @@ export function Labs() {
         
         {/* Section Label */}
         <div data-cursor="VIEW">
-          <SectionLabel label="LABS.EXE" />
+          <SectionLabel label="LABS.SH" />
           <p className="text-system" style={{ marginTop: "4px" }}>
             UNDERGROUND R&D CHAMBER · EXPERIMENTAL SYSTEM SANDBOXES
           </p>
@@ -162,6 +155,7 @@ export function Labs() {
             gridTemplateColumns: "1fr 1fr",
             gap: "clamp(24px, 4vw, 48px)",
             marginTop: "clamp(32px, 4vh, 48px)",
+            alignItems: "start",
           }}
           className="labs-grid"
         >
@@ -169,7 +163,7 @@ export function Labs() {
           <div className="flex flex-col gap-4">
             
             {/* Experiment selector menu */}
-            <div className="panel hover-glow-edge panel-breathing">
+            <div className="panel hover-glow-edge" style={{ contain: "layout paint style" }}>
               <div className="panel-header flex items-center justify-between">
                 <span className="panel-title">labs_manifest.json</span>
                 <span style={{ fontSize: "8px", color: "var(--color-online)", fontFamily: "var(--font-mono)" }}>
@@ -190,13 +184,13 @@ export function Labs() {
                   data-cursor="CLICK"
                 >
                   <div className="flex justify-between items-center w-full">
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "11.5px", fontWeight: "bold", color: activeExp === "neural-core" ? "var(--color-amber-bright)" : "var(--color-text-primary)" }}>
-                      &gt; BIOLUMINESCENT PARTICLE SIM
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "11px", fontWeight: "bold", color: activeExp === "neural-core" ? "var(--color-amber-bright)" : "var(--color-text-primary)" }}>
+                      &gt; LOCAL LLM INFERENCE CORE
                     </span>
                     <span className="terminal-badge terminal-badge-success" style={{ fontSize: "8px" }}>ONLINE</span>
                   </div>
-                  <p style={{ fontSize: "11px", color: "var(--color-text-secondary)", marginTop: "4px" }}>
-                    Parametric butterfly morphogenesis with spring-physics particles. Colorful wings scatter on hover and reform organically.
+                  <p style={{ fontSize: "11px", color: "var(--color-text-secondary)", marginTop: "4px", lineHeight: "1.5" }}>
+                    Real-time attention-map and neural parameter visualization using high-performance particle morphing physics. Hover to scatter, click to pulse.
                   </p>
                 </button>
 
@@ -212,20 +206,20 @@ export function Labs() {
                   data-cursor="CLICK"
                 >
                   <div className="flex justify-between items-center w-full">
-                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "11.5px", fontWeight: "bold", color: activeExp === "blockchain-vault" ? "var(--color-amber-bright)" : "var(--color-text-primary)" }}>
-                      &gt; SOLVAULT EVM SANDBOX COMPILER
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: "11px", fontWeight: "bold", color: activeExp === "blockchain-vault" ? "var(--color-amber-bright)" : "var(--color-text-primary)" }}>
+                      &gt; NODE TELEMETRY SANDBOX
                     </span>
                     <span className="terminal-badge terminal-badge-ok" style={{ fontSize: "8px" }}>STANDBY</span>
                   </div>
-                  <p style={{ fontSize: "11px", color: "var(--color-text-secondary)", marginTop: "4px" }}>
-                    Interactive Solidity multi-sig vault deployment simulator. Manipulate core frequency & processor threads to trace live oscilloscopes.
+                  <p style={{ fontSize: "11px", color: "var(--color-text-secondary)", marginTop: "4px", lineHeight: "1.5" }}>
+                    Interactive Solidity multi-sig contract and blockchain node simulation. Adjust core telemetry indicators to visualize active server waveforms.
                   </p>
                 </button>
               </div>
             </div>
 
             {/* Sandbox Operations Output */}
-            <div className="panel hover-glow-edge flex-1 min-h-[200px]">
+            <div className="panel hover-glow-edge flex-1 min-h-[200px]" style={{ contain: "layout paint style" }}>
               <div className="panel-header flex items-center justify-between">
                 <span className="panel-title">sandbox_telemetry_terminal.log</span>
                 <button 
@@ -247,11 +241,11 @@ export function Labs() {
                     <div 
                       key={i} 
                       style={{ 
-                        color: log.includes("Tx:") || log.includes("SUCCESS")
+                        color: log.includes("SUCCESS")
                           ? "var(--color-cyan)" 
-                          : log.includes("COMPILER")
+                          : log.includes("INFERENCE")
                           ? "var(--color-amber)"
-                          : log.includes("OSCILLATOR") || log.includes("stabilized")
+                          : log.includes("OSCILLATOR") || log.includes("stable")
                           ? "var(--color-text-primary)"
                           : "var(--color-text-secondary)" 
                       }}
@@ -272,9 +266,9 @@ export function Labs() {
                 <AsciiCore />
               </div>
             ) : (
-              <div className="panel hover-glow-edge w-full h-[320px] flex flex-col justify-between panel-breathing">
+              <div className="panel hover-glow-edge w-full h-[320px] flex flex-col justify-between" style={{ contain: "layout paint style" }}>
                 <div className="panel-header flex items-center justify-between">
-                  <span className="panel-title">SolidityVaultSandbox.sol</span>
+                  <span className="panel-title">NodeSignalSandbox.sh</span>
                   <span style={{ fontSize: "8px", color: "var(--color-warning)", fontFamily: "var(--font-mono)" }}>
                     ⚠️ WARNING: TESTNET ENVIRONMENT
                   </span>
@@ -287,13 +281,13 @@ export function Labs() {
 
                 <div className="panel-body flex-1 font-mono text-[9px] overflow-hidden" style={{ background: "var(--color-elevated)", padding: "10px 12px" }}>
                   <pre style={{ color: "var(--color-text-secondary)", lineHeight: 1.45 }}>
-{`contract UndergroundMultiSig {
-    address[] public owners;
-    uint256 public requiredConfirmations;
+{`contract NodeSignalSandbox {
+    address[] public validatorNodes;
+    uint256 public activeCoreFrequency;
 
-    constructor(address[] memory _owners) {
-        owners = _owners;
-        requiredConfirmations = 2;
+    constructor(address[] memory _nodes) {
+        validatorNodes = _nodes;
+        activeCoreFrequency = 2400; // MHz
     }
 }`}
                   </pre>
@@ -338,7 +332,7 @@ export function Labs() {
                     style={{ flex: 1, textAlign: "center" }}
                     data-cursor="CLICK"
                   >
-                    {txDeploying ? "› SIMULATING DEPLOYMENT..." : "› INITIATE COMPILE & DEPLOY"}
+                    {txDeploying ? "› SIMULATING TELEMETRY..." : "› INITIATE COMPILE & SIMULATE"}
                   </button>
                 </div>
               </div>
