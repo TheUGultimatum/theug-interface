@@ -1,291 +1,306 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
+
+/* ─────────────────────────────────────────────
+   High-Fidelity ASCII Portrait Identity Scanner
+   ───────────────────────────────────────────── */
 
 interface Particle {
   x: number;
   y: number;
-  tx: number; // Target X coordinate
-  ty: number; // Target Y coordinate
+  tx: number;
+  ty: number;
   vx: number;
   vy: number;
   char: string;
-  originalChar: string;
   size: number;
   alpha: number;
   targetAlpha: number;
   brightness: number;
-  isAccent: boolean;
-  gridX: number;
-  gridY: number;
+  edge: number;
+  revealed: boolean;
 }
-
-interface AmbientParticle {
-  x: number;
-  y: number;
-  vy: number;
-  vx: number;
-  size: number;
-  alpha: number;
-  char: string;
-}
-
-type RevealStage = "particles" | "wireframe" | "reconstruction" | "locked";
 
 export function IdentityHologram() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  
-  // Reveal State Machine
-  const [revealStage, setRevealStage] = useState<RevealStage>("particles");
-  const [glitchActive, setGlitchActive] = useState(false);
-  const [hudStatus, setHudStatus] = useState("INITIALIZING");
-  const [faceMatchRate, setFaceMatchRate] = useState(0);
 
-  // Synchronous refs for 60fps canvas drawing loop
-  const stageRef = useRef<RevealStage>("particles");
   const particlesRef = useRef<Particle[]>([]);
-  const ambientRef = useRef<AmbientParticle[]>([]);
   const mouseRef = useRef<{ x: number; y: number } | null>(null);
   const frameRef = useRef(0);
-  const scanProgressRef = useRef(0); // Y pos of horizontal laser scanner sweep
-  const bootTimeRef = useRef(0);
+  const scanYRef = useRef(-10);
+  const isLockedRef = useRef(false);
   const hasTriggeredRef = useRef(false);
+  const rafIdRef = useRef(0);
+  const dimRef = useRef({ w: 460, h: 540, dpr: 1 });
 
-  // Keep stageRef synced
-  useEffect(() => {
-    stageRef.current = revealStage;
-  }, [revealStage]);
+  const [statusText, setStatusText] = useState("STANDBY");
+  const [glitchActive, setGlitchActive] = useState(false);
 
-  // Increment facial match rate once active
-  useEffect(() => {
-    if (revealStage === "reconstruction") {
-      let current = 0;
-      const interval = setInterval(() => {
-        current += Math.floor(Math.random() * 8) + 4;
-        if (current >= 99) {
-          current = 99.8;
-          clearInterval(interval);
-        }
-        setFaceMatchRate(current);
-      }, 80);
-      return () => clearInterval(interval);
-    }
-  }, [revealStage]);
+  // Extended ASCII density ramp — more levels for smoother tonal gradation
+  const CHARS = " .·:;-=+*#%@█";
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    mouseRef.current = {
+      x: (e.clientX - rect.left) * dimRef.current.dpr,
+      y: (e.clientY - rect.top) * dimRef.current.dpr,
+    };
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    mouseRef.current = null;
+  }, []);
+
+  const triggerGlitch = useCallback(() => {
+    if (!isLockedRef.current) return;
+    setGlitchActive(true);
+    particlesRef.current.forEach((p) => {
+      p.x += (Math.random() - 0.5) * 50;
+      p.y += (Math.random() - 0.5) * 50;
+      p.vx = (Math.random() - 0.5) * 12;
+      p.vy = (Math.random() - 0.5) * 12;
+    });
+    setTimeout(() => setGlitchActive(false), 350);
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+    const container = containerRef.current;
+    if (!canvas || !container) return;
+    const ctx = canvas.getContext("2d", { alpha: true });
     if (!ctx) return;
 
-    let width = (canvas.width = 460);
-    let height = (canvas.height = 540);
-    let dpr = 1;
+    // ── SIZING ──
+    const setupSize = () => {
+      const rect = container.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      canvas.style.width = `${rect.width}px`;
+      canvas.style.height = `${rect.height}px`;
+      dimRef.current = { w: rect.width * dpr, h: rect.height * dpr, dpr };
+    };
+    setupSize();
+    window.addEventListener("resize", setupSize);
 
-    // Premium dense ASCII character shading ramp
-    const CHARS_RAMP = [".", ":", "-", "=", "+", "*", "D", "Q", "0", "O", "8", "B", "&", "%", "#", "@"];
-
-    // Viewport-triggered scroll observer
+    // ── INTERSECTION OBSERVER ──
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && !hasTriggeredRef.current) {
           hasTriggeredRef.current = true;
-          bootTimeRef.current = Date.now();
-          // Stage 1: Particles
-          setRevealStage("particles");
-          setHudStatus("ANALYZING ENVIRONMENT");
-
-          // Stage 2: Transition to Wireframe after 1.2s
-          setTimeout(() => {
-            setRevealStage("wireframe");
-            setHudStatus("CALIBRATING HUD COORDS");
-            
-            // Stage 3: Transition to Reconstruction after another 1.4s
-            setTimeout(() => {
-              setRevealStage("reconstruction");
-              setHudStatus("RECONSTRUCTING DATA");
-              scanProgressRef.current = 0;
-            }, 1400);
-
-          }, 1200);
+          scanYRef.current = 0;
+          setStatusText("SCANNING");
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.08 }
     );
-    if (containerRef.current) observer.observe(containerRef.current);
+    observer.observe(container);
 
-    const handleResize = () => {
-      if (containerRef.current && canvasRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        dpr = window.devicePixelRatio || 1;
-        width = canvasRef.current.width = rect.width;
-        height = canvasRef.current.height = rect.height;
-        
-        canvasRef.current.width = rect.width * dpr;
-        canvasRef.current.height = rect.height * dpr;
-        ctx.scale(dpr, dpr);
-      }
-    };
-    window.addEventListener("resize", handleResize);
-    handleResize();
-
-    // 1. Initialize ambient floating binary/dot data
-    const initAmbientParticles = () => {
-      const list: AmbientParticle[] = [];
-      const chars = ["0", "1", "+", "·", "x", "*", "•"];
-      for (let i = 0; i < 60; i++) {
-        list.push({
-          x: Math.random() * width,
-          y: Math.random() * height,
-          vx: (Math.random() - 0.5) * 0.4,
-          vy: -(0.4 + Math.random() * 0.8),
-          size: 4 + Math.random() * 5,
-          alpha: 0.04 + Math.random() * 0.12,
-          char: chars[Math.floor(Math.random() * chars.length)]
-        });
-      }
-      ambientRef.current = list;
-    };
-    initAmbientParticles();
-
-    // 2. Load and sample /images/portrait.png
+    // ── IMAGE LOADING & PIXEL SAMPLING ──
     const img = new Image();
-    img.src = "/images/portrait.png";
     img.crossOrigin = "anonymous";
+    img.src = "/images/portrait.png";
 
     img.onload = () => {
-      // Draw onto a temporary detection canvas to identify the subject's bounding box
-      // and mathematically crop out all empty top background/headspace.
-      const detectW = 100;
-      const detectH = Math.floor(100 * (img.height / img.width));
-      const detectCanvas = document.createElement("canvas");
-      detectCanvas.width = detectW;
-      detectCanvas.height = detectH;
-      const detectCtx = detectCanvas.getContext("2d");
-      
-      let cropX = 0;
-      let cropY = 0;
-      let cropW = img.width;
-      let cropH = img.height;
+      const { w, h, dpr } = dimRef.current;
 
-      if (detectCtx) {
-        detectCtx.drawImage(img, 0, 0, detectW, detectH);
-        const detectData = detectCtx.getImageData(0, 0, detectW, detectH).data;
+      // Step 1: Auto-crop whitespace — find subject bounding box
+      const detectW = 200;
+      const detectH = Math.round(200 * (img.height / img.width));
+      const dCvs = document.createElement("canvas");
+      dCvs.width = detectW;
+      dCvs.height = detectH;
+      const dCtx = dCvs.getContext("2d")!;
+      dCtx.drawImage(img, 0, 0, detectW, detectH);
+      const dData = dCtx.getImageData(0, 0, detectW, detectH).data;
 
-        let minY = detectH;
-        let maxY = 0;
-        let minX = detectW;
-        let maxX = 0;
+      let minY = detectH, maxY = 0, minX = detectW, maxX = 0;
+      for (let y = 0; y < detectH; y++) {
+        for (let x = 0; x < detectW; x++) {
+          const idx = (y * detectW + x) * 4;
+          const r = dData[idx], g = dData[idx + 1], b = dData[idx + 2], a = dData[idx + 3];
+          if (a < 20) continue;
+          const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+          if (lum < 228) {
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+          }
+        }
+      }
 
-        for (let y = 0; y < detectH; y++) {
-          for (let x = 0; x < detectW; x++) {
-            const idx = (y * detectW + x) * 4;
-            const r = detectData[idx];
-            const g = detectData[idx + 1];
-            const b = detectData[idx + 2];
-            const a = detectData[idx + 3];
+      const sX = img.width / detectW;
+      const sY = img.height / detectH;
 
-            if (a > 15) {
-              const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
-              // Detect non-white subject pixels
-              if (brightness < 238) {
-                if (y < minY) minY = y;
-                if (y > maxY) maxY = y;
-                if (x < minX) minX = x;
-                if (x > maxX) maxX = x;
+      let cropX = 0, cropY = 0, cropW = img.width, cropH = img.height;
+      if (maxY > minY && maxX > minX) {
+        const padFrac = 0.03;
+        const cW = (maxX - minX) * sX;
+        const cH = (maxY - minY) * sY;
+        cropX = Math.max(0, minX * sX - cW * padFrac);
+        cropY = Math.max(0, minY * sY - cH * padFrac);
+        cropW = Math.min(img.width - cropX, cW * (1 + padFrac * 2));
+        cropH = Math.min(img.height - cropY, cH * (1 + padFrac * 2));
+      }
+
+      // Step 2: Sample at high density with aspect-corrected rows
+      const GRID_COLS = 130;
+      const GRID_ROWS = Math.round(GRID_COLS * (cropH / cropW) * 0.55);
+      const sampleCvs = document.createElement("canvas");
+      sampleCvs.width = GRID_COLS;
+      sampleCvs.height = GRID_ROWS;
+      const sCtx = sampleCvs.getContext("2d")!;
+      sCtx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, GRID_COLS, GRID_ROWS);
+      const sData = sCtx.getImageData(0, 0, GRID_COLS, GRID_ROWS).data;
+
+      // Step 3: Compute luminance grid
+      const lumGrid: number[][] = [];
+      for (let y = 0; y < GRID_ROWS; y++) {
+        lumGrid[y] = [];
+        for (let x = 0; x < GRID_COLS; x++) {
+          const idx = (y * GRID_COLS + x) * 4;
+          lumGrid[y][x] = 0.299 * sData[idx] + 0.587 * sData[idx + 1] + 0.114 * sData[idx + 2];
+        }
+      }
+
+      // Step 4: Sobel edge detection
+      const rawEdge: number[][] = [];
+      for (let y = 0; y < GRID_ROWS; y++) {
+        rawEdge[y] = [];
+        for (let x = 0; x < GRID_COLS; x++) {
+          if (y === 0 || y === GRID_ROWS - 1 || x === 0 || x === GRID_COLS - 1) {
+            rawEdge[y][x] = 0;
+            continue;
+          }
+          const gx =
+            -lumGrid[y - 1][x - 1] + lumGrid[y - 1][x + 1] +
+            -2 * lumGrid[y][x - 1] + 2 * lumGrid[y][x + 1] +
+            -lumGrid[y + 1][x - 1] + lumGrid[y + 1][x + 1];
+          const gy =
+            -lumGrid[y - 1][x - 1] - 2 * lumGrid[y - 1][x] - lumGrid[y - 1][x + 1] +
+            lumGrid[y + 1][x - 1] + 2 * lumGrid[y + 1][x] + lumGrid[y + 1][x + 1];
+          rawEdge[y][x] = Math.min(1, Math.sqrt(gx * gx + gy * gy) / 200);
+        }
+      }
+
+      // Step 5: Smooth edges with DOUBLE box blur — extra smooth shoulder/body contours
+      // First pass: 3x3
+      const blurPass1: number[][] = [];
+      for (let y = 0; y < GRID_ROWS; y++) {
+        blurPass1[y] = [];
+        for (let x = 0; x < GRID_COLS; x++) {
+          if (y < 1 || y >= GRID_ROWS - 1 || x < 1 || x >= GRID_COLS - 1) {
+            blurPass1[y][x] = rawEdge[y][x];
+            continue;
+          }
+          let sum = 0;
+          for (let dy = -1; dy <= 1; dy++)
+            for (let dx = -1; dx <= 1; dx++)
+              sum += rawEdge[y + dy][x + dx];
+          blurPass1[y][x] = sum / 9;
+        }
+      }
+      // Second pass: another 3x3 on the first pass result (effectively 5x5 Gaussian approximation)
+      const edgeGrid: number[][] = [];
+      for (let y = 0; y < GRID_ROWS; y++) {
+        edgeGrid[y] = [];
+        for (let x = 0; x < GRID_COLS; x++) {
+          if (y < 1 || y >= GRID_ROWS - 1 || x < 1 || x >= GRID_COLS - 1) {
+            edgeGrid[y][x] = blurPass1[y][x];
+            continue;
+          }
+          let sum = 0;
+          for (let dy = -1; dy <= 1; dy++)
+            for (let dx = -1; dx <= 1; dx++)
+              sum += blurPass1[y + dy][x + dx];
+          edgeGrid[y][x] = sum / 9;
+        }
+      }
+
+      // Step 6: Build alpha mask to detect background vs subject
+      // Use a flood-fill-like approach: pixels near edges that are very bright = background
+      const isSubject: boolean[][] = [];
+      for (let y = 0; y < GRID_ROWS; y++) {
+        isSubject[y] = [];
+        for (let x = 0; x < GRID_COLS; x++) {
+          const idx = (y * GRID_COLS + x) * 4;
+          const a = sData[idx + 3];
+          const lum = lumGrid[y][x];
+          const edge = edgeGrid[y][x];
+
+          if (a < 20) {
+            isSubject[y][x] = false;
+          } else if (lum > 240 && edge < 0.03) {
+            // Very bright + no edge = definite background
+            isSubject[y][x] = false;
+          } else if (lum > 225 && edge < 0.06) {
+            // Bright + minimal edge = likely background  
+            // But check if neighbors are subject (for shirt edges, etc.)
+            isSubject[y][x] = false;
+          } else {
+            isSubject[y][x] = true;
+          }
+        }
+      }
+
+      // Step 7: Clean up isolated non-subject holes inside the face (erode+dilate)
+      // Dilate subject: if a non-subject pixel is surrounded by mostly subject pixels, include it
+      for (let y = 2; y < GRID_ROWS - 2; y++) {
+        for (let x = 2; x < GRID_COLS - 2; x++) {
+          if (!isSubject[y][x]) {
+            let subjectNeighbors = 0;
+            for (let dy = -1; dy <= 1; dy++) {
+              for (let dx = -1; dx <= 1; dx++) {
+                if (isSubject[y + dy][x + dx]) subjectNeighbors++;
               }
+            }
+            // If 6+ of 9 neighbors are subject, fill in this pixel
+            if (subjectNeighbors >= 6) {
+              isSubject[y][x] = true;
             }
           }
         }
-
-        // Convert back to original image dimensions if subject detected
-        if (maxY > minY && maxX > minX) {
-          const scaleToOrigX = img.width / detectW;
-          const scaleToOrigY = img.height / detectH;
-
-          const contentX = minX * scaleToOrigX;
-          const contentY = minY * scaleToOrigY;
-          const contentW = (maxX - minX) * scaleToOrigX;
-          const contentH = (maxY - minY) * scaleToOrigY;
-
-          // Add a tight 3.5% padding for high-fidelity alignment
-          const padY = contentH * 0.035;
-          const padX = contentW * 0.035;
-
-          cropX = Math.max(0, contentX - padX);
-          cropY = Math.max(0, contentY - padY);
-          cropW = Math.min(img.width - cropX, contentW + padX * 2);
-          cropH = Math.min(img.height - cropY, contentH + padY * 2);
-        }
       }
 
-      const tempCanvas = document.createElement("canvas");
-      const tempCtx = tempCanvas.getContext("2d");
-      if (!tempCtx) return;
-
-      // Lock sampling grid to a highly detailed 90x116 aspect ratio (no stretch or squish)
-      const sampleW = 90;
-      const sampleH = 116;
-      tempCanvas.width = sampleW;
-      tempCanvas.height = sampleH;
-
-      // Draw cropped subject to the sample grid canvas
-      tempCtx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, sampleW, sampleH);
-
-      const imgData = tempCtx.getImageData(0, 0, sampleW, sampleH);
-      const data = imgData.data;
+      // Step 8: Build particles
+      const displayW = w * 0.92;
+      const displayH = h * 0.88;
+      const offsetX = (w - displayW) / 2;
+      const offsetY = (h - displayH) / 2;
+      const cellW = displayW / GRID_COLS;
+      const cellH = displayH / GRID_ROWS;
+      const fontSize = Math.max(3, Math.min(cellW, cellH) * 1.15);
 
       const particles: Particle[] = [];
 
-      // Calculate perfect scale factors to display the ASCII reconstruction sharply
-      // Face is shifted upwards and fills the height beautifully (zero empty headroom)
-      const displayW = width * 0.88;
-      const displayH = height * 0.84;
-      const offsetX = (width - displayW) / 2;
-      const offsetY = 45; // Start exactly below header, fully utilizing canvas height
+      for (let y = 0; y < GRID_ROWS; y++) {
+        for (let x = 0; x < GRID_COLS; x++) {
+          if (!isSubject[y][x]) continue;
 
-      const scaleX = displayW / sampleW;
-      const scaleY = displayH / sampleH;
-
-      // Parse pixels and construct high-fidelity ASCII mapping particles
-      for (let y = 0; y < sampleH; y++) {
-        for (let x = 0; x < sampleW; x++) {
-          const idx = (y * sampleW + x) * 4;
-          const r = data[idx];
-          const g = data[idx + 1];
-          const b = data[idx + 2];
-          const a = data[idx + 3];
-
-          // Skip pure white/transparent background pixels of the photo
-          if (a < 15) continue;
-          const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
-          if (brightness > 235) continue; // Exclude photo background contour
-
-          // Target grid coordinates
-          const tx = offsetX + x * scaleX;
-          const ty = offsetY + y * scaleY;
-
-          // Accents: ~4% glowing orange/red dots
-          const isAccent = Math.random() > 0.96;
+          const lum = lumGrid[y][x];
+          const edge = edgeGrid[y][x];
+          const tx = offsetX + x * cellW;
+          const ty = offsetY + y * cellH;
 
           particles.push({
-            // Scatter coordinates randomly across edges for Stage 1 particles
-            x: Math.random() * width,
-            y: Math.random() * height,
+            x: tx + (Math.random() - 0.5) * w * 0.6,
+            y: ty + (Math.random() - 0.5) * h * 0.6,
             tx,
             ty,
             vx: 0,
             vy: 0,
-            char: "", // resolved in state machine
-            originalChar: "", // resolved in state machine
-            size: 5.6, // locked font size to keep facial features crisp and clear
+            char: "",
+            size: fontSize,
             alpha: 0,
-            targetAlpha: 0, // calculated based on theme mapping
-            brightness,
-            isAccent,
-            gridX: x,
-            gridY: y
+            targetAlpha: 0,
+            brightness: lum,
+            edge,
+            revealed: false,
           });
         }
       }
@@ -293,384 +308,249 @@ export function IdentityHologram() {
       particlesRef.current = particles;
     };
 
-    let rafId: number;
-
+    // ── RENDER LOOP ──
     const render = () => {
+      const { w, h, dpr } = dimRef.current;
       frameRef.current++;
-      ctx.clearRect(0, 0, width, height);
+      ctx.clearRect(0, 0, w, h);
 
       const time = frameRef.current;
-      const stage = stageRef.current;
       const isDay = document.documentElement.classList.contains("day-mode");
-
-      // ── COLOR CONFIGURATION (Day/Night Theme Tuning) ──
-      const baseAlphaColor = isDay ? "rgba(18, 20, 23, " : "rgba(240, 243, 250, ";
-      const hudColor = isDay ? "rgba(18, 20, 23, 0.08)" : "rgba(255, 94, 58, 0.08)";
-      const orangeAccent = isDay ? "rgba(216, 67, 21, 0.85)" : "rgba(255, 94, 58, 0.85)";
-
-      // Recalibrate target alpha and characters based on Day Mode vs Dark Mode
-      particlesRef.current.forEach((p) => {
-        if (isDay) {
-          // LIGHT MODE: Inverted Darkness Mapping (Dark pixels = solid black; Bright skin = light gray)
-          const d_norm = 1 - p.brightness / 235;
-          const idx = Math.min(CHARS_RAMP.length - 1, Math.floor(d_norm * CHARS_RAMP.length));
-          p.originalChar = CHARS_RAMP[idx];
-          
-          // High opacity for hair/beard/shadows, very low opacity for skin
-          p.targetAlpha = 0.06 + d_norm * 0.90;
-        } else {
-          // DARK MODE: Direct Brightness Mapping (Skin highlights = bright white; Shadows/hair = dim gray/dark)
-          const b_norm = p.brightness / 235;
-          const idx = Math.min(CHARS_RAMP.length - 1, Math.floor(b_norm * CHARS_RAMP.length));
-          p.originalChar = CHARS_RAMP[idx];
-          
-          // High opacity for skin highlights, very faint opacity for hair/beard to let the background be dark
-          p.targetAlpha = 0.12 + b_norm * 0.82;
-        }
-      });
-
-      // ── STAGE 1: Render background ambient floating nodes ──
-      ambientRef.current.forEach((ap) => {
-        ap.x += ap.vx;
-        ap.y += ap.vy;
-        if (ap.y < 0) {
-          ap.y = height;
-          ap.x = Math.random() * width;
-        }
-        ctx.fillStyle = isDay ? `rgba(18, 20, 23, ${ap.alpha})` : `rgba(255, 94, 58, ${ap.alpha * 1.6})`;
-        ctx.font = `${ap.size}px monospace`;
-        ctx.fillText(ap.char, ap.x, ap.y);
-      });
-
-      // ── STAGE 2: Render HUD Biometric Vector Guides ──
-      ctx.strokeStyle = hudColor;
-      ctx.lineWidth = 0.6;
-      
-      // Face Frame Corner Guides
-      const pad = 28;
-      ctx.beginPath();
-      ctx.moveTo(pad, pad + 20); ctx.lineTo(pad, pad); ctx.lineTo(pad + 20, pad);
-      ctx.moveTo(width - pad, pad + 20); ctx.lineTo(width - pad, pad); ctx.lineTo(width - pad - 20, pad);
-      ctx.moveTo(pad, height - pad - 20); ctx.lineTo(pad, height - pad); ctx.lineTo(pad + 20, height - pad);
-      ctx.moveTo(width - pad, height - pad - 20); ctx.lineTo(width - pad, height - pad); ctx.lineTo(width - pad - 20, height - pad);
-      ctx.stroke();
-
-      if (stage === "wireframe" || stage === "reconstruction" || stage === "locked") {
-        // Biometric targeting circles
-        ctx.beginPath();
-        ctx.arc(width / 2, height / 2 - 10, 48, 0, Math.PI * 2);
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.arc(width / 2, height / 2 - 10, 96, 0, Math.PI * 2);
-        ctx.stroke();
-
-        // Horizontal and vertical HUD crosshairs
-        ctx.beginPath();
-        ctx.moveTo(35, height / 2 - 10); ctx.lineTo(width - 35, height / 2 - 10);
-        ctx.moveTo(width / 2, 35); ctx.lineTo(width / 2, height - 35);
-        ctx.stroke();
+      const pList = particlesRef.current;
+      if (pList.length === 0) {
+        rafIdRef.current = requestAnimationFrame(render);
+        return;
       }
 
-      // ── STAGE 3: Biometric Reveal State Machine ──
+      // ── THEME COLORS ──
+      // No accent/orange dots at all — monochrome only
+      const textColor = isDay ? "18,20,23" : "225,230,240";
+      const scanColor = isDay ? "rgba(120,130,140,0.5)" : "rgba(255,94,58,0.55)";
+      const cornerColor = isDay ? "rgba(18,20,23,0.06)" : "rgba(255,94,58,0.06)";
 
-      const pList = particlesRef.current;
+      // ── COMPUTE CHAR & ALPHA per particle ──
+      for (let i = 0; i < pList.length; i++) {
+        const p = pList[i];
+        const lum = p.brightness;
+        const edge = p.edge;
 
-      if (stage === "particles") {
-        // Stage 1: Cloud of glowing floating points
-        pList.forEach((p) => {
-          // Slowly drift randomly
-          p.x += (Math.random() - 0.5) * 0.6;
-          p.y += (Math.random() - 0.5) * 0.6;
-          p.alpha = 0.45;
-
-          // Renders just as small floating dots
-          ctx.fillStyle = isDay ? "rgba(18, 20, 23, 0.4)" : "rgba(255, 94, 58, 0.5)";
-          ctx.fillRect(p.x, p.y, 1.5, 1.5);
-        });
-      } 
-      
-      else if (stage === "wireframe") {
-        // Stage 2: Pull points into a faint wireframe face silhouette
-        pList.forEach((p) => {
-          // Fast spring force towards target grid positions
-          const dx = p.tx - p.x;
-          const dy = p.ty - p.y;
-          p.x += dx * 0.08;
-          p.y += dy * 0.08;
-          p.alpha = 0.35;
-
-          // Render as subtle wireframe grid coordinates
-          ctx.fillStyle = isDay ? "rgba(18, 20, 23, 0.25)" : "rgba(0, 217, 255, 0.25)";
-          ctx.fillRect(p.x, p.y, 1.2, 1.2);
-        });
-
-        // Grid lines linking adjacent points
-        ctx.strokeStyle = isDay ? "rgba(18, 20, 23, 0.02)" : "rgba(0, 217, 255, 0.04)";
-        ctx.beginPath();
-        for (let i = 0; i < pList.length; i += 28) {
-          if (pList[i+1]) {
-            ctx.moveTo(pList[i].x, pList[i].y);
-            ctx.lineTo(pList[i+1].x, pList[i+1].y);
-          }
+        if (isDay) {
+          // Light mode: darkness → density — STRONG visibility
+          const darkness = 1 - lum / 255;
+          const boosted = Math.pow(darkness, 0.6); // stronger gamma for light mode
+          const charIdx = Math.min(CHARS.length - 1, Math.floor(boosted * CHARS.length));
+          p.char = CHARS[charIdx];
+          // Much higher base alpha for light mode readability
+          p.targetAlpha = Math.min(1, 0.15 + boosted * 0.85 + edge * 0.5);
+        } else {
+          // Dark mode: brightness → glow
+          const normB = lum / 255;
+          const boosted = Math.pow(normB, 0.65);
+          const charIdx = Math.min(CHARS.length - 1, Math.floor(boosted * CHARS.length));
+          p.char = CHARS[charIdx];
+          p.targetAlpha = Math.min(1, 0.08 + boosted * 0.85 + edge * 0.3);
         }
-        ctx.stroke();
-      } 
-      
-      else if (stage === "reconstruction") {
-        // Stage 3: Scanning laser sweeps down, morphing points into high-density ASCII characters
-        scanProgressRef.current += 3.8;
-        const scanY = scanProgressRef.current;
+      }
 
-        // Laser Scan Sweep Line
-        ctx.strokeStyle = orangeAccent;
-        ctx.lineWidth = 1.3;
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = orangeAccent;
+      // ── CORNER BRACKETS ──
+      ctx.strokeStyle = cornerColor;
+      ctx.lineWidth = 1 * dpr;
+      const pad = 15 * dpr;
+      const L = 18 * dpr;
+      ctx.beginPath();
+      ctx.moveTo(pad, pad + L); ctx.lineTo(pad, pad); ctx.lineTo(pad + L, pad);
+      ctx.moveTo(w - pad, pad + L); ctx.lineTo(w - pad, pad); ctx.lineTo(w - pad - L, pad);
+      ctx.moveTo(pad, h - pad - L); ctx.lineTo(pad, h - pad); ctx.lineTo(pad + L, h - pad);
+      ctx.moveTo(w - pad, h - pad - L); ctx.lineTo(w - pad, h - pad); ctx.lineTo(w - pad - L, h - pad);
+      ctx.stroke();
+
+      // ── SCAN SWEEP ──
+      if (hasTriggeredRef.current && !isLockedRef.current) {
+        scanYRef.current += h * 0.012;
+        const sy = scanYRef.current;
+        ctx.save();
+        ctx.strokeStyle = scanColor;
+        ctx.lineWidth = 1.5 * dpr;
+        ctx.shadowBlur = 8 * dpr;
+        ctx.shadowColor = scanColor;
         ctx.beginPath();
-        ctx.moveTo(35, scanY);
-        ctx.lineTo(width - 35, scanY);
+        ctx.moveTo(pad, sy);
+        ctx.lineTo(w - pad, sy);
         ctx.stroke();
-        ctx.shadowBlur = 0; // reset glow
+        ctx.restore();
 
-        pList.forEach((p) => {
-          if (p.ty <= scanY) {
-            // Reveal particle characters row-by-row
-            p.char = p.originalChar;
-            p.alpha = Math.min(p.targetAlpha, p.alpha + 0.06);
+        if (sy >= h) {
+          isLockedRef.current = true;
+          setStatusText("IDENTITY MATCHED");
+        }
+      }
 
-            const dx = p.tx - p.x;
-            const dy = p.ty - p.y;
-            p.x += dx * 0.12;
-            p.y += dy * 0.12;
+      // ── RENDER PARTICLES ──
+      const locked = isLockedRef.current;
+      const scanLine = scanYRef.current;
+      const triggered = hasTriggeredRef.current;
+      const mouse = mouseRef.current;
+
+      ctx.textBaseline = "middle";
+
+      for (let i = 0; i < pList.length; i++) {
+        const p = pList[i];
+
+        if (!triggered) {
+          p.x += (Math.random() - 0.5) * 0.3;
+          p.y += (Math.random() - 0.5) * 0.3;
+          ctx.fillStyle = `rgba(${textColor},0.08)`;
+          ctx.fillRect(p.x, p.y, 1 * dpr, 1 * dpr);
+          continue;
+        }
+
+        if (!locked) {
+          if (p.ty <= scanLine) {
+            p.revealed = true;
+            p.x += (p.tx - p.x) * 0.15;
+            p.y += (p.ty - p.y) * 0.15;
+            p.alpha = Math.min(p.targetAlpha, p.alpha + 0.08);
           } else {
-            // Keep as dots below laser scanner
-            ctx.fillStyle = isDay ? "rgba(18, 20, 23, 0.15)" : "rgba(255, 94, 58, 0.25)";
-            ctx.fillRect(p.x, p.y, 1.2, 1.2);
-            
-            const dx = p.tx - p.x;
-            const dy = p.ty - p.y;
-            p.x += dx * 0.04;
-            p.y += dy * 0.04;
+            p.x += (p.tx - p.x) * 0.06;
+            p.y += (p.ty - p.y) * 0.06;
+            ctx.fillStyle = `rgba(${textColor},0.04)`;
+            ctx.fillRect(p.x, p.y, 1 * dpr, 1 * dpr);
+            continue;
           }
+        } else {
+          p.revealed = true;
 
-          if (p.char && p.alpha > 0) {
-            ctx.fillStyle = p.isAccent ? orangeAccent : `${baseAlphaColor}${p.alpha})`;
-            ctx.font = `bold ${p.size}px var(--font-mono), monospace`;
-            ctx.fillText(p.char, p.x, p.y);
-          }
-        });
-
-        if (scanY >= height - 35) {
-          setRevealStage("locked");
-          setHudStatus("NEURAL IDENTITY MATCHED");
-        }
-      } 
-      
-      else if (stage === "locked") {
-        // Stage 4: Scanner is locked. Face is 100% recognizable, crisp, and interactive
-        pList.forEach((p) => {
-          p.char = p.originalChar;
-
-          // Lock alpha to targetAlpha with a micro-shimmer
-          let target = p.targetAlpha;
-          if (Math.random() > 0.995) {
-            target = p.targetAlpha * (0.4 + Math.random() * 0.4);
-          }
-          if (p.alpha < target) p.alpha += 0.04;
-          if (p.alpha > target) p.alpha -= 0.04;
-
-          // 1. Precise target spring force (breathing wave is locked to a maximum of 1px to prevent any distortion)
-          const breatheX = Math.sin(time * 0.002 + p.gridY * 0.12) * 0.4;
-          const breatheY = Math.cos(time * 0.0016 + p.gridX * 0.12) * 0.4;
+          const breatheX = Math.sin(time * 0.0015 + p.ty * 0.008) * 0.3 * dpr;
+          const breatheY = Math.cos(time * 0.0012 + p.tx * 0.008) * 0.3 * dpr;
 
           const targetX = p.tx + breatheX;
           const targetY = p.ty + breatheY;
 
-          const dx = targetX - p.x;
-          const dy = targetY - p.y;
+          p.vx += (targetX - p.x) * 0.025;
+          p.vy += (targetY - p.y) * 0.025;
+          p.vx *= 0.82;
+          p.vy *= 0.82;
 
-          p.vx += dx * 0.024;
-          p.vy += dy * 0.024;
-
-          p.vx *= 0.80; // High damping to snap-back perfectly
-          p.vy *= 0.80;
-
-          // 2. Cursor hover dispersion (deflects slightly on hover, snaps back tightly)
-          if (mouseRef.current) {
-            const mdx = p.x - mouseRef.current.x;
-            const mdy = p.y - mouseRef.current.y;
+          if (mouse) {
+            const mdx = p.x - mouse.x;
+            const mdy = p.y - mouse.y;
             const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
-            
-            const radius = 55;
-            if (mdist < radius) {
+            const radius = 50 * dpr;
+            if (mdist < radius && mdist > 0) {
               const force = (radius - mdist) / radius;
-              // Deflection coordinates with tight boundaries to prevent warping face shape
-              p.vx += (mdx / mdist) * force * 3.5;
-              p.vy += (mdy / mdist) * force * 3.5;
-              p.alpha *= 0.65; // subtle fade on hover
+              p.vx += (mdx / mdist) * force * 3;
+              p.vy += (mdy / mdist) * force * 3;
             }
           }
 
           p.x += p.vx;
           p.y += p.vy;
 
-          // Render high-definition text particle
-          ctx.fillStyle = p.isAccent ? orangeAccent : `${baseAlphaColor}${p.alpha})`;
-          ctx.font = `bold ${p.size}px var(--font-mono), monospace`;
-          ctx.fillText(p.char, p.x, p.y);
-        });
+          // Subtle shimmer
+          let alpha = p.targetAlpha;
+          if (Math.random() > 0.997) {
+            alpha *= 0.3 + Math.random() * 0.5;
+          }
+          p.alpha = alpha;
+        }
 
-        // Ambient Scanner Sweep Line
-        const sweepY = (Math.sin(time * 0.003) * 0.5 + 0.5) * (height - 90) + 45;
-        ctx.strokeStyle = isDay ? "rgba(18, 20, 23, 0.015)" : "rgba(255, 94, 58, 0.022)";
-        ctx.lineWidth = 0.8;
+        // Skip space/empty chars
+        if (p.char.trim() === "" || p.alpha < 0.02) continue;
+
+        // Render — pure monochrome, no accent dots
+        ctx.fillStyle = `rgba(${textColor},${p.alpha})`;
+        ctx.font = `bold ${p.size}px "Fira Code", "JetBrains Mono", monospace`;
+        ctx.fillText(p.char, p.x, p.y);
+      }
+
+      // ── SUBTLE AMBIENT SCAN LINE (locked) ──
+      if (locked) {
+        const sweepY = (Math.sin(time * 0.002) * 0.5 + 0.5) * h;
+        ctx.strokeStyle = `rgba(${textColor},0.012)`;
+        ctx.lineWidth = 0.5 * dpr;
         ctx.beginPath();
-        ctx.moveTo(35, sweepY);
-        ctx.lineTo(width - 35, sweepY);
+        ctx.moveTo(0, sweepY);
+        ctx.lineTo(w, sweepY);
         ctx.stroke();
       }
 
-      rafId = requestAnimationFrame(render);
+      rafIdRef.current = requestAnimationFrame(render);
     };
 
-    render();
+    rafIdRef.current = requestAnimationFrame(render);
 
     return () => {
-      cancelAnimationFrame(rafId);
-      window.removeEventListener("resize", handleResize);
+      cancelAnimationFrame(rafIdRef.current);
+      window.removeEventListener("resize", setupSize);
       observer.disconnect();
     };
   }, []);
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    mouseRef.current = {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
-    };
-  };
-
-  const handleMouseLeave = () => {
-    mouseRef.current = null;
-  };
-
-  const triggerGlitch = () => {
-    if (revealStage !== "locked") return;
-    setGlitchActive(true);
-    
-    // Quick scramble coordinates
-    particlesRef.current.forEach((p) => {
-      p.x += (Math.random() - 0.5) * 60;
-      p.y += (Math.random() - 0.5) * 60;
-      p.vx = (Math.random() - 0.5) * 15;
-      p.vy = (Math.random() - 0.5) * 15;
-      p.char = ["0", "1", "@", "#", "%", "B", "8"][Math.floor(Math.random() * 7)];
-    });
-
-    setTimeout(() => {
-      setGlitchActive(false);
-      particlesRef.current.forEach((p) => {
-        p.char = p.originalChar;
-      });
-    }, 420);
-  };
-
   return (
     <div
       ref={containerRef}
-      className="panel hover-glow-edge relative w-full h-[540px] overflow-hidden group select-none"
+      className="panel hover-glow-edge relative w-full overflow-hidden group select-none"
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       onClick={triggerGlitch}
       data-cursor="glitch"
       style={{
+        height: "clamp(420px, 50vw, 580px)",
         background: "var(--color-surface)",
         border: "1px solid var(--color-border)",
-        boxShadow: "var(--glow-ambient)"
+        boxShadow: "var(--glow-ambient)",
       }}
     >
-      {/* HUD Header Bar */}
+      {/* Header */}
       <div className="panel-header flex items-center justify-between border-b border-[var(--color-border)] px-4 py-2.5">
         <span className="panel-title flex items-center gap-2 text-system">
-          <span className="inline-block w-2 h-2 bg-[var(--color-amber)] rounded-full animate-pulse" />
-          ASCII_IDENTITY.DAT
+          <span
+            className="inline-block w-2 h-2 rounded-full animate-pulse"
+            style={{ background: "var(--color-amber)" }}
+          />
+          IDENTITY_SCAN.DAT
         </span>
         <span className="font-mono text-[8.5px] tracking-widest text-[var(--color-text-muted)]">
-          {revealStage === "locked" ? (
-            <span className="text-[var(--color-online)]">● IDENTITY_SYNC [ACTIVE]</span>
+          {statusText === "IDENTITY MATCHED" ? (
+            <span style={{ color: "var(--color-online)" }}>● LOCKED</span>
           ) : (
-            <span className="text-[var(--color-warning)]">● {hudStatus}</span>
+            <span style={{ color: "var(--color-warning)" }}>● {statusText}</span>
           )}
         </span>
       </div>
-
-      {/* HTML absolute positioning overlays for Neural biometric workstation feel */}
-      <div className="absolute top-14 left-6 pointer-events-none font-mono text-[7px] text-[var(--color-text-muted)] flex flex-col gap-0.5 opacity-75">
-        <span className="text-[var(--color-text-secondary)] font-bold text-[8px]">● CORE PROFILE</span>
-        <span>ID: USMAAN GANI // theUG</span>
-        <span>MODEL: RECONSTRUCTED MATRIX</span>
-      </div>
-      
-      <div className="absolute top-14 right-6 pointer-events-none font-mono text-[7px] text-[var(--color-text-muted)] flex flex-col items-end gap-0.5 opacity-75">
-        <span className="text-[var(--color-text-secondary)] font-bold text-[8px]">● SIGNAL STABILITY</span>
-        <span>STABLE // 100% LATENCY LINK</span>
-        <span>BAUD: 115200 KBPS</span>
-      </div>
-
-      {/* Mid Left Biometric matching node */}
-      <div className="absolute left-6 top-[40%] pointer-events-none font-mono text-[7px] text-[var(--color-text-muted)] flex flex-col gap-0.5 opacity-75">
-        <span className="text-[var(--color-text-secondary)] font-bold text-[8px]">● FACE MATCH</span>
-        <span className="text-[var(--color-amber-bright)] font-bold tracking-widest text-[10px]">
-          {revealStage === "particles" ? "0.0%" : `${faceMatchRate}%`}
-        </span>
-      </div>
-
-      {/* Mid Right AI telemetry engine status */}
-      <div className="absolute right-6 top-[40%] pointer-events-none font-mono text-[7px] text-[var(--color-text-muted)] flex flex-col items-end gap-0.5 opacity-75">
-        <span className="text-[var(--color-text-secondary)] font-bold text-[8px]">● AI RECONSTRUCTION</span>
-        <span className="text-[var(--color-online)] font-bold text-[9px]">
-          {revealStage === "locked" ? "COMPLETED" : "PROCESSING..."}
-        </span>
-      </div>
-
-      {/* Canvas Layer */}
+      {/* Canvas */}
       <canvas
         ref={canvasRef}
-        className="w-full h-full block animate-screen-flicker"
+        className="w-full h-full block"
         style={{
           filter: glitchActive
-            ? "skewX(-16deg) contrast(250%) invert(20%) hue-rotate(90deg)"
+            ? "hue-rotate(60deg) contrast(180%) brightness(1.3)"
             : "none",
-          transition: "filter 0.08s ease"
+          transition: "filter 0.1s ease",
         }}
       />
 
-      <div className="absolute inset-0 pointer-events-none border border-[rgba(255,94,58,0.015)]" />
-
-      {/* Bottom matching cyber bar status */}
-      <div 
-        className="absolute bottom-4 left-0 right-0 px-6 py-2 border-y border-[rgba(255,94,58,0.08)] backdrop-blur-md flex items-center justify-between pointer-events-none animate-fade-in-up"
+      {/* Bottom status bar */}
+      <div
+        className="absolute bottom-0 left-0 right-0 px-4 py-2 flex items-center justify-between pointer-events-none"
         style={{
-          background: "rgba(5, 5, 5, 0.85)"
+          background: "linear-gradient(transparent, var(--color-surface))",
+          borderTop: "1px solid var(--color-border)",
         }}
       >
-        <span 
-          className="font-mono text-[9.5px] font-bold tracking-widest"
-          style={{
-            color: "var(--color-amber-bright)"
-          }}
+        <span
+          className="font-mono text-[8px] tracking-widest"
+          style={{ color: "var(--color-text-muted)" }}
         >
-          {revealStage === "locked" ? (
-            <span className="animate-pulse">&gt; IDENTITY MATCHED // USMAAN GANI</span>
-          ) : (
-            <span>&gt; BIOMETRIC_SCANNER: SECURING CRANIAL MATRIX...</span>
-          )}
+          {statusText === "IDENTITY MATCHED"
+            ? "▸ USMAAN GANI // theUG"
+            : "▸ BIOMETRIC ANALYSIS"}
         </span>
-        <span className="font-mono text-[8px] text-[var(--color-text-muted)]">
-          SECURE_PORT
+        <span
+          className="font-mono text-[7px] tracking-widest"
+          style={{ color: "var(--color-text-muted)" }}
+        >
+          ASCII_RENDER v3.1
         </span>
       </div>
     </div>

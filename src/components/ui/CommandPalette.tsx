@@ -92,7 +92,7 @@ export function CommandPalette() {
     <div 
       className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] px-4 animate-fade-in"
       style={{
-        background: "rgba(5, 5, 5, 0.6)",
+        background: "color-mix(in srgb, var(--color-void) 60%, transparent)",
         backdropFilter: "blur(8px)",
       }}
       onClick={() => setOpen(false)}
@@ -100,7 +100,7 @@ export function CommandPalette() {
       <div 
         className="panel w-full max-w-xl animate-fade-in-up"
         style={{
-          boxShadow: "0 20px 60px rgba(0,0,0,0.8), 0 0 0 1px var(--color-border-bright)",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.25), 0 0 0 1px var(--color-border-bright)",
           borderRadius: "4px",
           background: "var(--color-surface)",
         }}
@@ -153,7 +153,7 @@ export function CommandPalette() {
           )}
         </div>
         
-        <div className="px-4 py-2 border-t border-[var(--color-border)] bg-[rgba(0,0,0,0.2)] flex justify-between items-center">
+        <div className="px-4 py-2 border-t border-[var(--color-border)] flex justify-between items-center" style={{ background: "var(--color-elevated)" }}>
           <span className="font-mono text-[9px] text-[var(--color-text-muted)]">
             Use <span className="text-[var(--color-text-secondary)]">↑↓</span> to navigate, <span className="text-[var(--color-text-secondary)]">↵</span> to select
           </span>

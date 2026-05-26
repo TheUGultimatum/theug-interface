@@ -108,7 +108,7 @@ export function Now() {
               ref={containerRef}
               className="panel-body overflow-y-auto flex-1 font-mono text-[11px]"
               style={{
-                background: "rgba(5, 8, 16, 0.4)",
+                background: "var(--color-elevated)",
                 padding: "16px",
               }}
             >
@@ -125,15 +125,15 @@ export function Now() {
                 <span className="panel-title">active_focus.conf</span>
               </div>
               <div className="panel-body flex flex-col gap-2.5 font-mono text-[11px]" style={{ padding: "12px 14px" }}>
-                <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.03)] pb-1.5">
+                <div className="flex justify-between items-center border-b border-[var(--color-border)] pb-1.5">
                   <span style={{ color: "var(--color-text-muted)" }}>CURRENT PROJECT :</span>
                   <span style={{ color: "var(--color-amber-bright)" }}>Portfolio Phase 2 Core</span>
                 </div>
-                <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.03)] pb-1.5">
+                <div className="flex justify-between items-center border-b border-[var(--color-border)] pb-1.5">
                   <span style={{ color: "var(--color-text-muted)" }}>RESEARCH TOPIC :</span>
                   <span style={{ color: "var(--color-cyan)" }}>Multi-Agent Orchestrations</span>
                 </div>
-                <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.03)] pb-1.5">
+                <div className="flex justify-between items-center border-b border-[var(--color-border)] pb-1.5">
                   <span style={{ color: "var(--color-text-muted)" }}>READING BOOK   :</span>
                   <span style={{ color: "var(--color-text-primary)" }}>Designing Data Systems</span>
                 </div>

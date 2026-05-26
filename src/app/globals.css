@@ -129,19 +129,23 @@
 }
 
 .day-mode .crt-overlay {
-  background: linear-gradient(rgba(0, 0, 0, 0.015) 50%, transparent 50%);
+  background: linear-gradient(rgba(0, 0, 0, 0.008) 50%, transparent 50%);
   background-size: 100% 3px;
-  opacity: 0.85;
+  opacity: 0.3;
 }
 
 @keyframes screen-flicker {
-  0%, 100% { opacity: 0.995; }
-  50% { opacity: 0.985; }
-  85% { opacity: 0.992; }
+  0%, 100% { opacity: 0.998; }
+  50% { opacity: 0.993; }
+  85% { opacity: 0.996; }
 }
 
 .animate-screen-flicker {
   animation: screen-flicker 0.15s infinite;
+}
+
+.day-mode .animate-screen-flicker {
+  animation: none;
 }
 
 /* Subtle breathing glow effect on panels using variables */
@@ -395,6 +399,11 @@ body {
   z-index: 10;
 }
 
+.day-mode .hover-glow-edge:hover {
+  border-color: rgba(216, 67, 21, 0.25);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), inset 0 0 8px rgba(216, 67, 21, 0.03);
+}
+
 .panel::before {
   content: '';
   position: absolute;
@@ -408,6 +417,16 @@ body {
   );
   pointer-events: none;
   z-index: 1;
+}
+
+.day-mode .panel::before {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0,0,0,0.012) 3px,
+    rgba(0,0,0,0.012) 4px
+  );
 }
 
 .panel > * { position: relative; z-index: 2; }
@@ -424,6 +443,10 @@ body {
   border-bottom: 1px solid var(--color-border);
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(8px);
+}
+
+.day-mode .panel-header {
+  background: rgba(0, 0, 0, 0.015);
 }
 
 .panel-controls {

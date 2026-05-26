@@ -40,7 +40,7 @@ function LabWaveform({ active = false, frequency = 1.0, speed = 1.0 }) {
       offset += active ? 0.08 * speed : 0.02 * speed;
 
       // Draw horizontal grid lines underneath
-      ctx.strokeStyle = "rgba(255, 94, 58, 0.03)";
+      ctx.strokeStyle = "rgba(128, 128, 128, 0.06)";
       ctx.lineWidth = 0.5;
       for (let i = 10; i < height; i += 15) {
         ctx.beginPath();
@@ -193,12 +193,12 @@ export function Labs() {
                 >
                   <div className="flex justify-between items-center w-full">
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: "11.5px", fontWeight: "bold", color: activeExp === "neural-core" ? "var(--color-amber-bright)" : "var(--color-text-primary)" }}>
-                      &gt; NEURAL PARTICLE SILHOUETTE
+                      &gt; BIOLUMINESCENT PARTICLE SIM
                     </span>
                     <span className="terminal-badge terminal-badge-success" style={{ fontSize: "8px" }}>ONLINE</span>
                   </div>
                   <p style={{ fontSize: "11px", color: "var(--color-text-secondary)", marginTop: "4px" }}>
-                    Artistic canvas coordinates outline mapping of dynamic character structures. Pushed aside dynamically on mouse-hover, reforming smoothly.
+                    Parametric butterfly morphogenesis with spring-physics particles. Colorful wings scatter on hover and reform organically.
                   </p>
                 </button>
 
@@ -240,7 +240,7 @@ export function Labs() {
               <div 
                 className="panel-body font-mono text-[10px] overflow-y-auto max-h-[155px]"
                 style={{
-                  background: "rgba(5,5,5,0.45)",
+                  background: "var(--color-elevated)",
                   color: "var(--color-text-secondary)"
                 }}
               >
@@ -283,11 +283,11 @@ export function Labs() {
                 </div>
                 
                 {/* Real-time Oscilloscope Waveform visualizer */}
-                <div className="border-b border-[var(--color-border)]" style={{ background: "rgba(5,5,5,0.7)" }}>
+                <div className="border-b border-[var(--color-border)]" style={{ background: "var(--color-elevated)" }}>
                   <LabWaveform active={txDeploying} frequency={coreFreq} speed={threadAlloc / 4} />
                 </div>
 
-                <div className="panel-body flex-1 font-mono text-[9px] overflow-hidden" style={{ background: "rgba(5, 5, 5, 0.45)", padding: "10px 12px" }}>
+                <div className="panel-body flex-1 font-mono text-[9px] overflow-hidden" style={{ background: "var(--color-elevated)", padding: "10px 12px" }}>
                   <pre style={{ color: "var(--color-text-secondary)", lineHeight: 1.45 }}>
 {`contract UndergroundMultiSig {
     address[] public owners;
@@ -302,7 +302,7 @@ export function Labs() {
                 </div>
 
                 {/* Highly dynamic sliders adjusting live waveforms */}
-                <div className="px-4 py-2.5 border-t border-[var(--color-border)] flex flex-col gap-2" style={{ background: "rgba(5,5,5,0.15)" }}>
+                <div className="px-4 py-2.5 border-t border-[var(--color-border)] flex flex-col gap-2" style={{ background: "var(--color-elevated)" }}>
                   <div className="flex justify-between items-center text-[10px] font-mono">
                     <span style={{ color: "var(--color-text-muted)" }}>CORE FREQUENCY:</span>
                     <span style={{ color: "var(--color-amber-bright)" }}>{coreFreq.toFixed(1)} GHz</span>

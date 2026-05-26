@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import Image from "next/image";
 import { ExternalLink, Code2, Lock } from "lucide-react";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -146,17 +146,17 @@ function ProjectPreview({ project, large = false }: { project: Project; large?: 
           src={project.bannerUrl} 
           alt={project.name}
           fill
+          className="project-banner-img"
           style={{
-            objectFit: "cover", opacity: 0.9, mixBlendMode: "screen"
+            objectFit: "cover", opacity: 0.85,
           }}
         />
       )}
 
       {/* Gradient overlay to ensure text readability */}
       {project.bannerUrl && (
-        <div style={{
+        <div className="project-banner-overlay" style={{
           position: "absolute", inset: 0,
-          background: `linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)`
         }} />
       )}
 
@@ -459,6 +459,19 @@ export function Projects() {
       </div>
 
       <style>{`
+        .project-banner-img {
+          mix-blend-mode: screen;
+        }
+        .project-banner-overlay {
+          background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
+        }
+        .day-mode .project-banner-img {
+          mix-blend-mode: multiply;
+          opacity: 0.7 !important;
+        }
+        .day-mode .project-banner-overlay {
+          background: linear-gradient(to top, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.2) 100%) !important;
+        }
         @media (max-width: 960px) {
           .projects-grid { grid-template-columns: repeat(2, 1fr) !important; }
           .featured-inner { grid-template-columns: 1fr !important; }
