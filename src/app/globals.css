@@ -59,33 +59,35 @@
 
 /* Industrial Lab Day Mode variables */
 .day-mode {
-  --color-void: #fbfbfa;
-  --color-abyss: #f2f3f6;
-  --color-surface: #ffffff;
-  --color-elevated: #eaecef;
-  --color-border: #dcdfe6;
-  --color-border-bright: #adb5be;
+  /* Volumetric warm Japanese paper / Apple editorial palette */
+  --color-void: #FAF8F5;          /* Rich warm editorial off-white background */
+  --color-abyss: #F5F2EC;         /* Slightly deeper warm paper under-shadow */
+  --color-surface: #FCFAF7;       /* Soft luxury off-white paper texture surface */
+  --color-elevated: #F0EDE6;      /* Warm clay-gray for elevated panels */
+  --color-border: #E8E3D9;        /* Extremely soft, low-contrast warm border */
+  --color-border-bright: #D8D2C4; /* Neutral warm clay-gray border */
 
-  --color-text-primary: #121417;
-  --color-text-secondary: #3e434f;
-  --color-text-muted: #787e8d;
-  --color-text-ghost: #cbd0d8;
+  /* Text Layer - warm slate & charcoal for premium readability */
+  --color-text-primary: #1C1E22;  /* Deep rich warm charcoal, highly readable */
+  --color-text-secondary: #4F5561;/* Muted warm slate gray */
+  --color-text-muted: #838C9E;    /* Soft clay-slate telemetry text */
+  --color-text-ghost: #DEDAD1;    /* Volumetric low-contrast elements */
 
-  --color-amber: #d84315;
-  --color-amber-bright: #ff5722;
-  --color-amber-dim: #fbe9e7;
+  --color-amber: #D84315;         /* Rich terracota warm orange accent */
+  --color-amber-bright: #FF5722;  /* Vibrant flame orange */
+  --color-amber-dim: #FDF2EE;     /* Soft peach/terracota wash */
   --color-amber-glow: rgba(216, 67, 21, 0.05);
-  --color-cyan: #007787;
-  --color-cyan-dim: #e0f7fa;
-  --color-cyan-glow: rgba(0, 119, 135, 0.04);
+  --color-cyan: #006B7A;          /* Volumetric deep teal/cyan for indicators */
+  --color-cyan-dim: #E0F2F5;      /* Faint cyan wash */
+  --color-cyan-glow: rgba(0, 107, 122, 0.04);
 
-  --color-online: #007787;
-  --color-online-bright: #00acc1;
+  --color-online: #006B7A;
+  --color-online-bright: #008394;
 
-  --glow-ambient: 0 4px 20px rgba(216, 67, 21, 0.02);
-  --glow-active: 0 6px 28px rgba(216, 67, 21, 0.05);
-  --glow-focus: 0 10px 36px rgba(216, 67, 21, 0.08);
-  --color-pulse-glow: rgba(216, 67, 21, 0.25);
+  --glow-ambient: 0 4px 24px rgba(216, 67, 21, 0.02);
+  --glow-active: 0 6px 32px rgba(216, 67, 21, 0.04);
+  --glow-focus: 0 10px 48px rgba(216, 67, 21, 0.06);
+  --color-pulse-glow: rgba(216, 67, 21, 0.18);
 }
 
 .day-mode .bg-grid {

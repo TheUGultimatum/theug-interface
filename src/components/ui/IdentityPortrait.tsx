@@ -3,50 +3,81 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 
-/* ────────────────────────────────────────────────────────
-   IdentityPortrait: Cinematic, 3D Parallax Neural Profile
-   ──────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────────
+   IdentityPortrait: Frameless, Floating Holographic Visualizer
+   Features:
+   - Damped Spring-Inertial Parallax (expensive camera-rig inertia)
+   - Continuous Micro-Breathing Camera Drift (idle float)
+   - Seamless Bottom Gradient Masking (shoulders fade into page)
+   - Procedural Dynamic Film Grain & Scanlines
+   - Sparse, Authentic System HUD Telemetry
+   ───────────────────────────────────────────────────────────────── */
 
 export function IdentityPortrait() {
   const containerRef = useRef<HTMLDivElement>(null);
   const reflectionRef = useRef<HTMLDivElement>(null);
   const imageWrapperRef = useRef<HTMLDivElement>(null);
 
-  const [scanStatus, setScanStatus] = useState("ONLINE");
   const [dots, setDots] = useState("");
+  const frameRef = useRef(0);
 
-  // Parallax values
-  const tiltX = useRef(0);
-  const tiltY = useRef(0);
-  const currentTiltX = useRef(0);
-  const currentTiltY = useRef(0);
+  // Parallax / Spring Dynamics Refs
+  const targetX = useRef(0);
+  const targetY = useRef(0);
+  const currentX = useRef(0);
+  const currentY = useRef(0);
+  const vx = useRef(0);
+  const vy = useRef(0);
 
-  // Status text pulsing dots
+  // Status indicator pulsing dots
   useEffect(() => {
     const interval = setInterval(() => {
       setDots((prev) => (prev.length >= 3 ? "" : prev + "."));
-    }, 600);
+    }, 700);
     return () => clearInterval(interval);
   }, []);
 
-  // 120fps Damped Parallax loop
+  // 120Hz Damped Spring Parallax & Idle Float Loop
   useEffect(() => {
     let rafId: number;
-    
+
     const update = () => {
-      // Damped interpolation (0.08 damping)
-      currentTiltX.current += (tiltX.current - currentTiltX.current) * 0.08;
-      currentTiltY.current += (tiltY.current - currentTiltY.current) * 0.08;
+      frameRef.current++;
+      const time = frameRef.current;
+
+      // 1. Spring physics (lerp with inertia for a heavy, expensive look)
+      const springK = 0.05; // spring constant
+      const damping = 0.86;  // damping coefficient
+
+      const forceX = (targetX.current - currentX.current) * springK;
+      const forceY = (targetY.current - currentY.current) * springK;
+
+      vx.current = vx.current * damping + forceX;
+      vy.current = vy.current * damping + forceY;
+
+      currentX.current += vx.current;
+      currentY.current += vy.current;
+
+      // 2. Micro-Breathing camera float (idle movement)
+      const breatheTime = time * 0.012;
+      const breatheX = Math.sin(breatheTime) * 1.2;
+      const breatheY = Math.cos(breatheTime * 0.8) * 1.2;
+
+      // Combine parallax and breathe
+      const finalX = currentX.current + breatheX;
+      const finalY = currentY.current + breatheY;
 
       if (imageWrapperRef.current && reflectionRef.current) {
-        // Highly responsive direct DOM transforms bypass React re-renders completely for 120Hz/60fps fluidity
+        // Direct DOM transforms avoid React rendering overhead for absolute 120Hz fluid movement
         imageWrapperRef.current.style.transform = `
-          rotateX(${currentTiltY.current}deg)
-          rotateY(${currentTiltX.current}deg)
+          rotateX(${finalY}deg)
+          rotateY(${finalX}deg)
           scale3d(1.02, 1.02, 1.02)
         `;
+
+        // Shift reflection glare in the opposite direction
         reflectionRef.current.style.transform = `
-          translate3d(${-currentTiltX.current * 4}px, ${-currentTiltY.current * 4}px, 0)
+          translate3d(${-finalX * 3.5}px, ${-finalY * 3.5}px, 0)
         `;
       }
 
@@ -65,223 +96,218 @@ export function IdentityPortrait() {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    // Calculate normalized coords (-1 to 1)
+    // Normalized coords (-1 to 1)
     const px = (x / rect.width) * 2 - 1;
     const py = (y / rect.height) * 2 - 1;
 
-    // Max tilt angles (8 deg for premium subtle feel)
-    tiltX.current = px * 8;
-    tiltY.current = -py * 8;
+    // Maximum tilt angles (6 deg for extremely premium, elegant feeling)
+    targetX.current = px * 6;
+    targetY.current = -py * 6;
   };
 
   const handleMouseLeave = () => {
-    // Return smoothly to center
-    tiltX.current = 0;
-    tiltY.current = 0;
+    // Smoothely spring back to center
+    targetX.current = 0;
+    targetY.current = 0;
   };
 
   return (
     <div
       ref={containerRef}
-      className="panel hover-glow-edge relative w-full overflow-hidden select-none group"
+      className="relative w-full overflow-hidden select-none group flex items-center justify-center p-6"
       style={{
-        height: "clamp(460px, 50vw, 600px)",
-        background: "var(--color-surface)",
-        border: "1px solid var(--color-border)",
-        boxShadow: "var(--glow-ambient)",
-        perspective: "1000px",
+        height: "clamp(500px, 52vw, 640px)",
+        background: "transparent",
+        perspective: "1200px",
         cursor: "crosshair",
       }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
     >
-      {/* ── TECHNICAL HEADER ── */}
-      <div className="panel-header flex items-center justify-between border-b border-[var(--color-border)] px-4 py-2.5 bg-black/5 dark:bg-white/5">
-        <span className="panel-title flex items-center gap-2 text-system font-mono text-[10px] tracking-wider text-[var(--color-text-secondary)]">
+      {/* ── AMBIENT PROJECTING GLOW (VOLUMETRIC BREATHING SOURCE) ── */}
+      <div 
+        className="absolute inset-0 pointer-events-none rounded-full blur-[80px] opacity-[0.06] group-hover:opacity-[0.09] transition-opacity duration-1000 animate-pulse"
+        style={{
+          background: "radial-gradient(circle, var(--color-amber) 0%, transparent 65%)",
+          transform: "translate3d(0, -20px, 0) scale(1.1)",
+        }}
+      />
+
+      {/* ── CINEMATIC SEAMLESS PORTRAIT CONTAINER ── */}
+      <div
+        ref={imageWrapperRef}
+        className="relative aspect-[3/4] h-[92%] max-h-[92%] w-auto overflow-hidden transition-all duration-700 ease-out"
+        style={{
+          transformStyle: "preserve-3d",
+          willChange: "transform",
+          transition: "box-shadow 0.6s ease",
+          // Gradients and mask-image seamlessly dissolve shoulders/posture into the background void
+          maskImage: "linear-gradient(to bottom, black 62%, rgba(0,0,0,0.8) 72%, rgba(0,0,0,0.1) 90%, transparent 100%)",
+          WebkitMaskImage: "linear-gradient(to bottom, black 62%, rgba(0,0,0,0.8) 72%, rgba(0,0,0,0.1) 90%, transparent 100%)",
+        }}
+      >
+        {/* Next.js Image component with monochrome grading and object-contain to protect composition */}
+        <div className="absolute inset-0 grayscale contrast-[1.12] brightness-[0.93] transition-all duration-700 ease-out group-hover:scale-101 group-hover:brightness-[0.97] group-hover:contrast-[1.14]">
+          <Image
+            src="/images/portrait.png"
+            alt="Usmaan Gani - Editorial Portrait"
+            fill
+            sizes="(max-width: 768px) 100vw, 550px"
+            priority={true}
+            className="object-contain"
+          />
+        </div>
+
+        {/* ── VOLUMETRIC VIGNETTE OVERLAY ── */}
+        <div
+          className="absolute inset-0 pointer-events-none mix-blend-multiply opacity-80"
+          style={{
+            background: "radial-gradient(circle, transparent 40%, rgba(0,0,0,0.6) 100%)",
+          }}
+        />
+
+        {/* ── SOFT OPERATING SYSTEM SCANLINES ── */}
+        <div
+          className="absolute inset-0 pointer-events-none opacity-[0.04] dark:opacity-[0.05]"
+          style={{
+            backgroundImage: "repeating-linear-gradient(rgba(0,0,0,0.8) 0px, rgba(0,0,0,0.8) 1px, transparent 1px, transparent 3px)",
+          }}
+        />
+
+        {/* ── BROWSER-NATIVE procedural film grain ── */}
+        <div
+          className="absolute inset-0 pointer-events-none opacity-[0.05] animate-grain"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`
+          }}
+        />
+
+        {/* ── SLOW CYBERNETIC scanning beam ── */}
+        <div
+          className="absolute left-0 w-full h-[1.5px] bg-gradient-to-r from-transparent via-[var(--color-amber)] to-transparent opacity-[0.35] pointer-events-none animate-scan-sweep"
+          style={{
+            boxShadow: "0 0 6px var(--color-amber)",
+          }}
+        />
+
+        {/* ── GLASS reflection GLARE ── */}
+        <div
+          ref={reflectionRef}
+          className="absolute inset-0 pointer-events-none z-10 transition-opacity duration-500 opacity-[0.12] group-hover:opacity-[0.24]"
+          style={{
+            background: "linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.06) 45%, transparent 45%, transparent 100%)",
+            willChange: "transform",
+          }}
+        />
+      </div>
+
+      {/* ── FLOATING TECHNICAL METADATA (NO BOXES, DIRECTLY EMBEDDED IN SPACE) ── */}
+      <div className="absolute inset-x-2 inset-y-6 pointer-events-none z-20 font-mono text-[8px] tracking-wider text-[var(--color-text-muted)] opacity-60 group-hover:opacity-85 transition-opacity duration-500">
+        
+        {/* Top-Left: Active Lock Tracker */}
+        <div className="absolute top-0 left-0 flex items-center gap-2">
           <span
-            className="inline-block w-2.5 h-2.5 rounded-full animate-pulse"
+            className="w-1.5 h-1.5 rounded-full"
             style={{
               background: "var(--color-amber)",
-              boxShadow: "0 0 8px var(--color-amber)",
+              boxShadow: "0 0 6px var(--color-amber)",
             }}
           />
-          IDENTITY_SCAN.ACTIVE
-        </span>
-        <span className="font-mono text-[8.5px] tracking-widest text-[var(--color-text-muted)]">
-          SYNC: <span style={{ color: "var(--color-online)" }}>{scanStatus}{dots}</span>
-        </span>
-      </div>
+          <span>SYS.LOCK // SECURED{dots}</span>
+        </div>
 
-      {/* ── METADATA WATERMARKS ── */}
-      <div className="absolute top-14 left-4 z-20 pointer-events-none font-mono text-[8.5px] text-[var(--color-text-muted)] opacity-60 flex flex-col gap-1">
-        <span>LOC: [IND.IST.530]</span>
-        <span>SCAN: 8.42Hz // 120FPS</span>
-      </div>
+        {/* Top-Right: Scan Frequency telemetry */}
+        <div className="absolute top-0 right-0 text-right flex flex-col gap-0.5">
+          <span>SCAN_FREQ // 120.00Hz</span>
+          <span>LATENCY // 1.2ms</span>
+        </div>
 
-      <div className="absolute top-14 right-4 z-20 pointer-events-none font-mono text-[8.5px] text-[var(--color-text-muted)] opacity-60 flex flex-col gap-1 text-right">
-        <span>NEURAL_PROFILE_v2.01</span>
-        <span>FACE_LOCK: ACTIVE</span>
-      </div>
+        {/* Bottom-Left: Coordinates */}
+        <div className="absolute bottom-6 left-0 flex flex-col gap-0.5">
+          <span>LOC // IND.IST.530</span>
+          <span>NEURAL.SYNC // 0.9982</span>
+        </div>
 
-      {/* ── CORNER BRACKETS ── */}
-      <div className="absolute inset-x-3 inset-y-[52px] z-20 pointer-events-none border border-transparent">
-        {/* Top-Left */}
-        <span className="absolute top-0 left-0 w-3.5 h-3.5 border-t border-l border-[var(--color-border)] opacity-60 group-hover:opacity-100 group-hover:border-[var(--color-amber)] transition-all duration-300" />
-        {/* Top-Right */}
-        <span className="absolute top-0 right-0 w-3.5 h-3.5 border-t border-r border-[var(--color-border)] opacity-60 group-hover:opacity-100 group-hover:border-[var(--color-amber)] transition-all duration-300" />
-        {/* Bottom-Left */}
-        <span className="absolute bottom-0 left-0 w-3.5 h-3.5 border-b border-l border-[var(--color-border)] opacity-60 group-hover:opacity-100 group-hover:border-[var(--color-amber)] transition-all duration-300" />
-        {/* Bottom-Right */}
-        <span className="absolute bottom-0 right-0 w-3.5 h-3.5 border-b border-r border-[var(--color-border)] opacity-60 group-hover:opacity-100 group-hover:border-[var(--color-amber)] transition-all duration-300" />
-      </div>
-
-      {/* ── PORTRAIT WRAPPER WITH 3D PERSPECTIVE ── */}
-      <div
-        className="w-full h-full flex items-center justify-center p-8 transition-transform duration-500 ease-out"
-        style={{ perspective: "1000px" }}
-      >
-        <div
-          ref={imageWrapperRef}
-          className="relative aspect-[3/4] h-[90%] overflow-hidden rounded border border-[var(--color-border)] transition-shadow duration-300 shadow-md group-hover:shadow-[0_0_24px_rgba(216,67,21,0.08)]"
-          style={{
-            transformStyle: "preserve-3d",
-            willChange: "transform",
-            transition: "transform 0.1s ease-out, shadow 0.3s ease",
-          }}
-        >
-          {/* Next.js Image component with premium monochrome grading and object-contain to prevent cropping */}
-          <div className="absolute inset-0 grayscale contrast-[1.12] brightness-[0.93] transition-all duration-500 ease-out group-hover:scale-102 group-hover:brightness-[0.98] group-hover:contrast-[1.16]">
-            <Image
-              src="/images/portrait.png"
-              alt="Usmaan Gani - Identity Profile"
-              fill
-              sizes="(max-width: 768px) 100vw, 500px"
-              priority={false}
-              className="object-contain"
-              loading="lazy"
-            />
-          </div>
-
-          {/* ── VIGNETTE OVERLAY ── */}
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background: "radial-gradient(circle, transparent 35%, rgba(0,0,0,0.55) 100%)",
-              mixBlendMode: "multiply",
-            }}
-          />
-
-          {/* ── SOFT SCANLINE OVERLAY ── */}
-          <div
-            className="absolute inset-0 pointer-events-none opacity-[0.05]"
-            style={{
-              backgroundImage: "repeating-linear-gradient(rgba(0,0,0,0.85) 0px, rgba(0,0,0,0.85) 1px, transparent 1px, transparent 3px)",
-            }}
-          />
-
-          {/* ── MOVING FILM GRAIN OVERLAY ── */}
-          <div
-            className="absolute inset-0 pointer-events-none opacity-[0.055] animate-grain"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`
-            }}
-          />
-
-          {/* ── SCAN SWEEP BAR (Sweeps every 12 seconds) ── */}
-          <div
-            className="absolute left-0 w-full h-[2.5px] bg-gradient-to-r from-transparent via-[var(--color-amber)] to-transparent opacity-60 pointer-events-none animate-scan-sweep"
-            style={{
-              boxShadow: "0 0 10px var(--color-amber)",
-            }}
-          />
-
-          {/* ── GLASS GLARE REFLECTION ── */}
-          <div
-            ref={reflectionRef}
-            className="absolute inset-0 pointer-events-none z-10 transition-opacity duration-300 opacity-20 group-hover:opacity-35"
-            style={{
-              background: "linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.08) 40%, transparent 40%, transparent 100%)",
-              willChange: "transform",
-            }}
-          />
-
-          {/* ── SUBTLE INTERACTIVE PULSE RING (Breathing) ── */}
-          <div className="absolute inset-0 border-[0.5px] border-[var(--color-amber)] opacity-[0.05] rounded pointer-events-none group-hover:opacity-[0.12] transition-opacity duration-500 animate-pulse" />
+        {/* Bottom-Right: OS Build ID */}
+        <div className="absolute bottom-6 right-0 text-right flex flex-col gap-0.5">
+          <span>IDENTITY_SCAN.EXE</span>
+          <span>SYS_VER // v2.01</span>
         </div>
       </div>
 
-      {/* ── AMBIENT PARTICLES (LIGHTWEIGHT LAYER) ── */}
+      {/* ── DUST PARTICLES (LIGHTWEIGHT TRANSITION EFFECT) ── */}
       <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
-        <span className="particle absolute bottom-4 left-6 w-1 h-1 bg-[var(--color-amber)] rounded-full opacity-30 animate-particle-float-slow" />
-        <span className="particle absolute top-8 right-16 w-1.5 h-1.5 bg-[var(--color-amber)] rounded-full opacity-20 animate-particle-float-fast" />
-        <span className="particle absolute bottom-24 right-12 w-1 h-1 bg-[var(--color-amber)] rounded-full opacity-25 animate-particle-float-medium" />
+        <span className="particle absolute bottom-8 left-16 w-[1.5px] h-[1.5px] bg-[var(--color-amber)] rounded-full opacity-20 animate-particle-float-slow" />
+        <span className="particle absolute top-12 right-24 w-[1px] h-[1px] bg-[var(--color-amber)] rounded-full opacity-15 animate-particle-float-fast" />
+        <span className="particle absolute bottom-28 right-20 w-[1.5px] h-[1.5px] bg-[var(--color-amber)] rounded-full opacity-25 animate-particle-float-medium" />
       </div>
 
-      {/* ── TECHNICAL BOTTOM PANEL STATUS ── */}
-      <div
-        className="absolute bottom-0 left-0 right-0 px-4 py-2 flex items-center justify-between pointer-events-none bg-gradient-to-t from-[var(--color-surface)] to-transparent border-t border-[var(--color-border)]"
-      >
-        <span className="font-mono text-[7.5px] tracking-wider text-[var(--color-text-muted)]">
-          LOCKSTATE: COMPLETED
-        </span>
-        <span className="font-mono text-[7.5px] tracking-wider text-[var(--color-text-muted)]">
-          HASH: 0x9AF03C
-        </span>
+      {/* ── TECHNICAL SINGLE PIXEL INDICATOR TICK MARKS ── */}
+      <div className="absolute inset-x-0 inset-y-12 pointer-events-none z-10 opacity-30 group-hover:opacity-60 transition-opacity duration-500">
+        {/* Ticks on margins */}
+        <span className="absolute top-0 left-12 w-2 h-[1px] bg-[var(--color-border)]" />
+        <span className="absolute top-0 right-12 w-2 h-[1px] bg-[var(--color-border)]" />
+        <span className="absolute bottom-6 left-12 w-2 h-[1px] bg-[var(--color-border)]" />
+        <span className="absolute bottom-6 right-12 w-2 h-[1px] bg-[var(--color-border)]" />
+        
+        {/* Center alignment thin crosshairs */}
+        <span className="absolute top-[48%] left-4 w-2 h-[1px] bg-[var(--color-border)]" />
+        <span className="absolute top-[48%] right-4 w-2 h-[1px] bg-[var(--color-border)]" />
       </div>
 
       {/* ── COMPONENT-SPECIFIC ANIMATIONS ── */}
       <style>{`
         @keyframes scan-sweep {
-          0% { top: -5%; }
-          15% { top: 105%; }
-          100% { top: 105%; }
+          0% { top: -2%; }
+          20% { top: 102%; }
+          100% { top: 102%; }
         }
         .animate-scan-sweep {
-          animation: scan-sweep 12s infinite cubic-bezier(0.25, 0.46, 0.45, 0.94);
+          animation: scan-sweep 15s infinite cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
         
-        /* Moving grain animation using CSS transforms for 120fps rendering */
+        /* Cinematic film grain noise translation loop */
         @keyframes grain-shift {
           0%, 100% { transform: translate3d(0, 0, 0); }
-          10% { transform: translate3d(-1%, -1%, 0); }
-          30% { transform: translate3d(-2%, 1%, 0); }
-          50% { transform: translate3d(1%, -2%, 0); }
-          70% { transform: translate3d(2%, 2%, 0); }
-          90% { transform: translate3d(-1%, 2%, 0); }
+          10% { transform: translate3d(-1.5%, -1.5%, 0); }
+          30% { transform: translate3d(-3%, 1.5%, 0); }
+          50% { transform: translate3d(1.5%, -3%, 0); }
+          70% { transform: translate3d(3%, 3%, 0); }
+          90% { transform: translate3d(-1.5%, 3%, 0); }
         }
         .animate-grain {
-          width: 120%;
-          height: 120%;
-          top: -10%;
-          left: -10%;
-          background-size: 120px;
-          animation: grain-shift 8s steps(6) infinite;
+          width: 130%;
+          height: 130%;
+          top: -15%;
+          left: -15%;
+          background-size: 110px;
+          animation: grain-shift 10s steps(8) infinite;
         }
 
-        /* Float animations for ambient particles */
+        /* Particle drifts */
         @keyframes float-slow {
-          0% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.1; }
-          50% { transform: translate3d(15px, -50px, 0) scale(1.2); opacity: 0.4; }
-          100% { transform: translate3d(-5px, -110px, 0) scale(0.8); opacity: 0; }
+          0% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.05; }
+          50% { transform: translate3d(20px, -60px, 0) scale(1.3); opacity: 0.3; }
+          100% { transform: translate3d(-8px, -130px, 0) scale(0.7); opacity: 0; }
         }
         @keyframes float-medium {
-          0% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.15; }
-          50% { transform: translate3d(-25px, -70px, 0) scale(0.8); opacity: 0.35; }
-          100% { transform: translate3d(10px, -140px, 0) scale(1.1); opacity: 0; }
+          0% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.1; }
+          50% { transform: translate3d(-30px, -80px, 0) scale(0.7); opacity: 0.25; }
+          100% { transform: translate3d(15px, -160px, 0) scale(1.2); opacity: 0; }
         }
         @keyframes float-fast {
-          0% { transform: translate3d(0, 0, 0) scale(0.8); opacity: 0.2; }
-          50% { transform: translate3d(30px, -90px, 0) scale(1.3); opacity: 0.45; }
-          100% { transform: translate3d(-10px, -180px, 0) scale(0.7); opacity: 0; }
+          0% { transform: translate3d(0, 0, 0) scale(0.7); opacity: 0.15; }
+          50% { transform: translate3d(35px, -100px, 0) scale(1.4); opacity: 0.4; }
+          100% { transform: translate3d(-12px, -200px, 0) scale(0.6); opacity: 0; }
         }
         .animate-particle-float-slow {
-          animation: float-slow 15s infinite linear;
+          animation: float-slow 16s infinite linear;
         }
         .animate-particle-float-medium {
-          animation: float-medium 12s infinite linear;
+          animation: float-medium 13s infinite linear;
         }
         .animate-particle-float-fast {
-          animation: float-fast 9s infinite linear;
+          animation: float-fast 10s infinite linear;
         }
       `}</style>
     </div>
