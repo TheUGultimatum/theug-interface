@@ -752,7 +752,7 @@ export function Contact() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "13px", color: "var(--color-text-primary)", letterSpacing: "0.08em" }}>theUG</span>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--color-text-muted)" }}>© 2025 · All rights reserved</span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--color-text-muted)" }}>© {new Date().getFullYear()} · All rights reserved</span>
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>

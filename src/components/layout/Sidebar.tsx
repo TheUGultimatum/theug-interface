@@ -178,7 +178,7 @@ function DesktopSidebar({ active }: { active: string }) {
           className="font-mono text-[9px] leading-relaxed"
           style={{ color: "var(--color-text-muted)" }}
         >
-          © 2025 theUG
+          © {new Date().getFullYear()} theUG
           <br />
           All rights reserved
         </p>
