@@ -6,10 +6,19 @@ export function GlobalLoader() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Force manual scroll restoration to block browser jump on reload
+    if ("scrollRestoration" in history) {
+      history.scrollRestoration = "manual";
+    }
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+
     // Wait for everything to settle
     const hideLoader = () => {
       // Small delay to ensure smooth transition and fonts loaded
-      setTimeout(() => setLoading(false), 500);
+      setTimeout(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+        setLoading(false);
+      }, 500);
     };
 
     if (document.readyState === "complete") {
