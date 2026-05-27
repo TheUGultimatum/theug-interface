@@ -14,11 +14,11 @@ export default function OnchainPage() {
          NetworkMap handles the Solar System, Telemetry logs, Meme meteors inside the Canvas currently. 
          We can add breathing room below it for future content. 
       */}
-      <div className="px-6 md:px-12 py-24 max-w-7xl mx-auto w-full">
-        <h3 className="font-mono text-xl text-[var(--color-cyan)] mb-8 tracking-widest uppercase">
+      <div className="operator-insights pt-12 pb-24 max-w-7xl mx-auto w-full">
+        <h2 className="font-mono text-[var(--color-cyan)] mb-8 tracking-widest uppercase">
           Operator Insights
-        </h3>
-        <p className="text-[var(--color-text-secondary)] font-mono text-sm leading-relaxed max-w-2xl">
+        </h2>
+        <p className="text-[var(--color-text-secondary)] font-mono text-sm">
           More detailed architectural breakdowns and conviction theses will be logged here.
           Awaiting further data synchronization...
         </p>

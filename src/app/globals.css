@@ -1,4 +1,4 @@
-﻿@import "tailwindcss";
+@import "tailwindcss";
 
 /* ============================================
    DESIGN TOKENS â€” INDUSTRIAL CYBERPUNK
@@ -819,5 +819,71 @@ h1, h2, h3, h4, .text-balance {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+
+/* ============================================
+   RESPONSIVENESS FIXES
+============================================ */
+html, body {
+  overflow-x: hidden;
+}
+
+.main-container {
+  width: 100%;
+  max-width: 100vw;
+}
+
+.onchain-title {
+  font-size: clamp(28px, 7vw, 72px);
+  line-height: 0.95;
+  letter-spacing: clamp(4px, 1vw, 14px);
+  max-width: 100%;
+  word-break: break-word;
+}
+
+@media (max-width: 768px) {
+  .onchain-header {
+    padding-inline: 20px;
+    align-items: center;
+    text-align: center;
+    left: 0 !important;
+    right: 0 !important;
+    top: 32px !important;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .onchain-title {
+    font-size: 34px !important;
+    letter-spacing: 6px !important;
+  }
+
+  .telemetry-card {
+    left: 50% !important;
+    bottom: 24px !important;
+    top: auto !important;
+    transform: translateX(-50%) !important;
+    width: min(92vw, 360px) !important;
+  }
+}
+
+.operator-insights {
+  width: 100%;
+  padding-inline: 18px;
+  text-align: center;
+  align-items: center;
+}
+
+.operator-insights h2 {
+  font-size: clamp(18px, 5vw, 36px);
+  letter-spacing: 4px;
+}
+
+.operator-insights p {
+  font-size: 13px;
+  line-height: 1.7;
+  max-width: 95%;
+  margin-inline: auto;
 }
 

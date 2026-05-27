@@ -322,8 +322,9 @@ function CosmicEcosystem() {
 
       const width = canvas.width / dprRef.current;
       const height = canvas.height / dprRef.current;
-      const cx = width / 2;
-      const cy = height / 2;
+      const isMobile = window.innerWidth < 768;
+      const cx = isMobile ? width * 0.5 : width * 0.58;
+      const cy = isMobile ? height * 0.42 : height * 0.48;
 
       const spawnChance = configRef.current.meteorSpawnRate * particleScaleRef.current;
       if (Math.random() < spawnChance * dt) spawnMeteor(width, height, time);
@@ -787,8 +788,8 @@ function CosmicEcosystem() {
       )}
 
       {/* Cinematic Header Overlay */}
-      <div className="absolute top-6 left-6 md:top-12 md:left-12 z-40 pointer-events-none" style={{ color: "var(--color-text-primary)", fontFamily: "var(--font-mono)" }}>
-         <h2 className="text-xl md:text-2xl font-bold tracking-[0.3em] text-[var(--color-text-primary)] mb-2" style={{ textShadow: "0 0 20px var(--color-cyan-glow)" }}>ONCHAIN CONVICTIONS //</h2>
+      <div className="absolute top-6 left-6 md:top-12 md:left-12 z-40 pointer-events-none onchain-header" style={{ color: "var(--color-text-primary)", fontFamily: "var(--font-mono)" }}>
+         <h2 className="onchain-title text-xl md:text-2xl font-bold tracking-[0.3em] text-[var(--color-text-primary)] mb-2" style={{ textShadow: "0 0 20px var(--color-cyan-glow)" }}>ONCHAIN CONVICTIONS //</h2>
          <p className="text-[10px] md:text-xs text-[var(--color-text-secondary)] max-w-[280px] md:max-w-md leading-relaxed mb-4 text-balance">Infrastructure layers I actively monitor, build around, and believe will shape the next internet stack.</p>
          <div className="flex flex-wrap items-center gap-2 md:gap-4 text-[9px] md:text-[10px] tracking-widest opacity-80">
             <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 bg-[var(--color-cyan)] rounded-full animate-pulse shadow-[0_0_8px_var(--color-cyan)]"/> ACTIVE ECOSYSTEMS: {TOKENS_DATA.length}</span>
@@ -866,7 +867,7 @@ function CosmicEcosystem() {
       {/* Intelligence Log / Telemetry */}
       <div
         ref={telemetryRef}
-        className="w-[calc(100vw-40px)] md:w-[280px]"
+        className="telemetry-card w-[calc(100vw-40px)] md:w-[280px]"
         style={{
           position: "absolute", left: 0, top: 0, padding: "20px",
           background: "var(--color-surface)",
