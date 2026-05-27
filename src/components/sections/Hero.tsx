@@ -575,11 +575,12 @@ function HeroIdentity() {
           <div 
             className="animate-fade-in-up" 
             style={{ 
-              marginTop: "12px", display: "flex", alignItems: "center", gap: "12px",
+              marginTop: "16px", display: "flex", alignItems: "center", justifyContent: "flex-start",
+              gap: "16px", flexWrap: "wrap",
               opacity: phase === "stable" ? 1 : 0, transition: "opacity 0.6s ease 0.6s"
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
               <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--color-text-muted)", letterSpacing: "0.1em" }}>AKA</span>
               <span style={{
                 fontFamily: "var(--font-mono)", fontSize: "12px", color: "var(--color-amber)",
@@ -587,20 +588,20 @@ function HeroIdentity() {
                 letterSpacing: "0.08em",
               }}>theUG</span>
             </div>
-            <span style={{ color: "var(--color-border)" }}>|</span>
+            <span style={{ color: "var(--color-border)" }} className="hidden sm:inline">|</span>
             <div style={{
-              fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--color-cyan)", 
+              fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--color-cyan)", 
               letterSpacing: "0.08em", overflow: "hidden", position: "relative",
-              height: "14px", display: "flex", alignItems: "center"
+              height: "16px", display: "flex", alignItems: "center", flexShrink: 0, minWidth: "160px"
             }}>
               <div 
                 style={{ 
                   transition: "transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                  transform: `translateY(-${roleIdx * 14}px)` 
+                  transform: `translateY(-${roleIdx * 16}px)` 
                 }}
               >
                 {ROLES.map((role, i) => (
-                  <div key={i} style={{ height: "14px", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>
+                  <div key={i} style={{ height: "16px", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>
                     &gt; {role}
                   </div>
                 ))}
