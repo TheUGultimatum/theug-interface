@@ -1,989 +1,910 @@
+// @ts-nocheck
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback, memo } from "react";
-import Image from "next/image";
+import React, { useEffect, useRef, memo, useState } from "react";
+import { 
+  TOKENS_DATA, 
+  METEOR_TYPES, 
+  ECOSYSTEM_RELATIONSHIPS, 
+  CATEGORY_LABELS, 
+  mobileConfig, 
+  tabletConfig, 
+  desktopConfig 
+} from "@/config/networkData";
 
-/* ═══════════════════════════════════════════════════════════
-   TYPE DEFINITIONS
-   Adding spatial depth coefficient to nodes (0.8 to 1.15)
-═══════════════════════════════════════════════════════════ */
-interface PhysicsNode {
+const DEBUG_PERF = process.env.NODE_ENV === "development";
+
+// Types
+type TokenState = {
   id: string;
   label: string;
-  role: string;
-  belief: string;
-  interest: string;
-  status: "ACTIVE" | "ONLINE" | "SYNCED";
-  baseAngle: number;
-  baseDist: number;
-  cssSize: number;    // Base CSS diameter
-  tier: 1 | 2 | 3;
-  depth: number;      // Cinematic depth (foreground: 1.15, mid: 1.0, background: 0.8)
-  x: number; y: number;
-  vx: number; vy: number;
-  targetX: number; targetY: number;
-  angleOffset: number;
-  driftPhase: number;
-}
-
-interface Packet {
-  from: string; to: string;
-  t: number; speed: number;
-  type: "primary" | "secondary" | "weak";
-}
-
-/* ═══════════════════════════════════════════════════════════
-   DELIBERATE ASYMMETRIC TOPOLOGY & HIERARCHY DEFINITIONS
-   Base distances are scaled dynamically based on screen size.
-   z-levels (depth) establish spatial parallax layers.
-═══════════════════════════════════════════════════════════ */
-const RAW_NODES = [
-  {
-    id: "eth", label: "ETH",
-    role: "Smart Contract Core",
-    belief: "Decentralized compute coordination — the substrate for autonomous systems.",
-    interest: "AI Agents · DeFi Infrastructure · Smart Contracts",
-    status: "ACTIVE" as const,
-    baseAngle: 4.80,  baseDist: 110, cssSize: 88, tier: 1 as const,
-    depth: 1.15,      // Foreground / Largest secondary core
-  },
-  {
-    id: "sol", label: "SOL",
-    role: "High-Speed Execution",
-    belief: "Parallel throughput at hardware speed. Latency kills real products.",
-    interest: "High Throughput · Consumer DApps · NFT Infra",
-    status: "ACTIVE" as const,
-    baseAngle: 0.20,  baseDist: 145, cssSize: 82, tier: 1 as const,
-    depth: 1.10,      // Foreground / High execution speed
-  },
-  {
-    id: "btc", label: "BTC",
-    role: "Security Anchor",
-    belief: "The immutable digital reserve layer. Value without counterparty risk.",
-    interest: "Store of Value · Proof of Work · Self Custody",
-    status: "ONLINE" as const,
-    baseAngle: 3.45,  baseDist: 200, cssSize: 80, tier: 2 as const,
-    depth: 0.85,      // Background / Detached Reserve Anchor
-  },
-  {
-    id: "polygon", label: "POLYGON",
-    role: "L2 Scaling Layer",
-    belief: "Aggregated liquidity at ZK speed. The modular settlement fabric.",
-    interest: "ZK Rollups · EVM Scaling · Modular Infrastructure",
-    status: "SYNCED" as const,
-    baseAngle: 4.35,  baseDist: 180, cssSize: 72, tier: 2 as const,
-    depth: 0.90,      // Background / L2 scaling hub close to ETH
-  },
-  {
-    id: "sui", label: "SUI",
-    role: "Parallel Object State",
-    belief: "Memory-safe ownership model — the engineering thesis for next-gen chains.",
-    interest: "Move Language · Object Model · Parallel Execution",
-    status: "SYNCED" as const,
-    baseAngle: 0.80,  baseDist: 225, cssSize: 70, tier: 2 as const,
-    depth: 1.00,      // Midground / Connected execution core
-  },
-  {
-    id: "near", label: "NEAR",
-    role: "Chain Abstraction",
-    belief: "User-first abstraction across all chains — the AI coordination fabric.",
-    interest: "Account Aggregation · NEAR AI · Interop",
-    status: "ONLINE" as const,
-    baseAngle: 2.65,  baseDist: 175, cssSize: 76, tier: 2 as const,
-    depth: 1.00,      // Midground / Abstraction interface
-  },
-  {
-    id: "ton", label: "TON",
-    role: "Social & Messaging Layer",
-    belief: "Consumer crypto at Telegram scale — the gateway to mass onchain adoption.",
-    interest: "MiniApps · Social Infrastructure · Telegram Ecosystem",
-    status: "ONLINE" as const,
-    baseAngle: 5.65,  baseDist: 245, cssSize: 74, tier: 3 as const,
-    depth: 0.80,      // Background / Detached Social Branch
-  },
-];
-
-/* ═══════════════════════════════════════════════════════════
-   CONNECTION PRIORITIES FOR VISUAL STORYTELLING
-═══════════════════════════════════════════════════════════ */
-const EDGES = [
-  { a: "core", b: "eth", type: "primary" as const },
-  { a: "core", b: "sol", type: "primary" as const },
-  { a: "eth",  b: "polygon", type: "primary" as const },
-  
-  { a: "core", b: "near", type: "secondary" as const },
-  { a: "sol",  b: "sui", type: "secondary" as const },
-  { a: "near", b: "sui", type: "secondary" as const },
-  
-  { a: "core", b: "btc", type: "weak" as const },
-  { a: "core", b: "ton", type: "weak" as const },
-  { a: "eth",  b: "btc", type: "weak" as const },
-];
-
-/* ═══════════════════════════════════════════════════════════
-   ECOSYSTEM BRAND ACCENT COLORS (LOW SATURATION / Sleek Tones)
-═══════════════════════════════════════════════════════════ */
-const ACCENT: Record<string, string> = {
-  core:    "#A0A8B8",
-  btc:     "#D4A24C",
-  eth:     "#7BA3D0",
-  polygon: "#9370CC",
-  sol:     "#A08CE8",
-  sui:     "#5AAED5",
-  near:    "#8E8E8E",
-  ton:     "#4E90C8",
+  color: string;
+  baseRadius: number;
+  baseSpeed: number;
+  angle: number;
+  x: number;
+  y: number;
+  dragX: number | null;
+  dragY: number | null;
+  vx: number;
+  vy: number;
+  isDragging: boolean;
+  isHovered: boolean;
+  trail: { x: number; y: number; alpha: number }[];
+  wobbleSpeed: number;
+  wobbleAmount: number;
+  ellipseFactor: number;
+  breatheSpeed: number;
+  breatheAmount: number;
+  rotation: number;
 };
 
-/* ═══════════════════════════════════════════════════════════
-   MAIN VISUALIZATION COMPONENT
-═══════════════════════════════════════════════════════════ */
-function NetworkMapComponent() {
-  const wrapRef    = useRef<HTMLDivElement>(null);
-  const canvasRef  = useRef<HTMLCanvasElement>(null);
-  const cardRef    = useRef<HTMLDivElement>(null);
-  const coreElRef  = useRef<HTMLDivElement>(null);
-  const nodeElsRef = useRef<Record<string, HTMLDivElement | null>>({});
+type MeteorState = {
+  active: boolean;
+  id: string;
+  color: string;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  alpha: number;
+  scale: number;
+  trail: { x: number; y: number; alpha: number }[];
+  isRare: boolean;
+  age: number;
+  lifespan: number;
+};
 
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
-  const [inView,    setInView]    = useState(false);
+type Star = {
+  x: number;
+  y: number;
+  size: number;
+  baseAlpha: number;
+  twinkleSpeed: number;
+  twinkleOffset: number;
+  parallaxFactor: number;
+};
 
-  const nodesRef    = useRef<PhysicsNode[]>([]);
-  const corePosRef  = useRef({ x: 0, y: 0 });
-  const dimRef      = useRef({ w: 900, h: 500, dpr: 1 });
-  const mouseRef    = useRef<{ x: number; y: number } | null>(null);
-  const dragRef     = useRef<PhysicsNode | null>(null);
-  const dragVelRef  = useRef({ vx: 0, vy: 0 });
-  const mobileRef   = useRef(false);
-  const rmRef       = useRef(false);
-  const sweepRef    = useRef(0);
+const lerp = (start: number, end: number, t: number) => start * (1 - t) + end * t;
 
-  // Viewport intersection observer to save CPU cycles
+function CosmicEcosystem() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  
+  // Performance and State Refs
+  const rafRef = useRef<number>();
+  const lastTimeRef = useRef<number>(0);
+  const rareMeteorCooldown = useRef<number>(0); 
+  const isTouchDeviceRef = useRef<boolean>(false);
+  const reduceMotionRef = useRef<boolean>(false);
+  
+  // Dynamic scaling multipliers based on FPS
+  const particleScaleRef = useRef<number>(1.0);
+  const recentFps = useRef<number[]>([]);
+
+  // Config mapping
+  const configRef = useRef(desktopConfig);
+  const dprRef = useRef(1);
+
+  const [hasEntered, setHasEntered] = useState(false);
+  const [debugInfo, setDebugInfo] = useState({ fps: 0, scale: 1 });
+  const [canvasError, setCanvasError] = useState(false);
+  const tokensRef = useRef<TokenState[]>([]);
+  const starsRef = useRef<Star[]>([]);
+  
+  // Meteor pool
+  const meteorsData = useRef<MeteorState[]>([
+    { active: false, id: "", color: "", x: 0, y: 0, vx: 0, vy: 0, alpha: 0, scale: 1, trail: [], isRare: false, age: 0, lifespan: 0 },
+    { active: false, id: "", color: "", x: 0, y: 0, vx: 0, vy: 0, alpha: 0, scale: 1, trail: [], isRare: false, age: 0, lifespan: 0 },
+    { active: false, id: "", color: "", x: 0, y: 0, vx: 0, vy: 0, alpha: 0, scale: 1, trail: [], isRare: false, age: 0, lifespan: 0 },
+    { active: false, id: "", color: "", x: 0, y: 0, vx: 0, vy: 0, alpha: 0, scale: 1, trail: [], isRare: false, age: 0, lifespan: 0 }
+  ]);
+  const meteorDOMRefs = useRef<Array<HTMLDivElement | null>>([null, null, null, null]);
+  const meteorImgRefs = useRef<Array<HTMLImageElement | null>>([null, null, null, null]);
+  const preloadedMemes = useRef<Record<string, HTMLImageElement>>({});
+
+  const domRefs = useRef<Record<string, HTMLDivElement>>({});
+  const labelRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const telemetryRef = useRef<HTMLDivElement>(null);
+  
+  // Telemetry DOM nodes
+  const tTitle = useRef<HTMLDivElement>(null);
+  const tRole = useRef<HTMLDivElement>(null);
+  const tThesis = useRef<HTMLDivElement>(null);
+  const tStrengths = useRef<HTMLDivElement>(null);
+  const tSector = useRef<HTMLDivElement>(null);
+  const tComment = useRef<HTMLDivElement>(null);
+  
+  const telemetryDataRef = useRef({
+    id: null as string | null, x: 0, y: 0, alpha: 0, 
+    label: "", role: "", thesis: "", strengths: "", sector: "", comment: ""
+  });
+
+  const mouseRef = useRef({ x: 0, y: 0, targetX: 0, targetY: 0, isDown: false, downId: null as string | null });
+  const globalRareGlow = useRef<{ active: boolean, color: string, alpha: number }>({ active: false, color: "", alpha: 0 });
+
+  // 1. IRONCLAD HYDRATION & INITIALIZATION
   useEffect(() => {
-    const obs = new IntersectionObserver(([e]) => setInView(e.isIntersecting), { threshold: 0.05 });
-    if (wrapRef.current) obs.observe(wrapRef.current);
-    return () => obs.disconnect();
-  }, []);
+    if (typeof window === "undefined") return;
 
-  // Initialize node coordinate mapping
-  const initNodes = useCallback((cssW: number, cssH: number, dpr: number) => {
-    const w = cssW * dpr, h = cssH * dpr;
-    // CINEMATIC ASYMMETRY: Center Core Node is deliberately left-heavy (42% width, 53% height)
-    const cx = w * 0.42, cy = h * 0.53;
-    corePosRef.current = { x: cx, y: cy };
+    // Detect touch and reduced motion
+    isTouchDeviceRef.current = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    reduceMotionRef.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    dprRef.current = Math.min(window.devicePixelRatio || 1, 1.5); // Cap DPR at 1.5 to save GPU
+
+    // Determine hardware config
+    const isMobile = window.innerWidth < 768;
+    const isTablet = window.innerWidth >= 768 && window.innerWidth < 1280;
     
-    const refScale = Math.min(cssW / 900, cssH / 520);
-    const mobileScale = mobileRef.current ? 0.78 : 1.0;
-    
-    nodesRef.current = RAW_NODES.map((d, i) => {
-      const dist = d.baseDist * refScale * dpr * mobileScale;
-      const tx = cx + Math.cos(d.baseAngle) * dist;
-      const ty = cy + Math.sin(d.baseAngle) * dist;
-      
-      return {
-        ...d,
-        x: tx + (Math.random() - 0.5) * 20 * dpr,
-        y: ty + (Math.random() - 0.5) * 20 * dpr,
-        vx: 0, vy: 0,
-        targetX: tx, targetY: ty,
-        angleOffset: 0,
-        driftPhase: i * 1.35,
-      } as PhysicsNode;
+    if (isMobile) configRef.current = mobileConfig;
+    else if (isTablet) configRef.current = tabletConfig;
+    else configRef.current = desktopConfig;
+
+    // Mobile GPU Safety (low concurrency devices)
+    if (isMobile && (navigator.hardwareConcurrency || 4) <= 4) {
+      configRef.current = { ...mobileConfig, particleDensity: 0.2, meteorSpawnRate: 0.0001, blurSpread: 0.2 };
+    }
+
+    // Preload Images
+    METEOR_TYPES.forEach(m => {
+      const img = new Image();
+      img.src = `/meme/${m.file}`;
+      preloadedMemes.current[m.id] = img;
     });
-  }, []);
 
-  // Primary requestAnimationFrame render and physics loop
-  useEffect(() => {
+    tokensRef.current = TOKENS_DATA.map(t => {
+      let startAngle = Math.random() * Math.PI * 2;
+      if (t.id === 'sol') startAngle = 1.0;
+      if (t.id === 'sui') startAngle = 1.1; 
+      if (t.id === 'eth') startAngle = 3.0;
+      if (t.id === 'polygon') startAngle = 3.1;
+
+      return {
+        ...t,
+        baseRadius: t.radius * configRef.current.radiusScale,
+        baseSpeed: reduceMotionRef.current ? t.speed * 0.3 : t.speed,
+        angle: startAngle,
+        x: 0, y: 0, dragX: null, dragY: null, vx: 0, vy: 0,
+        isDragging: false, isHovered: false, trail: [], rotation: 0
+      };
+    });
+
     const canvas = canvasRef.current;
-    const wrap   = wrapRef.current;
-    if (!canvas || !wrap) return;
+    if (!canvas) return;
     const ctx = canvas.getContext("2d", { alpha: true });
-    if (!ctx) return;
+    if (!ctx) {
+       setCanvasError(true);
+       return;
+    }
 
-    mobileRef.current = window.matchMedia("(hover:none)and(pointer:coarse)").matches || window.innerWidth < 768;
-    rmRef.current     = window.matchMedia("(prefers-reduced-motion:reduce)").matches;
-
-    let firstResize = true;
-    const ro = new ResizeObserver((entries) => {
-      for (const e of entries) {
-        const { width: cssW, height: cssH } = e.contentRect;
-        if (cssW < 1 || cssH < 1) continue;
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        canvas.width  = cssW * dpr;
-        canvas.height = cssH * dpr;
-        canvas.style.width  = `${cssW}px`;
-        canvas.style.height = `${cssH}px`;
-        dimRef.current = { w: cssW * dpr, h: cssH * dpr, dpr };
-
-        if (firstResize) {
-          firstResize = false;
-          initNodes(cssW, cssH, dpr);
-        } else {
-          const cx = (cssW * dpr) * 0.42;
-          const cy = (cssH * dpr) * 0.53;
-          const refScale = Math.min(cssW / 900, cssH / 520);
-          const mobileScale = mobileRef.current ? 0.78 : 1.0;
-          corePosRef.current = { x: cx, y: cy };
-          
-          nodesRef.current.forEach(n => {
-            const dist = n.baseDist * refScale * dpr * mobileScale;
-            n.targetX = cx + Math.cos(n.baseAngle + n.angleOffset) * dist;
-            n.targetY = cy + Math.sin(n.baseAngle + n.angleOffset) * dist;
-          });
-        }
-      }
-    });
-    ro.observe(wrap);
-
-    /* Pointer coordinates map */
-    const getCanvasXY = (clientX: number, clientY: number) => {
-      const r = canvas.getBoundingClientRect();
-      return {
-        x: (clientX - r.left) * dimRef.current.dpr,
-        y: (clientY - r.top)  * dimRef.current.dpr,
-      };
-    };
-    
-    const onMove = (e: MouseEvent) => {
-      const p = getCanvasXY(e.clientX, e.clientY);
-      if (dragRef.current && mouseRef.current) {
-        dragVelRef.current = { vx: p.x - mouseRef.current.x, vy: p.y - mouseRef.current.y };
-      }
-      mouseRef.current = p;
-    };
-    
-    const onLeave = () => {
-      if (dragRef.current) {
-        dragRef.current.vx = dragVelRef.current.vx;
-        dragRef.current.vy = dragVelRef.current.vy;
-        dragRef.current = null;
-      }
-      mouseRef.current = null;
-      setHoveredId(null);
-    };
-    
-    const pickNode = () => {
-      const m = mouseRef.current;
-      if (!m) return;
+    // Debounced Resize
+    let resizeTimeout: NodeJS.Timeout;
+    const resize = () => {
+      if (!containerRef.current || !canvas) return;
+      clearTimeout(resizeTimeout);
       
-      const mobileScale = mobileRef.current ? 0.78 : 1.0;
-      for (let i = nodesRef.current.length - 1; i >= 0; i--) {
-        const n = nodesRef.current[i];
-        const hitR = ((n.cssSize * mobileScale) / 2 + 12) * dimRef.current.dpr;
-        if ((n.x - m.x) ** 2 + (n.y - m.y) ** 2 < hitR * hitR) {
-          dragRef.current = n;
-          dragVelRef.current = { vx: 0, vy: 0 };
-          return;
-        }
-      }
-    };
-    
-    const relNode = () => {
-      if (dragRef.current) {
-        dragRef.current.vx = dragVelRef.current.vx;
-        dragRef.current.vy = dragVelRef.current.vy;
-        dragRef.current = null;
-      }
-    };
-    
-    const tPos = (e: TouchEvent) => {
-      if (!e.touches.length) return;
-      const t = e.touches[0];
-      const p = getCanvasXY(t.clientX, t.clientY);
-      if (dragRef.current && mouseRef.current) {
-        dragVelRef.current = { vx: p.x - mouseRef.current.x, vy: p.y - mouseRef.current.y };
-      }
-      mouseRef.current = p;
-    };
-    
-    const tStart = (e: TouchEvent) => {
-      if (!e.touches.length) return;
-      tPos(e);
-      pickNode();
-    };
-
-    canvas.addEventListener("mousemove", onMove);
-    canvas.addEventListener("mouseleave", onLeave);
-    canvas.addEventListener("mousedown", pickNode);
-    window.addEventListener("mouseup", relNode);
-    canvas.addEventListener("touchmove", tPos, { passive: true });
-    canvas.addEventListener("touchstart", tStart, { passive: true });
-    window.addEventListener("touchend", relNode);
-
-    let packets: Packet[] = [];
-    let pTimer = 0;
-    let raf = 0, tick = 0;
-    let prevHover: string | null = null;
-
-    // RAF Core animation loop
-    const loop = () => {
-      raf = requestAnimationFrame(loop);
-      if (document.hidden || !inView) return;
-
-      const { w, h, dpr } = dimRef.current;
-      tick++;
-      ctx.clearRect(0, 0, w, h);
-
-      const isDay = document.documentElement.classList.contains("day-mode");
-      const mouse = mouseRef.current;
-      const nodes = nodesRef.current;
-      const cx = corePosRef.current.x;
-      const cy = corePosRef.current.y;
-      
-      const cssW = w / dpr, cssH = h / dpr;
-      const refScale = Math.min(cssW / 900, cssH / 520);
-      const mobileScale = mobileRef.current ? 0.78 : 1.0;
-
-      /* Visual Packets Flow along priorities */
-      pTimer++;
-      const packetCooldown = mobileRef.current ? 120 : 55;
-      if (pTimer > packetCooldown) {
-        pTimer = 0;
-        const edge = EDGES[Math.floor(Math.random() * EDGES.length)];
+      resizeTimeout = setTimeout(() => {
+        const w = containerRef.current!.clientWidth;
+        const h = containerRef.current!.clientHeight;
+        canvas.width = w * dprRef.current;
+        canvas.height = h * dprRef.current;
+        ctx.scale(dprRef.current, dprRef.current);
         
-        // Skip packet rendering on weak edges on mobile
-        if (!(mobileRef.current && edge.type === "weak")) {
-          packets.push({
-            from: edge.a, to: edge.b,
-            t: 0,
-            speed: 0.005 + Math.random() * 0.006,
-            type: edge.type
-          });
+        const m = w < 768;
+        const t = w >= 768 && w < 1280;
+        const newConfig = m ? mobileConfig : (t ? tabletConfig : desktopConfig);
+        
+        if (configRef.current.radiusScale !== newConfig.radiusScale) {
+           configRef.current = newConfig;
+           tokensRef.current.forEach(tok => {
+              const orig = TOKENS_DATA.find(td => td.id === tok.id);
+              if (orig) tok.baseRadius = orig.radius * newConfig.radiusScale;
+           });
         }
-      }
-      packets = packets.filter(p => {
-        p.t += p.speed;
-        return p.t < 1;
+      }, 150);
+    };
+    resize();
+    window.addEventListener("resize", resize);
+
+    const numStars = configRef.current.starCount;
+    const stars: Star[] = [];
+    for (let i = 0; i < numStars; i++) {
+      stars.push({
+        x: Math.random() * (window.innerWidth || 1000),
+        y: Math.random() * (window.innerHeight || 800),
+        size: Math.random() * 1.5 + 0.5,
+        baseAlpha: Math.random() * 0.5 + 0.1,
+        twinkleSpeed: Math.random() * 0.002 + 0.0005,
+        twinkleOffset: Math.random() * Math.PI * 2,
+        parallaxFactor: Math.random() * 0.04 + 0.01 
       });
-
-      /* ── 1. Atmosphere tuning per theme ── */
-      ctx.save();
-      const atmosphereGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h) * 0.58);
-      if (isDay) {
-        atmosphereGrad.addColorStop(0,   "rgba(215, 210, 198, 0.14)");
-        atmosphereGrad.addColorStop(0.5, "rgba(215, 210, 198, 0.04)");
-        atmosphereGrad.addColorStop(1,   "rgba(255, 255, 255, 0)");
-      } else {
-        atmosphereGrad.addColorStop(0,   "rgba(0, 217, 255, 0.024)");
-        atmosphereGrad.addColorStop(0.4, "rgba(20, 60, 140, 0.008)");
-        atmosphereGrad.addColorStop(1,   "rgba(0, 0, 0, 0)");
-      }
-      ctx.fillStyle = atmosphereGrad;
-      ctx.fillRect(0, 0, w, h);
-      ctx.restore();
-
-      /* ── 2. Cinematic Radar Telemetry Sweep ── */
-      if (!rmRef.current) {
-        sweepRef.current = (sweepRef.current + 0.0009) % (Math.PI * 2);
-      }
-      ctx.save();
-      ctx.globalAlpha = isDay ? 0.016 : 0.012;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.arc(cx, cy, Math.max(w, h) * 0.65, sweepRef.current, sweepRef.current + 0.14);
-      ctx.closePath();
-      ctx.fillStyle = isDay ? "#1a1a24" : "#00d9ff";
-      ctx.fill();
-      ctx.restore();
-
-      /* ── 3. Active-Idle Breathing & Physics Engine ── */
-      for (let i = 0; i < nodes.length; i++) {
-        const n = nodes[i];
-        
-        if (n === dragRef.current && mouse) {
-          n.vx = 0; n.vy = 0;
-          n.x = mouse.x; n.y = mouse.y;
-        } else {
-          // Continuous orbit drift offset
-          if (!rmRef.current) {
-            n.angleOffset += 0.0002;
-          }
-          
-          const dist = n.baseDist * refScale * dpr * mobileScale;
-          const a    = n.baseAngle + n.angleOffset;
-          
-          // Organic sine wave breathing, scaled down for background depth layers
-          const driftSpeed = 0.003 + n.depth * 0.0015;
-          const driftAmp = 11 * dpr * n.depth * (isDay ? 0.8 : 1.0);
-          const driftX = rmRef.current ? 0 : Math.cos(tick * driftSpeed + n.driftPhase) * driftAmp;
-          const driftY = rmRef.current ? 0 : Math.sin(tick * (driftSpeed * 1.15) + n.driftPhase) * driftAmp;
-          
-          n.targetX = cx + Math.cos(a) * dist + driftX;
-          n.targetY = cy + Math.sin(a) * dist + driftY;
-
-          // Hooke's Law Spring. Foreground nodes (high depth) are slightly stiffer/more dynamic.
-          n.vx += (n.targetX - n.x) * 0.016 * n.depth;
-          n.vy += (n.targetY - n.y) * 0.016 * n.depth;
-
-          // Spatial node-node repulsion (skipped on mobile to optimize CPU)
-          if (!mobileRef.current) {
-            for (let j = 0; j < nodes.length; j++) {
-              if (i === j) continue;
-              const o = nodes[j];
-              const dx = n.x - o.x;
-              const dy = n.y - o.y;
-              const d2 = dx * dx + dy * dy;
-              const minD = ((n.cssSize + o.cssSize) / 2 + 30) * dpr;
-              
-              if (d2 < minD * minD && d2 > 0.01) {
-                const d = Math.sqrt(d2);
-                const f = ((minD - d) / minD) * 0.025;
-                n.vx += (dx / d) * f;
-                n.vy += (dy / d) * f;
-              }
-            }
-          }
-
-          // Gentle pointer magnetism (skipped on mobile)
-          if (!mobileRef.current && mouse) {
-            const dx = n.x - mouse.x;
-            const dy = n.y - mouse.y;
-            const d = Math.sqrt(dx * dx + dy * dy);
-            const mr = 160 * dpr;
-            
-            if (d < mr && d > 0.01) {
-              const pull = ((mr - d) / mr) * 0.14;
-              // Foreground nodes pulled more noticeably, creating parallax
-              n.vx += (mouse.x - n.x) * pull * 0.035 * n.depth;
-              n.vy += (mouse.y - n.y) * pull * 0.035 * n.depth;
-            }
-          }
-
-          n.vx *= 0.91;
-          n.vy *= 0.91;
-          if (Math.abs(n.vx) < 0.003) n.vx = 0;
-          if (Math.abs(n.vy) < 0.003) n.vy = 0;
-          
-          n.x += n.vx;
-          n.y += n.vy;
-        }
-      }
-
-      // Position maps for connection drawing
-      const pos: Record<string, { x: number; y: number; depth: number }> = {
-        core: { x: cx, y: cy, depth: 1.0 }
-      };
-      for (const n of nodes) {
-        pos[n.id] = { x: n.x, y: n.y, depth: n.depth };
-      }
-
-      /* ── 4. Pointer Hover Detection ── */
-      let hovered: string | null = null;
-      if (mouse) {
-        const dc = (cx - mouse.x) ** 2 + (cy - mouse.y) ** 2;
-        if (dc < (50 * dpr) ** 2) {
-          hovered = "core";
-        } else {
-          for (const n of nodes) {
-            const dd = (n.x - mouse.x) ** 2 + (n.y - mouse.y) ** 2;
-            const hitRadius = ((n.cssSize * mobileScale) / 2 + 10) * dpr;
-            if (dd < hitRadius * hitRadius) {
-              hovered = n.id;
-              break;
-            }
-          }
-        }
-      }
-      if (hovered !== prevHover) {
-        prevHover = hovered;
-        setHoveredId(hovered);
-      }
-
-      /* ── 5. Renders Connections by Priority & Depth Layers ── */
-      for (const edge of EDGES) {
-        // Mobile Mode optimization: hide weak connections to declutter viewport
-        if (mobileRef.current && edge.type === "weak") continue;
-
-        const fp = pos[edge.a];
-        const tp = pos[edge.b];
-        if (!fp || !tp) continue;
-        
-        const hot = hovered === edge.a || hovered === edge.b;
-        const lineDepthScale = Math.min(fp.depth, tp.depth);
-
-        ctx.save();
-        
-        // Canvas stroke weight modulated dynamically by layer depth
-        if (edge.type === "primary") {
-          ctx.lineWidth = (hot ? 2.2 : 1.25) * dpr * lineDepthScale;
-        } else if (edge.type === "secondary") {
-          ctx.lineWidth = (hot ? 1.6 : 0.8) * dpr * lineDepthScale;
-          ctx.setLineDash([5 * dpr, 6 * dpr]);
-        } else {
-          ctx.lineWidth = (hot ? 1.0 : 0.45) * dpr * lineDepthScale;
-          ctx.setLineDash([1.5 * dpr, 5 * dpr]); // Dotted look
-        }
-
-        // Color mapping per theme
-        const grad = ctx.createLinearGradient(fp.x, fp.y, tp.x, tp.y);
-        if (isDay) {
-          if (edge.type === "primary") {
-            grad.addColorStop(0, hot ? "rgba(40,40,50,0.45)" : "rgba(40,40,50,0.18)");
-            grad.addColorStop(1, hot ? "rgba(40,40,50,0.30)" : "rgba(40,40,50,0.08)");
-          } else if (edge.type === "secondary") {
-            grad.addColorStop(0, hot ? "rgba(40,40,50,0.32)" : "rgba(40,40,50,0.10)");
-            grad.addColorStop(1, hot ? "rgba(40,40,50,0.20)" : "rgba(40,40,50,0.04)");
-          } else {
-            grad.addColorStop(0, hot ? "rgba(40,40,50,0.18)" : "rgba(40,40,50,0.04)");
-            grad.addColorStop(1, hot ? "rgba(40,40,50,0.10)" : "rgba(40,40,50,0.01)");
-          }
-        } else {
-          if (edge.type === "primary") {
-            grad.addColorStop(0, hot ? "rgba(0,217,255,0.45)" : "rgba(0,217,255,0.18)");
-            grad.addColorStop(1, hot ? "rgba(100,150,255,0.28)" : "rgba(100,150,255,0.08)");
-          } else if (edge.type === "secondary") {
-            grad.addColorStop(0, hot ? "rgba(0,217,255,0.30)" : "rgba(0,217,255,0.11)");
-            grad.addColorStop(1, hot ? "rgba(100,150,255,0.18)" : "rgba(100,150,255,0.04)");
-          } else {
-            grad.addColorStop(0, hot ? "rgba(0,217,255,0.15)" : "rgba(0,217,255,0.04)");
-            grad.addColorStop(1, hot ? "rgba(100,150,255,0.08)" : "rgba(100,150,255,0.01)");
-          }
-        }
-
-        ctx.strokeStyle = grad as unknown as string;
-        ctx.beginPath();
-        ctx.moveTo(fp.x, fp.y);
-        ctx.lineTo(tp.x, tp.y);
-        ctx.stroke();
-        ctx.restore();
-      }
-
-      /* ── 6. Renders Traffic Flow Packets ── */
-      for (const p of packets) {
-        const fp = pos[p.from];
-        const tp = pos[p.to];
-        if (!fp || !tp) continue;
-        
-        const px = fp.x + (tp.x - fp.x) * p.t;
-        const py = fp.y + (tp.y - fp.y) * p.t;
-        const lineDepthScale = Math.min(fp.depth, tp.depth);
-
-        ctx.save();
-        ctx.beginPath();
-        
-        // Packets on primary paths are larger and brighter
-        let pRadius = 2.4 * dpr * lineDepthScale;
-        let trailLength = 0.08;
-        if (p.type === "primary") {
-          pRadius = 3.2 * dpr * lineDepthScale;
-          trailLength = 0.12;
-        } else if (p.type === "weak") {
-          pRadius = 1.4 * dpr * lineDepthScale;
-          trailLength = 0.04;
-        }
-
-        ctx.arc(px, py, pRadius, 0, Math.PI * 2);
-        ctx.fillStyle = isDay ? "rgba(40, 60, 100, 0.7)" : "rgba(0, 217, 255, 0.85)";
-        ctx.fill();
-
-        // Packet tail trails
-        const tail = Math.max(0, p.t - trailLength);
-        ctx.beginPath();
-        ctx.moveTo(px, py);
-        ctx.lineTo(fp.x + (tp.x - fp.x) * tail, fp.y + (tp.y - fp.y) * tail);
-        ctx.lineWidth = (p.type === "primary" ? 2.5 : p.type === "secondary" ? 1.4 : 0.8) * dpr * lineDepthScale;
-        ctx.strokeStyle = isDay ? "rgba(40, 60, 100, 0.22)" : "rgba(0, 217, 255, 0.28)";
-        ctx.stroke();
-        ctx.restore();
-      }
-
-      /* ── 7. DOM Translation Positioning (Free of React loops) ── */
-      if (coreElRef.current) {
-        coreElRef.current.style.transform = `translate(-50%,-50%) translate3d(${cx / dpr}px,${cy / dpr}px,0)`;
-      }
-
-      for (const n of nodes) {
-        const el = nodeElsRef.current[n.id];
-        if (!el) continue;
-        el.style.transform = `translate(-50%,-50%) translate3d(${n.x / dpr}px,${n.y / dpr}px,0)`;
-      }
-
-      /* ── 8. Hover Telemetry Card Tracker ── */
-      if (cardRef.current && mouse) {
-        const cssx = mouse.x / dpr;
-        const cssy = mouse.y / dpr;
-        const cw = 262;
-        const offX = (cssx + cw + 28 > cssW) ? -(cw + 14) : 20;
-        cardRef.current.style.transform = `translate3d(${cssx + offX}px,${Math.max(16, cssy - 180)}px,0)`;
-      }
-    };
-
-    loop();
+    }
+    starsRef.current = stars;
+    rareMeteorCooldown.current = performance.now() + 15000;
 
     return () => {
-      cancelAnimationFrame(raf);
-      ro.disconnect();
-      canvas.removeEventListener("mousemove", onMove);
-      canvas.removeEventListener("mouseleave", onLeave);
-      canvas.removeEventListener("mousedown", pickNode);
-      window.removeEventListener("mouseup", relNode);
-      canvas.removeEventListener("touchmove", tPos);
-      canvas.removeEventListener("touchstart", tStart);
-      window.removeEventListener("touchend", relNode);
+       window.removeEventListener("resize", resize);
+       clearTimeout(resizeTimeout);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [inView, initNodes]);
+  }, []);
 
-  const hoveredData = hoveredId === "core"
-    ? { id: "core", label: "theUG", role: "Operator Core", belief: "Decentralized autonomy and sovereign infrastructure code.", interest: "AI Systems · Web3 Infrastructure · Autonomous Pipelines", status: "ONLINE" as const }
-    : RAW_NODES.find(n => n.id === hoveredId) ?? null;
+  // Intersection Observer for entry pulse
+  useEffect(() => {
+    if (typeof window === "undefined" || canvasError) return;
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !hasEntered) {
+         setHasEntered(true);
+         if (!reduceMotionRef.current) {
+            globalRareGlow.current = { active: true, color: "#0ff", alpha: 0.8 };
+         }
+      }
+    }, { threshold: 0.3 });
+    if (containerRef.current) obs.observe(containerRef.current);
+    return () => obs.disconnect();
+  }, [hasEntered, canvasError]);
+
+  const spawnMeteor = (width: number, height: number, time: number) => {
+    if (reduceMotionRef.current) return;
+    const slotIdx = meteorsData.current.findIndex(m => !m.active);
+    if (slotIdx === -1) return;
+
+    const isRareTime = time > rareMeteorCooldown.current;
+    const isRare = isRareTime && Math.random() < 0.25; 
+    
+    if (isRare) {
+       rareMeteorCooldown.current = time + 30000 + Math.random() * 15000; 
+       globalRareGlow.current = { active: true, color: "", alpha: 0.6 };
+    }
+
+    const m = meteorsData.current[slotIdx];
+    const typePool = isRare ? METEOR_TYPES.filter(t => t.id === 'doge' || t.id === 'pepe') : METEOR_TYPES;
+    const type = typePool[Math.floor(Math.random() * typePool.length)];
+    
+    if (isRare) globalRareGlow.current.color = type.color;
+
+    m.active = true;
+    m.id = type.id;
+    m.color = type.color;
+    m.isRare = isRare;
+    m.alpha = 0; 
+    m.scale = isRare ? 1.8 : 0.8 + Math.random() * 0.4;
+    m.trail = [];
+    m.age = 0;
+    m.lifespan = isRare ? 8000 : 5000; 
+
+    const edge = Math.floor(Math.random() * 4); 
+    const speedBase = isRare ? (1.0 + Math.random() * 0.5) : (0.12 + Math.random() * 0.1);
+    
+    if (edge === 0) {
+      m.x = Math.random() * width; m.y = -50;
+      m.vx = (Math.random() - 0.5) * speedBase; m.vy = Math.random() * speedBase + 0.1;
+    } else if (edge === 1) {
+      m.x = width + 50; m.y = Math.random() * height;
+      m.vx = -(Math.random() * speedBase + 0.1); m.vy = (Math.random() - 0.5) * speedBase;
+    } else if (edge === 2) {
+      m.x = Math.random() * width; m.y = height + 50;
+      m.vx = (Math.random() - 0.5) * speedBase; m.vy = -(Math.random() * speedBase + 0.1);
+    } else {
+      m.x = -50; m.y = Math.random() * height;
+      m.vx = (Math.random() * speedBase + 0.1); m.vy = (Math.random() - 0.5) * speedBase;
+    }
+
+    const imgEl = meteorImgRefs.current[slotIdx];
+    if (imgEl && preloadedMemes.current[m.id]) {
+       imgEl.src = preloadedMemes.current[m.id].src;
+    }
+  };
+
+  // 2. MAIN RAF LOOP
+  useEffect(() => {
+    if (typeof window === "undefined" || canvasError) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+
+    let isUnmounted = false;
+
+    const animate = (time: number) => {
+      if (isUnmounted) return;
+      
+      const dt = Math.min(time - lastTimeRef.current, 50);
+      lastTimeRef.current = time;
+      
+      // Auto-scale FPS
+      if (dt > 0) {
+         recentFps.current.push(1000 / dt);
+         if (recentFps.current.length > 30) recentFps.current.shift();
+         const avgFps = recentFps.current.reduce((a, b) => a + b, 0) / recentFps.current.length;
+         if (avgFps < 40) particleScaleRef.current = Math.max(0.3, particleScaleRef.current - 0.01);
+         else if (avgFps > 55) particleScaleRef.current = Math.min(1.0, particleScaleRef.current + 0.01);
+         if (DEBUG_PERF && Math.random() < 0.1) setDebugInfo({ fps: Math.round(avgFps), scale: particleScaleRef.current });
+      }
+
+      const width = canvas.width / dprRef.current;
+      const height = canvas.height / dprRef.current;
+      const cx = width / 2;
+      const cy = height / 2;
+
+      const spawnChance = configRef.current.meteorSpawnRate * particleScaleRef.current;
+      if (Math.random() < spawnChance * dt) spawnMeteor(width, height, time);
+
+      mouseRef.current.x = lerp(mouseRef.current.x, mouseRef.current.targetX, 0.08);
+      mouseRef.current.y = lerp(mouseRef.current.y, mouseRef.current.targetY, 0.08);
+      const mx = mouseRef.current.x;
+      const my = mouseRef.current.y;
+
+      const parallaxX = (isTouchDeviceRef.current || reduceMotionRef.current) ? 0 : (mx - cx) * -0.07;
+      const parallaxY = (isTouchDeviceRef.current || reduceMotionRef.current) ? 0 : (my - cy) * -0.07;
+
+      const driftX = reduceMotionRef.current ? 0 : Math.sin(time * 0.0001) * 30;
+      const driftY = reduceMotionRef.current ? 0 : Math.cos(time * 0.00015) * 20;
+
+      // Clear for AppShell background
+      ctx.clearRect(0, 0, width, height);
+
+      const fogX = cx + driftX * 0.5 + parallaxX * 0.5;
+      const fogY = cy + driftY * 0.5 + parallaxY * 0.5;
+      
+      // Radar Sweep
+      if (!reduceMotionRef.current) {
+        ctx.save();
+        ctx.translate(fogX, fogY);
+        const sweepAngle = (time * 0.0005) % (Math.PI * 2);
+        ctx.rotate(sweepAngle);
+        const sweepGrad = ctx.createConicGradient(0, 0, 0);
+        sweepGrad.addColorStop(0, "rgba(0, 255, 255, 0)");
+        sweepGrad.addColorStop(0.1, `rgba(0, 255, 255, ${0.03 * configRef.current.blurSpread})`);
+        sweepGrad.addColorStop(1, "rgba(0, 255, 255, 0)");
+        ctx.fillStyle = sweepGrad;
+        ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0, Math.max(width, height), 0, 0.5); ctx.fill();
+        
+        ctx.strokeStyle = "rgba(0, 255, 255, 0.02)";
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(0,0, 150, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(0,0, 300, 0, Math.PI * 2); ctx.stroke();
+        ctx.restore();
+      }
+
+      // Stars
+      const activeStars = Math.floor(starsRef.current.length * particleScaleRef.current);
+      for (let i = 0; i < activeStars; i++) {
+        const star = starsRef.current[i];
+        const twinkle = Math.sin(time * star.twinkleSpeed + star.twinkleOffset) * 0.5 + 0.5;
+        const alpha = star.baseAlpha * twinkle;
+        let sx = star.x + driftX * star.parallaxFactor + parallaxX * star.parallaxFactor;
+        let sy = star.y + driftY * star.parallaxFactor + parallaxY * star.parallaxFactor;
+        if (sx < 0) sx += width; if (sx > width) sx -= width;
+        if (sy < 0) sy += height; if (sy > height) sy -= height;
+
+        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+        ctx.beginPath(); ctx.arc(sx, sy, star.size, 0, Math.PI * 2); ctx.fill();
+      }
+
+      // Meteors
+      meteorsData.current.forEach((m, idx) => {
+        if (!m.active) {
+           const el = meteorDOMRefs.current[idx];
+           if (el) el.style.visibility = "hidden";
+           return;
+        }
+
+        m.age += dt;
+        m.x += m.vx * dt;
+        m.y += m.vy * dt;
+
+        if (m.age < 500) m.alpha = Math.min(0.6, (m.age / 500) * 0.6);
+        else if (m.age > m.lifespan - 1000) m.alpha = Math.max(0, ((m.lifespan - m.age) / 1000) * 0.6);
+        else m.alpha = 0.6;
+
+        if (!isTouchDeviceRef.current) {
+          const distToMouse = Math.hypot(m.x - mx, m.y - my);
+          if (distToMouse < 60 && !m.isRare) {
+             m.vx = lerp(m.vx, m.vx * 0.95, 0.1);
+             m.vy = lerp(m.vy, m.vy * 0.95, 0.1);
+          }
+        }
+
+        m.trail.push({ x: m.x, y: m.y, alpha: m.alpha });
+        const maxTrail = m.isRare ? 50 : 20;
+        if (m.trail.length > maxTrail * particleScaleRef.current) m.trail.shift();
+
+        if (m.trail.length > 1) {
+           ctx.beginPath();
+           ctx.moveTo(m.trail[0].x, m.trail[0].y);
+           for (let i = 1; i < m.trail.length; i++) {
+              ctx.lineTo(m.trail[i].x, m.trail[i].y);
+              m.trail[i].alpha *= 0.9; 
+           }
+           const trailGrad = ctx.createLinearGradient(m.trail[0].x, m.trail[0].y, m.x, m.y);
+           trailGrad.addColorStop(0, "rgba(0,0,0,0)");
+           trailGrad.addColorStop(1, `${m.color}AA`);
+           ctx.strokeStyle = trailGrad;
+           ctx.lineWidth = m.isRare ? 6 : 2;
+           ctx.lineCap = "round";
+           ctx.stroke();
+        }
+
+        if (m.age >= m.lifespan || m.x < -200 || m.x > width + 200 || m.y < -200 || m.y > height + 200) {
+           m.alpha -= 0.05 * dt;
+           if (m.alpha <= 0) m.active = false;
+        }
+
+        const el = meteorDOMRefs.current[idx];
+        if (el) {
+           el.style.visibility = "visible";
+           const angle = Math.atan2(m.vy, m.vx);
+           const currentScale = m.scale * (0.5 + (m.alpha * 0.5)); 
+           el.style.transform = `translate3d(${m.x - 16}px, ${m.y - 16}px, 0) scale(${currentScale}) rotate(${angle}rad)`;
+           el.style.opacity = m.alpha.toString();
+           el.style.boxShadow = `0 0 20px ${m.color}88, inset 0 0 10px ${m.color}44`;
+        }
+      });
+
+      if (globalRareGlow.current.active) {
+          globalRareGlow.current.alpha = Math.max(0, globalRareGlow.current.alpha - 0.005);
+          if (globalRareGlow.current.alpha <= 0) globalRareGlow.current.active = false;
+      }
+
+      // Core Sun
+      ctx.save();
+      const sunPx = cx + parallaxX * 0.2;
+      const sunPy = cy + parallaxY * 0.2;
+      ctx.translate(sunPx, sunPy);
+      
+      const coreBloom = ctx.createRadialGradient(0, 0, 10, 0, 0, 150);
+      coreBloom.addColorStop(0, "rgba(255, 150, 50, 0.5)");
+      coreBloom.addColorStop(0.3, "rgba(0, 200, 255, 0.15)");
+      coreBloom.addColorStop(1, "rgba(0, 0, 0, 0)");
+      ctx.fillStyle = coreBloom;
+      ctx.beginPath(); ctx.arc(0, 0, 150, 0, Math.PI * 2); ctx.fill();
+
+      const pulseScale = reduceMotionRef.current ? 1 : Math.sin(time * 0.001) * 0.05 + 1;
+      const sunRadius = (window.innerWidth < 768 ? 35 : 45) * pulseScale;
+      
+      const sunGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, sunRadius);
+      sunGrad.addColorStop(0, "rgba(255, 255, 255, 1)");
+      sunGrad.addColorStop(0.2, "rgba(200, 240, 255, 0.9)");
+      sunGrad.addColorStop(0.8, "rgba(0, 150, 255, 0.5)");
+      sunGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+      ctx.fillStyle = sunGrad;
+      ctx.beginPath(); ctx.arc(0, 0, sunRadius, 0, Math.PI * 2); ctx.fill();
+
+      if (!reduceMotionRef.current) {
+        const rotRing1 = time * 0.0002;
+        const rotRing2 = -time * 0.00015;
+        ctx.strokeStyle = "rgba(0, 200, 255, 0.25)";
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([15, 25]);
+        ctx.rotate(rotRing1);
+        ctx.beginPath(); ctx.arc(0, 0, sunRadius + 15, 0, Math.PI * 2); ctx.stroke();
+        ctx.rotate(-rotRing1 + rotRing2);
+        ctx.setLineDash([5, 40]);
+        ctx.strokeStyle = "rgba(255, 150, 50, 0.3)";
+        ctx.beginPath(); ctx.arc(0, 0, sunRadius + 25, 0, Math.PI * 2); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      ctx.restore();
+
+      // Category Labels Float
+      CATEGORY_LABELS.forEach((cat, idx) => {
+         const r = cat.radius * configRef.current.radiusScale;
+         const a = cat.angle + (reduceMotionRef.current ? 0 : time * 0.0001);
+         const lx = sunPx + Math.cos(a) * r;
+         const ly = sunPy + Math.sin(a) * (r * 0.95);
+         
+         const depthRatio = (ly - sunPy) / r;
+         const scale = 1 + (depthRatio * 0.2);
+         const opacity = Math.max(0.05, 0.4 + (depthRatio * 0.4));
+         
+         const el = labelRefs.current[idx];
+         if (el) {
+            el.style.transform = `translate3d(${lx}px, ${ly}px, 0) scale(${scale})`;
+            el.style.opacity = opacity.toString();
+            el.style.zIndex = depthRatio < 0 ? "5" : "15";
+         }
+      });
+
+      // Planets
+      let hoveredTokenId: string | null = null;
+      let minHoverDist = Infinity;
+
+      if (!isTouchDeviceRef.current) {
+        tokensRef.current.forEach(tok => {
+          if (!tok.isDragging) {
+             const dist = Math.hypot(mx - tok.x, my - tok.y);
+             if (dist < 40 && dist < minHoverDist) {
+                minHoverDist = dist;
+                hoveredTokenId = tok.id;
+             }
+          }
+        });
+      }
+      if (mouseRef.current.downId) hoveredTokenId = mouseRef.current.downId;
+
+      const sortedTokens = [...tokensRef.current].sort((a, b) => a.y - b.y);
+
+      sortedTokens.forEach(tok => {
+        tok.isHovered = (tok.id === hoveredTokenId);
+        const relatedIds = ECOSYSTEM_RELATIONSHIPS[hoveredTokenId || ""] || [];
+        const isRelated = relatedIds.includes(tok.id);
+
+        const step = dt * (tok.isHovered ? tok.baseSpeed * 0.3 : tok.baseSpeed);
+        tok.angle += step;
+
+        const wobble = reduceMotionRef.current ? 0 : Math.sin(time * tok.wobbleSpeed) * tok.wobbleAmount;
+        const breathe = reduceMotionRef.current ? 0 : Math.sin(time * tok.breatheSpeed) * tok.breatheAmount;
+        const effRadius = tok.baseRadius + wobble + breathe;
+        
+        let orbitX = sunPx + Math.cos(tok.angle) * effRadius;
+        let orbitY = sunPy + Math.sin(tok.angle) * (effRadius * tok.ellipseFactor);
+
+        const depthRatio = (orbitY - sunPy) / (tok.baseRadius);
+        const ringBaseOpacity = Math.max(0.01, 0.08 + (depthRatio * 0.07)); 
+        
+        ctx.beginPath();
+        ctx.ellipse(sunPx, sunPy, effRadius, effRadius * tok.ellipseFactor, 0, 0, Math.PI * 2);
+        
+        if (tok.isHovered || isRelated) {
+          ctx.strokeStyle = `${tok.color}${isRelated ? '33' : '55'}`;
+        } else {
+          const dimFactor = hoveredTokenId ? 0.2 : 1;
+          ctx.strokeStyle = `${tok.color}${Math.floor(ringBaseOpacity * 255 * dimFactor).toString(16).padStart(2, '0')}`;
+        }
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        if (tok.isDragging && tok.dragX !== null && tok.dragY !== null) {
+          tok.vx = (tok.dragX - tok.x) * 0.15; 
+          tok.vy = (tok.dragY - tok.y) * 0.15;
+          tok.x += tok.vx; tok.y += tok.vy;
+          ctx.beginPath(); ctx.moveTo(orbitX, orbitY); ctx.lineTo(tok.x, tok.y);
+          ctx.strokeStyle = `${tok.color}66`; ctx.lineWidth = 1; ctx.stroke();
+        } else {
+          if (Math.abs(tok.vx) > 0.1 || Math.abs(tok.vy) > 0.1) {
+            tok.x += tok.vx; tok.y += tok.vy;
+            tok.vx *= 0.85; tok.vy *= 0.85;
+            tok.vx += (orbitX - tok.x) * 0.05;
+            tok.vy += (orbitY - tok.y) * 0.05;
+          } else {
+            tok.x = orbitX; tok.y = orbitY;
+          }
+        }
+
+        tok.trail.push({ x: tok.x, y: tok.y, alpha: 1.0 });
+        if (tok.trail.length > Math.floor(25 * particleScaleRef.current)) tok.trail.shift();
+
+        if (tok.trail.length > 1) {
+           ctx.beginPath();
+           ctx.moveTo(tok.trail[0].x, tok.trail[0].y);
+           for (let i = 1; i < tok.trail.length; i++) {
+              ctx.lineTo(tok.trail[i].x, tok.trail[i].y);
+              tok.trail[i].alpha -= 0.04;
+           }
+           const trailGrad = ctx.createLinearGradient(tok.trail[0].x, tok.trail[0].y, tok.x, tok.y);
+           trailGrad.addColorStop(0, "rgba(0,0,0,0)");
+           const trailEndOpacity = tok.isHovered ? 'cc' : (isRelated ? '77' : '44');
+           trailGrad.addColorStop(1, `${tok.color}${trailEndOpacity}`);
+           ctx.strokeStyle = trailGrad;
+           ctx.lineWidth = 1.5;
+           ctx.stroke();
+        }
+
+        const el = domRefs.current[tok.id];
+        if (el) {
+          const depthScale = 1 + (depthRatio * 0.1); 
+          let scale = depthScale;
+          if (tok.isHovered || tok.isDragging) scale *= 1.15;
+          const zIndex = tok.isHovered || tok.isDragging ? 40 : (depthRatio < 0 ? 10 : 20);
+          
+          tok.rotation = reduceMotionRef.current ? 0 : Math.sin(time * 0.0005 + tok.angle) * 5; 
+          
+          el.style.transform = `translate3d(${tok.x - 24}px, ${tok.y - 24}px, 0) scale(${scale}) rotate(${tok.rotation}deg)`;
+          el.style.zIndex = zIndex.toString();
+          
+          const dimFactor = (hoveredTokenId && !tok.isHovered && !isRelated) ? 0.3 : 1;
+          const brightness = Math.max(0.1, (0.7 + (depthRatio * 0.4))) * dimFactor;
+          
+          let ambientGlow = "";
+          if (globalRareGlow.current.active) {
+            ambientGlow = `, 0 0 15px ${globalRareGlow.current.color}${Math.floor(globalRareGlow.current.alpha * 255).toString(16).padStart(2,'0')}`;
+          }
+
+          if (tok.isHovered) {
+             el.style.boxShadow = `0 0 25px ${tok.color}66, inset 0 0 10px ${tok.color}88${ambientGlow}`;
+             el.style.borderColor = tok.color;
+             el.style.opacity = "1";
+             el.style.filter = "brightness(1.2)";
+          } else if (isRelated) {
+             el.style.boxShadow = `0 0 15px ${tok.color}33, inset 0 0 8px ${tok.color}44${ambientGlow}`;
+             el.style.borderColor = `rgba(255,255,255,0.4)`;
+             el.style.opacity = brightness.toString();
+             el.style.filter = "brightness(1.1)";
+          } else {
+             const idleGlowAlpha = reduceMotionRef.current ? "11" : Math.floor((0.2 + (Math.sin(time * tok.breatheSpeed) * 0.1)) * 255).toString(16).padStart(2,'0');
+             el.style.boxShadow = `0 0 15px ${tok.color}${idleGlowAlpha}, inset 0 0 8px rgba(255,255,255,0.03)${ambientGlow}`;
+             el.style.borderColor = `rgba(255,255,255,${0.1 * brightness})`;
+             el.style.opacity = brightness.toString();
+             el.style.filter = "brightness(1)";
+          }
+        }
+      });
+
+      // Telemetry Data Population
+      if (hoveredTokenId) {
+        const hoverTok = tokensRef.current.find(t => t.id === hoveredTokenId);
+        if (hoverTok) {
+          const tData = telemetryDataRef.current;
+          tData.id = hoverTok.id;
+          tData.label = hoverTok.label;
+          tData.role = hoverTok.role;
+          tData.thesis = hoverTok.thesis;
+          tData.strengths = hoverTok.strengths;
+          tData.sector = hoverTok.sector;
+          tData.comment = hoverTok.comment;
+
+          if (window.innerWidth < 768) {
+             tData.x = 20;
+             tData.y = height - 280; 
+          } else {
+             const cardWidth = 280;
+             const cardHeight = 300;
+             let tX = hoverTok.x + 35;
+             let tY = hoverTok.y - 35;
+             
+             if (tX + cardWidth > width - 20) tX = hoverTok.x - cardWidth - 35;
+             if (tY + cardHeight > height - 20) tY = height - cardHeight - 20;
+             if (tY < 20) tY = 20;
+             
+             if (tData.alpha === 0) {
+                tData.x = tX;
+                tData.y = tY + 20;
+             } else {
+                tData.x = lerp(tData.x, tX, 0.2);
+                tData.y = lerp(tData.y, tY, 0.2);
+             }
+          }
+          tData.alpha = Math.min(tData.alpha + 0.1, 1);
+        }
+      } else {
+        telemetryDataRef.current.alpha = Math.max(telemetryDataRef.current.alpha - 0.1, 0);
+      }
+
+      if (telemetryRef.current) {
+         const tData = telemetryDataRef.current;
+         if (tData.alpha <= 0.01) {
+            telemetryRef.current.style.opacity = "0";
+         } else {
+            telemetryRef.current.style.opacity = tData.alpha.toString();
+            const blur = (1 - tData.alpha) * 10;
+            const translateY = (1 - tData.alpha) * 10;
+            telemetryRef.current.style.transform = `translate3d(${tData.x}px, ${tData.y + translateY}px, 0)`;
+            telemetryRef.current.style.filter = `blur(${blur}px)`;
+            
+            if (tTitle.current) tTitle.current.textContent = tData.label;
+            if (tRole.current) tRole.current.textContent = `ROLE: ${tData.role}`;
+            if (tThesis.current) tThesis.current.textContent = tData.thesis;
+            if (tStrengths.current) tStrengths.current.textContent = `STRENGTHS: ${tData.strengths}`;
+            if (tSector.current) tSector.current.textContent = `SECTOR: ${tData.sector}`;
+            if (tComment.current) tComment.current.textContent = tData.comment;
+         }
+      }
+
+      rafRef.current = requestAnimationFrame(animate);
+    };
+
+    // Offscreen render pause
+    const handleVisibility = () => {
+      if (document.hidden) {
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      } else {
+        lastTimeRef.current = performance.now();
+        rafRef.current = requestAnimationFrame(animate);
+      }
+    };
+    
+    document.addEventListener("visibilitychange", handleVisibility);
+    lastTimeRef.current = performance.now();
+    rafRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      isUnmounted = true;
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [hasEntered, canvasError]);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    let closestId = null;
+    let minD = 40;
+    tokensRef.current.forEach(tok => {
+      const d = Math.hypot(tok.x - x, tok.y - y);
+      if (d < minD) { minD = d; closestId = tok.id; }
+    });
+
+    if (closestId) {
+      mouseRef.current.downId = closestId;
+      mouseRef.current.isDown = true;
+      const tok = tokensRef.current.find(t => t.id === closestId);
+      if (tok) { tok.isDragging = true; tok.dragX = x; tok.dragY = y; }
+      e.currentTarget.setPointerCapture(e.pointerId);
+    }
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    mouseRef.current.targetX = x;
+    mouseRef.current.targetY = y;
+
+    if (mouseRef.current.isDown && mouseRef.current.downId) {
+       const tok = tokensRef.current.find(t => t.id === mouseRef.current.downId);
+       if (tok) { tok.dragX = x; tok.dragY = y; }
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (mouseRef.current.downId) {
+      const tok = tokensRef.current.find(t => t.id === mouseRef.current.downId);
+      if (tok) tok.isDragging = false;
+    }
+    mouseRef.current.isDown = false;
+    mouseRef.current.downId = null;
+    e.currentTarget.releasePointerCapture(e.pointerId);
+  };
+
+  if (canvasError) {
+    return (
+      <section className="relative w-full h-[850px] bg-[var(--color-void)] flex items-center justify-center border-t border-[var(--color-border)]">
+        <p className="font-mono text-sm text-[var(--color-text-muted)]">CANVAS_RENDER_FAILED // VISUALIZATION_OFFLINE</p>
+      </section>
+    );
+  }
 
   return (
-    <div
-      ref={wrapRef}
-      className="panel relative w-full overflow-hidden select-none"
-      style={{
-        height: "clamp(460px, 56vw, 580px)",
-        background: "var(--color-surface)",
-        contain: "layout paint style",
-        cursor: "crosshair",
-      }}
+    <section 
+      id="onchain"
+      ref={containerRef}
+      className="relative w-full overflow-hidden select-none touch-none border-t border-b border-[var(--color-border)]" 
+      style={{ height: "clamp(600px, 80vw, 850px)", background: "transparent" }}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+      onPointerLeave={handlePointerUp}
     >
-      {/* Dynamic Keyframes Definitions inside self-contained Style block */}
-      <style>{`
-        @keyframes rotate-cw {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        @keyframes rotate-ccw {
-          from { transform: rotate(360deg); }
-          to { transform: rotate(0deg); }
-        }
-        @keyframes pulse-breathing {
-          0%, 100% { transform: scale(0.97); opacity: 0.35; }
-          50% { transform: scale(1.05); opacity: 0.58; }
-        }
-        .animate-rotate-cw {
-          animation: rotate-cw 22s linear infinite;
-        }
-        .animate-rotate-ccw {
-          animation: rotate-ccw 32s linear infinite;
-        }
-        .animate-pulse-breathing {
-          animation: pulse-breathing 4.5s ease-in-out infinite;
-        }
-
-        /* Highly optimized GPU composite style chains */
-        .node-container {
-          box-shadow: 0 4px 14px rgba(0,0,0,0.16);
-          will-change: border-color, box-shadow, transform;
-        }
-        .node-container:hover {
-          border-color: currentColor !important;
-          box-shadow: 0 10px 32px rgba(0,0,0,0.32) !important;
-          transform: scale(1.15) !important; /* Overrides target depth scale on hover */
-        }
-        .node-glow-halo {
-          transform: scale(1);
-          will-change: transform, opacity;
-        }
-        .node-container:hover .node-glow-halo {
-          transform: scale(1.28) !important;
-          opacity: 0.95 !important;
-        }
-        .node-logo-wrap {
-          opacity: 0.65;
-          filter: grayscale(0.4) brightness(1.0);
-          will-change: opacity, filter, transform;
-        }
-        .node-container:hover .node-logo-wrap {
-          opacity: 1 !important;
-          filter: grayscale(0) brightness(1.15) !important;
-          transform: scale(1.08) !important;
-        }
-        .node-label {
-          color: var(--color-text-secondary);
-          opacity: 0.85;
-          transition: color 300ms ease, opacity 300ms ease;
-        }
-        .node-container:hover .node-label {
-          color: var(--color-text-primary) !important;
-          opacity: 1 !important;
-        }
-
-        /* Core styling */
-        .core-container {
-          transition: border-color 300ms ease, box-shadow 300ms ease;
-          will-change: border-color, box-shadow;
-        }
-        .core-container:hover {
-          border-color: ${ACCENT.core}65 !important;
-          box-shadow: 0 8px 28px rgba(0,0,0,0.22) !important;
-        }
-        .core-container:hover .core-ring-inner {
-          border-color: ${ACCENT.core}60 !important;
-          animation-duration: 9s !important;
-        }
-        .core-container:hover .core-ring-outer {
-          border-color: ${ACCENT.core}35 !important;
-          animation-duration: 14s !important;
-        }
-        .core-container:hover .core-glyph {
-          color: var(--color-online-bright) !important;
-        }
-
-        /* Dual theme visual overrides */
-        .day-mode .node-container {
-          border-color: rgba(40, 40, 50, 0.08) !important;
-          background: #fcfbfa !important;
-          box-shadow: 0 3px 10px rgba(0,0,0,0.06);
-        }
-        .day-mode .node-container:hover {
-          border-color: currentColor !important;
-        }
-        .day-mode .core-container {
-          border-color: rgba(40, 40, 50, 0.08) !important;
-          background: #fcfbfa !important;
-          box-shadow: 0 3px 10px rgba(0,0,0,0.06);
-        }
-        .day-mode .core-container:hover {
-          border-color: ${ACCENT.core}75 !important;
-        }
-        .day-mode .node-glow-halo {
-          background: radial-gradient(circle, rgba(0,0,0,0.025) 0%, rgba(0,0,0,0) 70%) !important;
-        }
-        .day-mode .core-glow {
-          background: radial-gradient(circle, rgba(0,0,0,0.02) 0%, rgba(0,0,0,0) 70%) !important;
-        }
-        .day-mode .node-logo-wrap {
-          filter: grayscale(0.5) brightness(0.95);
-        }
-        .day-mode .node-container:hover .node-logo-wrap {
-          filter: grayscale(0) brightness(1.0) !important;
-        }
-      `}</style>
-
-      {/* Grid Canvas Background Layer */}
-      <div className="absolute inset-0 pointer-events-none" style={{
-        backgroundImage: "radial-gradient(circle, var(--color-border) 1px, transparent 1px)",
-        backgroundSize: "28px 28px",
-        opacity: 0.28,
-      }} />
-
-      {/* Atmospheric Vignette overlay */}
-      <div className="absolute inset-0 pointer-events-none" style={{
-        background: "radial-gradient(ellipse 75% 68% at 50% 50%, transparent 30%, var(--color-surface) 100%)",
-      }} />
-
-      {/* Header telemetry info */}
-      <div className="panel-header flex items-center justify-between z-20 relative">
-        <span className="panel-title">⬤ &nbsp;network_map.exe</span>
-        <div className="flex items-center gap-2" style={{ fontFamily: "var(--font-mono)", fontSize: "7.5px", color: "var(--color-online)" }}>
-          <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "var(--color-online)", display: "inline-block" }} />
-          <span>7 ECOSYSTEM INFRASTRUCTURE LAYER MAP // ONLINE</span>
+      {DEBUG_PERF && (
+        <div className="absolute top-2 right-2 z-50 bg-black/80 px-2 py-1 font-mono text-[10px] text-green-400 border border-green-500/30">
+          FPS: {debugInfo.fps} | Scale: {debugInfo.scale.toFixed(2)}
         </div>
+      )}
+
+      {/* Cinematic Header Overlay */}
+      <div className="absolute top-6 left-6 md:top-12 md:left-12 z-40 pointer-events-none" style={{ color: "var(--color-text-primary)", fontFamily: "var(--font-mono)" }}>
+         <h2 className="text-xl md:text-2xl font-bold tracking-[0.3em] text-[var(--color-text-primary)] mb-2" style={{ textShadow: "0 0 20px var(--color-cyan-glow)" }}>ONCHAIN CONVICTIONS //</h2>
+         <p className="text-[10px] md:text-xs text-[var(--color-text-secondary)] max-w-[280px] md:max-w-md leading-relaxed mb-4 text-balance">Infrastructure layers I actively monitor, build around, and believe will shape the next internet stack.</p>
+         <div className="flex flex-wrap items-center gap-2 md:gap-4 text-[9px] md:text-[10px] tracking-widest opacity-80">
+            <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 bg-[var(--color-cyan)] rounded-full animate-pulse shadow-[0_0_8px_var(--color-cyan)]"/> ACTIVE ECOSYSTEMS: {TOKENS_DATA.length}</span>
+            <span className="hidden md:inline text-[var(--color-text-muted)]">|</span>
+            <span className="text-[var(--color-amber)]">SIGNAL STRENGTH: STABLE</span>
+            <span className="hidden md:inline text-[var(--color-text-muted)]">|</span>
+            <span className="text-[var(--color-online)]">NETWORK STATUS: ONLINE</span>
+         </div>
       </div>
 
-      {/* CANVAS ELEMENT — z-index 1 */}
-      <canvas ref={canvasRef} className="absolute inset-0" style={{ width: "100%", height: "100%", display: "block", zIndex: 1 }} />
+      <canvas ref={canvasRef} className="absolute inset-0" style={{ width: "100%", height: "100%", zIndex: 1 }} />
 
-      {/* DOM OVERLAYS CONTAINER — z-index 10 */}
-      <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 10 }}>
-        
-        {/* ==================================================
-            CENTRAL IDENTITY CUSTOM CORE NODE
-            ================================================== */}
+      {/* Operator Node Label */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 translate-y-12 z-10 pointer-events-none text-center mix-blend-screen">
+         <span className="font-mono text-[9px] md:text-[10px] tracking-[0.2em] text-[var(--color-cyan)] opacity-70" style={{ textShadow: "0 0 10px var(--color-cyan-glow)" }}>theug.operator_node</span>
+      </div>
+
+      {/* Floating Category Labels */}
+      {CATEGORY_LABELS.map((cat, idx) => (
+        <div 
+          key={cat.text}
+          ref={el => { if (el) labelRefs.current[idx] = el; }}
+          className="absolute left-0 top-0 font-mono text-[8px] md:text-[9px] tracking-widest text-[var(--color-text-secondary)] pointer-events-none mix-blend-screen will-change-transform"
+        >
+           [{cat.text}]
+        </div>
+      ))}
+
+      {METEOR_TYPES.map((_, idx) => (
         <div
-          ref={coreElRef}
-          className="absolute pointer-events-auto core-container"
+          key={`meteor-${idx}`}
+          ref={el => { if (el) meteorDOMRefs.current[idx] = el; }}
           style={{
-            left: 0, top: 0,
-            width: "100px", height: "100px",
-            borderRadius: "50%",
-            background: "var(--color-surface)",
-            border: `1.5px solid ${ACCENT.core}22`,
-            display: "flex", flexDirection: "column",
-            alignItems: "center", justifyContent: "center",
-            transform: "translate(-50%,-50%) translate3d(-9999px,-9999px,0)",
-            willChange: "transform, border-color",
-            color: ACCENT.core,
-            cursor: "default",
-            boxShadow: "0 4px 16px rgba(0,0,0,0.18)",
-            zIndex: 11,
+            position: "absolute", left: 0, top: 0,
+            width: 32, height: 32, borderRadius: "50%",
+            background: "rgba(10, 15, 25, 0.4)",
+            backdropFilter: "blur(4px)", WebkitBackdropFilter: "blur(4px)",
+            border: "1px solid rgba(255,255,255,0.05)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            willChange: "transform, opacity, visibility",
+            zIndex: 10, visibility: "hidden", pointerEvents: "none"
           }}
         >
-          {/* Rotating Concentric Rings */}
-          <div className="absolute inset-0 pointer-events-none core-ring-inner animate-rotate-cw" style={{
-            border: `1.2px dashed ${ACCENT.core}18`,
-            borderRadius: "50%",
-            margin: "6px",
-          }} />
-          
-          <div className="absolute inset-0 pointer-events-none core-ring-outer animate-rotate-ccw" style={{
-            border: `0.8px dashed ${ACCENT.core}10`,
-            borderRadius: "50%",
-            margin: "-6px",
-          }} />
-
-          {/* Dynamic Breathing Halo */}
-          <div className="absolute pointer-events-none core-glow animate-pulse-breathing" style={{
-            inset: "-35px",
-            borderRadius: "50%",
-            background: `radial-gradient(circle, ${ACCENT.core}12 0%, ${ACCENT.core}00 70%)`,
-            zIndex: -1,
-          }} />
-
-          {/* Branded Operator Glyph */}
-          <span className="core-glyph" style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "19px",
-            fontWeight: 600,
-            color: "var(--color-text-primary)",
-            letterSpacing: "0.05em",
-            lineHeight: 1,
-            opacity: 0.9,
-            transition: "color 300ms ease, transform 300ms ease",
-          }}>
-            [ ⏽ ]
-          </span>
-
-          <span style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "8px",
-            color: "var(--color-text-muted)",
-            letterSpacing: "0.10em",
-            lineHeight: 1,
-            marginTop: "6px",
-            textTransform: "uppercase",
-          }}>
-            theUG
-          </span>
+          <img
+            ref={el => { if (el) meteorImgRefs.current[idx] = el; }}
+            src={`/meme/${METEOR_TYPES[idx].file}`} alt={METEOR_TYPES[idx].id} className="pointer-events-none"
+            style={{ width: "18px", height: "18px", display: "block" }}
+          />
         </div>
+      ))}
 
-        {/* ==================================================
-            ECOSYSTEM TOKEN NODES
-            ================================================== */}
-        {RAW_NODES.map(n => {
-          const logoPx = Math.round(n.cssSize * 0.44);
-          
-          return (
-            <div
-              key={n.id}
-              ref={el => { nodeElsRef.current[n.id] = el; }}
-              className="absolute pointer-events-auto"
-              style={{
-                left: 0, top: 0,
-                transform: "translate(-50%,-50%) translate3d(-9999px,-9999px,0)",
-                willChange: "transform",
-                cursor: "grab",
-                zIndex: n.depth > 1.1 ? 14 : n.depth < 0.9 ? 8 : 10,
-              }}
-            >
-              {/* Composite-friendly inner node box */}
-              <div
-                className="node-container flex flex-col items-center justify-center"
-                style={{
-                  position: "relative",
-                  width: `${n.cssSize}px`, height: `${n.cssSize}px`,
-                  borderRadius: "50%",
-                  background: "var(--color-surface)",
-                  border: `1.5px solid ${ACCENT[n.id]}22`,
-                  color: ACCENT[n.id],
-                  transition: "border-color 300ms ease, box-shadow 300ms ease, transform 300ms cubic-bezier(0.16, 1, 0.3, 1)",
-                  transform: `scale(${n.depth})`, // Initial depth scale
-                }}
-              >
-                {/* GPU-composited Glow Halo absolute element */}
-                <div
-                  className="absolute pointer-events-none node-glow-halo"
-                  style={{
-                    inset: "-32px",
-                    borderRadius: "50%",
-                    background: `radial-gradient(circle, ${ACCENT[n.id]}18 0%, ${ACCENT[n.id]}00 70%)`,
-                    opacity: 0.35,
-                    transition: "transform 400ms cubic-bezier(0.16, 1, 0.3, 1), opacity 400ms cubic-bezier(0.16, 1, 0.3, 1)",
-                    zIndex: -1,
-                  }}
-                />
+      {TOKENS_DATA.map(tok => (
+        <div
+          key={tok.id}
+          ref={el => { if (el) domRefs.current[tok.id] = el; }}
+          style={{
+            position: "absolute", left: 0, top: 0,
+            width: 48, height: 48, borderRadius: "50%",
+            background: "var(--color-surface)",
+            backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)",
+            border: "1px solid var(--color-border)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            transition: "box-shadow var(--transition-fast), border-color var(--transition-fast), opacity var(--transition-fast)", 
+            willChange: "transform, opacity", zIndex: 20,
+            cursor: mouseRef.current.downId === tok.id ? "grabbing" : "grab"
+          }}
+        >
+          <img
+            src={`/logos/${tok.id}.svg`} alt={tok.label} className="pointer-events-none"
+            style={{ width: "24px", height: "24px", display: "block" }}
+          />
+        </div>
+      ))}
 
-                {/* Next.js optimized preloaded logo */}
-                <div className="node-logo-wrap flex items-center justify-center" style={{
-                  position: "relative",
-                  width: `${logoPx}px`, height: `${logoPx}px`,
-                  transition: "opacity 300ms ease, filter 300ms ease, transform 300ms cubic-bezier(0.16, 1, 0.3, 1)",
-                }}>
-                  <Image
-                    src={`/logos/${n.id}.svg`}
-                    alt={n.label}
-                    width={logoPx}
-                    height={logoPx}
-                    priority
-                    unoptimized // SVGs are light vector shapes and don't need raster optimization
-                    style={{ objectFit: "contain", display: "block" }}
-                  />
-                </div>
-
-                {/* Mono branding label */}
-                <span className="node-label" style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: `${Math.round(n.cssSize * 0.125)}px`,
-                  letterSpacing: "0.08em",
-                  lineHeight: 1,
-                  fontWeight: 500,
-                  marginTop: `${Math.round(n.cssSize * 0.045)}px`,
-                }}>
-                  {n.label}
-                </span>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* ==================================================
-          HOVER TELEMETRY COMPOSITE PANEL
-          ================================================== */}
+      {/* Intelligence Log / Telemetry */}
       <div
-        ref={cardRef}
+        ref={telemetryRef}
+        className="w-[calc(100vw-40px)] md:w-[280px]"
         style={{
-          position: "absolute", left: 0, top: 0,
-          zIndex: 40, width: "262px",
-          pointerEvents: "none",
-          willChange: "transform",
-          transform: "translate3d(-9999px,-9999px,0)",
-          opacity: hoveredData ? 1 : 0,
-          visibility: hoveredData ? "visible" : "hidden",
-          transition: "opacity 160ms ease",
-          background: "var(--color-elevated)",
-          border: "1px solid var(--color-border-bright)",
-          padding: "18px",
-          boxShadow: "0 12px 48px rgba(0,0,0,0.32), 0 2px 8px rgba(0,0,0,0.2)",
+          position: "absolute", left: 0, top: 0, padding: "20px",
+          background: "var(--color-surface)",
+          backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+          border: "1px solid var(--color-border-bright)", borderRadius: "12px",
+          boxShadow: "0 10px 40px rgba(0,0,0,0.4), inset 0 0 20px var(--color-cyan-glow)",
+          zIndex: 9999, color: "var(--color-text-primary)", fontFamily: "var(--font-mono)",
+          opacity: 0, willChange: "transform, opacity, filter", pointerEvents: "none",
+          display: "flex", flexDirection: "column", gap: "12px"
         }}
       >
-        {hoveredData && (() => {
-          const accent = ACCENT[hoveredData.id];
-          const sc = hoveredData.status === "ACTIVE" || hoveredData.status === "ONLINE" ? "var(--color-online-bright)" : "var(--color-text-muted)";
-          return (
-            <div style={{ fontFamily: "var(--font-mono)", display: "flex", flexDirection: "column", gap: "14px" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: "11px", borderBottom: "1px solid var(--color-border)" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
-                  <div style={{ width: "9px", height: "9px", borderRadius: "50%", background: accent, opacity: 0.85 }} />
-                  <span style={{ color: "var(--color-text-primary)", fontWeight: 700, fontSize: "14.5px", letterSpacing: "0.03em" }}>{hoveredData.label}</span>
-                </div>
-                <span style={{ marginLeft: "auto", fontSize: "8px", color: sc, border: `1px solid ${sc}`, padding: "2px 8px", letterSpacing: "0.10em", opacity: 0.85 }}>{hoveredData.status}</span>
-              </div>
-              <div>
-                <div style={{ fontSize: "7.5px", color: "var(--color-text-muted)", letterSpacing: "0.12em", marginBottom: "4px" }}>ROLE</div>
-                <div style={{ fontSize: "11.5px", color: "var(--color-text-primary)", lineHeight: 1.45 }}>{hoveredData.role}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: "7.5px", color: "var(--color-text-muted)", letterSpacing: "0.12em", marginBottom: "4px" }}>BELIEF</div>
-                <div style={{ fontSize: "10px", color: "var(--color-text-secondary)", lineHeight: 1.6, fontStyle: "italic" }}>&ldquo;{hoveredData.belief}&rdquo;</div>
-              </div>
-              <div style={{ paddingTop: "11px", borderTop: "1px solid var(--color-border)" }}>
-                <div style={{ fontSize: "7.5px", color: "var(--color-text-muted)", letterSpacing: "0.12em", marginBottom: "5px" }}>FOCUS AREA</div>
-                <div style={{ fontSize: "9.5px", color: "var(--color-text-muted)", lineHeight: 1.7 }}>{hoveredData.interest}</div>
-              </div>
-            </div>
-          );
-        })()}
+        <div style={{
+          position: "absolute", inset: 0, borderRadius: "12px", pointerEvents: "none",
+          background: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,255,0.01) 2px, rgba(0,255,255,0.01) 4px)"
+        }} />
+        
+        <div style={{ display: "flex", alignItems: "baseline", gap: "10px", borderBottom: "1px solid var(--color-border)", paddingBottom: "10px" }}>
+           <div ref={tTitle} style={{ fontSize: "18px", fontWeight: 700, color: "var(--color-text-primary)", textShadow: "0 0 10px rgba(255,255,255,0.1)" }} />
+           <div ref={tRole} style={{ fontSize: "10px", color: "var(--color-cyan)", textTransform: "uppercase", letterSpacing: "1px", opacity: 0.8 }} />
+        </div>
+        
+        <div>
+           <div style={{ fontSize: "9px", color: "var(--color-text-muted)", marginBottom: "4px", letterSpacing: "1px" }}>OPERATOR THESIS</div>
+           <div ref={tThesis} style={{ fontSize: "12px", color: "var(--color-text-secondary)", lineHeight: 1.5, textWrap: "balance" }} />
+        </div>
+        
+        <div>
+           <div style={{ fontSize: "9px", color: "var(--color-text-muted)", marginBottom: "4px", letterSpacing: "1px" }}>KEY METRICS</div>
+           <div ref={tStrengths} style={{ fontSize: "11px", color: "var(--color-text-primary)" }} />
+           <div ref={tSector} style={{ fontSize: "11px", color: "var(--color-text-primary)", marginTop: "2px" }} />
+        </div>
+        
+        <div style={{ marginTop: "4px", padding: "10px", background: "var(--color-cyan-glow)", borderRadius: "6px", borderLeft: "2px solid var(--color-cyan)" }}>
+           <div ref={tComment} style={{ fontSize: "11px", color: "var(--color-text-primary)", fontStyle: "italic", textWrap: "balance" }} />
+        </div>
       </div>
-
-      {/* Legend guide */}
-      <div className="absolute bottom-3 left-4 pointer-events-none" style={{ zIndex: 20, fontFamily: "var(--font-mono)", fontSize: "7px", color: "var(--color-text-muted)", letterSpacing: "0.05em" }}>
-        DRAG NODES TO ARRANGE · HOVER TO ENGAGE TELEMETRY
-      </div>
-    </div>
+    </section>
   );
 }
 
-export const NetworkMap = memo(NetworkMapComponent);
+export const NetworkMap = memo(CosmicEcosystem);

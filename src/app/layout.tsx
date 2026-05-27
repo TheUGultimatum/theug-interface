@@ -1,6 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Space_Grotesk, IBM_Plex_Mono, Bebas_Neue } from "next/font/google";
 import { GlobalLoader } from "@/components/ui/GlobalLoader";
+import { Background } from "@/components/layout/Background";
+import { Sidebar } from "@/components/layout/Sidebar";
+import { TopBar } from "@/components/layout/TopBar";
+import { CustomCursor } from "@/components/ui/CustomCursor";
+import { CommandPalette } from "@/components/ui/CommandPalette";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -86,7 +91,17 @@ export default function RootLayout({
       </head>
       <body suppressHydrationWarning>
         <GlobalLoader />
-        {children}
+        <div className="workspace-layout">
+          <div className="crt-overlay" />
+          <CustomCursor />
+          <CommandPalette />
+          <Background />
+          <Sidebar />
+          <TopBar />
+          <main className="workspace-content relative z-10 pt-[94px] md:pt-[52px]">
+            {children}
+          </main>
+        </div>
       </body>
     </html>
   );

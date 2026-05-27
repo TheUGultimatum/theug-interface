@@ -1,10 +1,10 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 
 /* ============================================
-   DESIGN TOKENS — INDUSTRIAL CYBERPUNK
+   DESIGN TOKENS â€” INDUSTRIAL CYBERPUNK
 ============================================ */
 :root {
-  /* Base Layer — true black industrial */
+  /* Base Layer â€” true black industrial */
   --color-void: #000000;
   --color-abyss: #050505;
   --color-surface: #0a0a0a;
@@ -12,13 +12,12 @@
   --color-border: #1a1a1a;
   --color-border-bright: #2a2a2a;
 
-  /* Text Layer — neutral off-white */
+  /* Text Layer â€” neutral off-white */
   --color-text-primary: #ededed;
   --color-text-secondary: #888888;
   --color-text-muted: #555555;
   --color-text-ghost: #2a2a2a;
-
-  /* Accent — bright orange/red primary, cyan only for active */
+  /* Accent â€” bright orange/red primary, cyan only for active */
   --color-amber: #ff5e3a;
   --color-amber-bright: #ff7b00;
   --color-amber-dim: #33130b;
@@ -33,7 +32,7 @@
   --color-warning: #ffb800;
   --color-error: #ff3333;
 
-  /* Glow — restrained */
+  /* Glow â€” restrained */
   --glow-ambient: 0 0 24px rgba(255, 94, 58, 0.04);
   --glow-active: 0 0 32px rgba(255, 94, 58, 0.12);
   --glow-focus: 0 0 48px rgba(255, 94, 58, 0.20);
@@ -351,7 +350,7 @@ body {
   100% { transform: translate(0,0) }
 }
 
-/* Ambient warmth — very faint */
+/* Ambient warmth â€” very faint */
 .bg-glow-left {
   position: absolute;
   width: 700px;
@@ -782,3 +781,43 @@ body {
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
 }
+/* ============================================
+   GLOBAL RESET & TYPOGRAPHIC POLISH
+============================================ */
+html, body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-void);
+  color: var(--color-text-primary);
+}
+
+/* Minimal Obsidian Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-void);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-bright);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* Text Balancing for Cinematic Typography */
+h1, h2, h3, h4, .text-balance {
+  text-wrap: balance;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
