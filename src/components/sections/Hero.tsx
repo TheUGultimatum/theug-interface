@@ -592,7 +592,7 @@ function HeroIdentity() {
             <div style={{
               fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--color-cyan)", 
               letterSpacing: "0.08em", overflow: "hidden", position: "relative",
-              height: "16px", display: "flex", alignItems: "center", flexShrink: 0, minWidth: "160px"
+              height: "16px", display: "block", flexShrink: 0, minWidth: "160px"
             }}>
               <div 
                 style={{ 
