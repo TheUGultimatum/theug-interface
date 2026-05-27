@@ -1,7 +1,9 @@
 import { NetworkMapClient } from "@/components/sections/NetworkMapClient";
 
-export const metadata = {
-  title: "Onchain Convictions | theUG",
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Onchain Convictions — theUG",
   description: "Futuristic observatory visualizing active ecosystems and infrastructure.",
 };
 

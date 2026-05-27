@@ -1,7 +1,9 @@
 import { Timeline } from "@/components/sections/Timeline";
 
-export const metadata = {
-  title: "Timeline | theUG",
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Timeline — theUG",
   description: "The journey and experience timeline of theUG.",
 };
 

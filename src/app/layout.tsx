@@ -30,32 +30,59 @@ const bebasNeue = Bebas_Neue({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://theug.vercel.app"),
-  title: "theUG · AI & Automation Engineer",
+  metadataBase: new URL("https://theug.vercel.app"),
+  title: "theUG — Usmaan Gani | AI Engineer • Web3 Builder • Developer",
   description:
-    "Portfolio of theUG — building AI agents, automation tools, and experimental products. Enter the workspace.",
-  keywords: ["AI", "Automation", "Developer", "Portfolio", "Next.js", "TypeScript", "Web3", "Smart Contracts", "Infrastructure", "Software Engineer"],
-  authors: [{ name: "theUG" }],
+    "Official portfolio of Usmaan Gani (theUG), independent AI engineer, Web3 developer, automation builder, blockchain researcher and creative technologist from Jharkhand, India.",
+
+  keywords: [
+    "theug",
+    "usmaan gani",
+    "usmaan gani ranchi",
+    "usmaan gani bokaro",
+    "usmaan gani chandrapura",
+    "ai engineer",
+    "web3 developer",
+    "automation engineer",
+    "blockchain developer india",
+    "portfolio website",
+    "crypto developer",
+    "full stack developer",
+    "independent builder",
+    "solana developer",
+    "ethereum developer",
+    "base builder",
+    "web3 portfolio",
+  ],
+
+  authors: [{ name: "Usmaan Gani" }],
+
+  creator: "Usmaan Gani",
+  publisher: "theUG",
+
   openGraph: {
-    title: "theUG · AI & Automation Engineer",
-    description: "Building intelligent systems. Enter the workspace.",
-    url: "/",
-    siteName: "theUG Portfolio",
+    title: "theUG — Usmaan Gani",
+    description:
+      "AI Engineer • Web3 Builder • Independent Developer",
+    url: "https://theug.vercel.app",
+    siteName: "theUG",
     images: [
       {
-        url: "/opengraph-image.png",
+        url: "/og-banner.png",
         width: 1200,
         height: 630,
-        alt: "theUG Portfolio Preview",
       },
     ],
+    locale: "en_US",
     type: "website",
   },
+
   twitter: {
     card: "summary_large_image",
-    title: "theUG · AI & Automation Engineer",
-    description: "Building intelligent systems. Enter the workspace.",
-    images: ["/opengraph-image.png"],
+    title: "theUG — Usmaan Gani",
+    description:
+      "AI Engineer • Web3 Builder • Independent Developer",
+    images: ["/og-banner.png"],
   },
 };
 
@@ -86,6 +113,31 @@ export default function RootLayout({
               }
               window.scrollTo(0, 0);
             `,
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Person",
+              name: "Usmaan Gani",
+              alternateName: "theUG",
+              url: "https://theug.vercel.app",
+              image: "https://theug.vercel.app/profile.png",
+              sameAs: [
+                "https://x.com/Usmaangani252",
+                "https://github.com/TheUGultimatum",
+                "https://www.linkedin.com/in/usmaan-gani/"
+              ],
+              jobTitle: "AI Engineer & Web3 Developer",
+              address: {
+                "@type": "PostalAddress",
+                addressLocality: "Ranchi",
+                addressRegion: "Jharkhand",
+                addressCountry: "India"
+              }
+            }),
           }}
         />
       </head>

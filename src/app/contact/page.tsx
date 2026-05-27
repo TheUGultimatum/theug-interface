@@ -1,7 +1,9 @@
 import { Contact } from "@/components/sections/Contact";
 
-export const metadata = {
-  title: "Contact | theUG",
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Contact — theUG",
   description: "Secure terminal connection to reach theUG.",
 };
 

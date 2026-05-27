@@ -1,8 +1,10 @@
 import { Projects } from "@/components/sections/Projects";
 
-export const metadata = {
-  title: "Projects | theUG",
-  description: "Showcase of projects, apps, and decentralized systems by theUG.",
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Projects — theUG",
+  description: "Showcase of projects, apps, and decentralized systems built by Usmaan Gani (theUG).",
 };
 
 export default function ProjectsPage() {

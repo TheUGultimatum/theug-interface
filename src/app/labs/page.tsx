@@ -1,7 +1,9 @@
 import { LabsClient } from "@/components/sections/LabsClient";
 
-export const metadata = {
-  title: "Labs | theUG",
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Labs — theUG",
   description: "Interactive experiments, simulations, and advanced capabilities.",
 };
 

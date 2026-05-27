@@ -61,6 +61,7 @@ export function About() {
         {/* Section label */}
         <div className={inView ? "animate-fade-in" : "anim-hidden"}>
           <SectionLabel label="ABOUT.LOG" />
+          <h1 className="sr-only">Usmaan Gani — AI Engineer & Web3 Builder</h1>
         </div>
 
         <div
@@ -88,7 +89,7 @@ export function About() {
               </div>
               <div className="panel-body" style={{ padding: "20px 24px" }}>
                 <p style={{ color: "var(--color-text-secondary)", fontSize: "14px", lineHeight: 2.0, letterSpacing: "0.02em" }}>
-                  I’m a self-driven builder focused on AI systems,
+                  I’m Usmaan Gani, a self-driven builder based in Ranchi, Jharkhand, with roots in Bokaro and Chandrapura, India. I am focused on AI systems,
                   automation pipelines, blockchain infrastructure,
                   and developer tooling.
                 </p>
