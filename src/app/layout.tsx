@@ -60,6 +60,10 @@ export const metadata: Metadata = {
   creator: "Usmaan Gani",
   publisher: "theUG",
 
+  verification: {
+    google: "e-Cmx8JGxYclrwrIZoq7cFX1g5WjEXCKwfWccsUWb8o",
+  },
+
   openGraph: {
     title: "theUG — Usmaan Gani",
     description:
