@@ -72,7 +72,7 @@ export const metadata: Metadata = {
     siteName: "theUG",
     images: [
       {
-        url: "/og-banner.png",
+        url: "/opengraph-image.png",
         width: 1200,
         height: 630,
       },
@@ -86,7 +86,7 @@ export const metadata: Metadata = {
     title: "theUG — Usmaan Gani",
     description:
       "AI Engineer • Web3 Builder • Independent Developer",
-    images: ["/og-banner.png"],
+    images: ["/opengraph-image.png"],
   },
 };
 
