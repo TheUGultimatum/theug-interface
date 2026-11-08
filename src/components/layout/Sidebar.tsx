@@ -184,6 +184,12 @@ function DesktopSidebar() {
           <br />
           All rights reserved
         </p>
+        <Link
+          href="/admin"
+          className="font-mono text-[9px] text-[var(--color-text-muted)] hover:text-[var(--color-amber)] transition-colors mt-2.5 block tracking-wider"
+        >
+          [ SYS.ADMIN // CONSOLE ]
+        </Link>
       </div>
     </aside>
   );
@@ -208,7 +214,7 @@ function MobileNav() {
 
   const mobileItems = [
     NAV_ITEMS[0], // Home
-    NAV_ITEMS[1], // About
+    NAV_ITEMS[2], // Projects
     NAV_ITEMS[3], // Onchain
     NAV_ITEMS[4], // Labs
     NAV_ITEMS[6], // Contact

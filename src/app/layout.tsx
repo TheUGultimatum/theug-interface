@@ -128,7 +128,7 @@ export default function RootLayout({
               name: "Usmaan Gani",
               alternateName: "theUG",
               url: "https://theug.vercel.app",
-              image: "https://theug.vercel.app/profile.png",
+              image: "https://theug.vercel.app/images/portrait.png",
               sameAs: [
                 "https://x.com/Usmaangani252",
                 "https://github.com/TheUGultimatum",

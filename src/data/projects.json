@@ -1,0 +1,197 @@
+[
+  {
+    "id": "testing",
+    "name": "testing",
+    "tagline": "dfafdafadfafadsf",
+    "description": "sdas",
+    "stack": [
+      "Next.js",
+      "TypeScript"
+    ],
+    "status": "live",
+    "deployTarget": "VERCEL",
+    "liveUrl": "https://jpegz.art/",
+    "githubUrl": "fasfasfasdfsdaf",
+    "featured": false,
+    "isPrivate": false,
+    "bannerUrl": "/uploads/projects/theug_glyph-nft-usmaangani252_1794137033705.png",
+    "accentColor": "var(--color-cyan)",
+    "accentRgb": "0,212,255",
+    "category": "FULL STACK",
+    "year": "2026"
+  },
+  {
+    "id": "theug-hub",
+    "name": "THEUG HUB",
+    "tagline": "Personal community platform & ecosystem hub",
+    "description": "Full-stack community portal featuring member onboarding, gated feeds, token-gated giveaways, and real-time social telemetry.",
+    "stack": [
+      "Next.js",
+      "TypeScript",
+      "Prisma",
+      "PostgreSQL",
+      "NextAuth",
+      "Tailwind CSS"
+    ],
+    "status": "live",
+    "deployTarget": "VERCEL",
+    "liveUrl": "https://theug.vercel.app",
+    "githubUrl": "https://github.com/TheUGultimatum/Theug-hub",
+    "isPrivate": true,
+    "featured": true,
+    "accentColor": "var(--color-amber)",
+    "accentRgb": "255,94,58",
+    "category": "FULL STACK",
+    "year": "2026"
+  },
+  {
+    "id": "dino-run",
+    "name": "DINO RUN",
+    "tagline": "On-chain multiplayer game — Base Chain",
+    "description": "A fully on-chain multiplayer browser game built on Base mainnet. Smart contracts handle all game logic, scoring, and reward distribution.",
+    "stack": [
+      "Next.js",
+      "Solidity",
+      "Base SDK",
+      "TypeScript",
+      "Wagmi"
+    ],
+    "status": "live",
+    "deployTarget": "BASE MAINNET",
+    "liveUrl": "https://dinorunbase.vercel.app/",
+    "githubUrl": "https://github.com/TheUGultimatum/Dino-Run-on-BASE",
+    "isPrivate": true,
+    "bannerUrl": "/images/dinorun.png",
+    "featured": true,
+    "accentColor": "var(--color-cyan)",
+    "accentRgb": "0,212,255",
+    "category": "WEB3 / GAMING",
+    "year": "2024"
+  },
+  {
+    "id": "drosera-network-node",
+    "name": "DROSERA NETWORK NODE",
+    "tagline": "Automated consensus node deployment & monitoring",
+    "description": "Infrastructure automation suite for running Drosera Network consensus nodes, telemetry streaming, and automated health recovery.",
+    "stack": [
+      "Shell",
+      "Docker",
+      "Linux",
+      "Node.js",
+      "RPC"
+    ],
+    "status": "live",
+    "deployTarget": "VPS / LINUX",
+    "githubUrl": "https://github.com/TheUGultimatum/DROSERA-NETWORK-NODE",
+    "isPrivate": false,
+    "featured": true,
+    "accentColor": "var(--color-purple)",
+    "accentRgb": "136,85,255",
+    "category": "INFRASTRUCTURE / NODES",
+    "year": "2025"
+  },
+  {
+    "id": "dac-node-by-theug",
+    "name": "DAC CHAIN TESTNET NODE",
+    "tagline": "Automated node runner with wallet & faucet integration",
+    "description": "Run a DAC Chain Testnet node with wallet generation, faucet requests, and background execution — fully automated single-command setup.",
+    "stack": [
+      "Shell",
+      "Bash",
+      "Linux",
+      "Web3 RPC"
+    ],
+    "status": "live",
+    "deployTarget": "VPS / LINUX",
+    "githubUrl": "https://github.com/TheUGultimatum/dac-node-by-theug",
+    "isPrivate": false,
+    "featured": false,
+    "accentColor": "var(--color-cyan)",
+    "accentRgb": "0,212,255",
+    "category": "INFRASTRUCTURE / NODES",
+    "year": "2026"
+  },
+  {
+    "id": "agent-stack",
+    "name": "AGENT STACK",
+    "tagline": "Modular AI agent orchestration framework",
+    "description": "Composable framework for building and deploying multi-agent AI pipelines. Supports tool use, persistent memory, and parallel task execution.",
+    "stack": [
+      "Python",
+      "LangChain",
+      "FastAPI",
+      "Redis",
+      "Docker"
+    ],
+    "status": "wip",
+    "githubUrl": "https://github.com/TheUGultimatum",
+    "isPrivate": false,
+    "featured": false,
+    "accentColor": "var(--color-electric)",
+    "accentRgb": "68,136,255",
+    "category": "AI / AUTOMATION",
+    "year": "2025"
+  },
+  {
+    "id": "content-pipeline",
+    "name": "CONTENT PIPELINE",
+    "tagline": "Automated content generation & publishing",
+    "description": "End-to-end pipeline that generates, edits, and publishes content across platforms. LLM-powered with human-in-the-loop approval stages.",
+    "stack": [
+      "TypeScript",
+      "OpenAI",
+      "Node.js",
+      "PostgreSQL"
+    ],
+    "status": "live",
+    "deployTarget": "VPS",
+    "githubUrl": "https://github.com/TheUGultimatum",
+    "isPrivate": false,
+    "featured": false,
+    "accentColor": "var(--color-purple)",
+    "accentRgb": "136,85,255",
+    "category": "AI / CONTENT",
+    "year": "2024"
+  },
+  {
+    "id": "quip-node",
+    "name": "QUIP QUANTUM NODE",
+    "tagline": "VPS deployment guide & automated runner",
+    "description": "Automated deployment pipeline and management scripts for QUIP Quantum Blockchain nodes on cloud VPS instances.",
+    "stack": [
+      "Shell",
+      "Linux",
+      "VPS",
+      "Automation"
+    ],
+    "status": "live",
+    "deployTarget": "VPS",
+    "githubUrl": "https://github.com/TheUGultimatum/quip-node-for-vps",
+    "isPrivate": false,
+    "featured": false,
+    "accentColor": "var(--color-amber)",
+    "accentRgb": "255,94,58",
+    "category": "INFRASTRUCTURE / NODES",
+    "year": "2026"
+  },
+  {
+    "id": "devkit",
+    "name": "DEVKIT",
+    "tagline": "CLI toolbox for rapid project scaffolding",
+    "description": "Personal CLI toolkit — scaffolds projects, manages dotfiles, provisions servers, and automates repetitive developer workflow tasks.",
+    "stack": [
+      "Python",
+      "Click",
+      "Bash",
+      "Docker"
+    ],
+    "status": "lab",
+    "githubUrl": "https://github.com/TheUGultimatum",
+    "isPrivate": false,
+    "featured": false,
+    "accentColor": "var(--color-cyan)",
+    "accentRgb": "0,212,255",
+    "category": "TOOLING / CLI",
+    "year": "2025"
+  }
+]

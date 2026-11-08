@@ -145,7 +145,13 @@ function Terminal() {
     
     switch(lowerCmd) {
       case "help":
-        output = "Available commands:\n  help     - List all available terminal commands\n  whoami   - Display active engineer identification\n  skills   - Output diagnostic skill visual metrics\n  projects - Show portfolio products & details\n  socials  - Link outbound transmission vectors\n  contact  - Open immediate communications link\n  clear    - Clear console screen buffer\n  date     - Show current standard system date\n  uptime   - Fetch host active runtime timer\n  stack    - Output active engineering stack details\n  matrix   - Sync binary translation streams\n  neocore  - Test active core thermal loads\n  glitch   - Trigger interface theme calibration";
+        output = "Available commands:\n  help     - List all available terminal commands\n  whoami   - Display active engineer identification\n  skills   - Output diagnostic skill visual metrics\n  projects - Show portfolio products & details\n  admin    - Access project management admin console\n  socials  - Link outbound transmission vectors\n  contact  - Open immediate communications link\n  clear    - Clear console screen buffer\n  date     - Show current standard system date\n  uptime   - Fetch host active runtime timer\n  stack    - Output active engineering stack details\n  matrix   - Sync binary translation streams\n  neocore  - Test active core thermal loads\n  glitch   - Trigger interface theme calibration";
+        break;
+      case "admin":
+        output = "› [AUTH: UPLINKING TO SECURE COMMAND CONSOLE]\n› Redirecting to /admin ...";
+        setTimeout(() => {
+          window.location.href = "/admin";
+        }, 600);
         break;
       case "about":
         output = "Scrolling to about section...";

@@ -17,18 +17,30 @@ export function CommandPalette() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const navigateTo = (path: string, id?: string) => {
+    if (id && document.getElementById(id)) {
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+    } else {
+      window.location.href = path;
+    }
+  };
+
   const commands: Command[] = [
-    { id: "home", label: "cd ~ / home", category: "Navigation", action: () => document.getElementById("home")?.scrollIntoView({ behavior: "smooth" }) },
-    { id: "about", label: "cat about.md", category: "Navigation", action: () => document.getElementById("about")?.scrollIntoView({ behavior: "smooth" }) },
-    { id: "projects", label: "ls ./projects", category: "Navigation", action: () => document.getElementById("projects")?.scrollIntoView({ behavior: "smooth" }) },
-    { id: "timeline", label: "history | grep timeline", category: "Navigation", action: () => document.getElementById("timeline")?.scrollIntoView({ behavior: "smooth" }) },
-    { id: "contact", label: "ping contact", category: "Navigation", action: () => document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" }) },
+    { id: "home", label: "cd ~ / home", category: "Navigation", action: () => navigateTo("/", "home") },
+    { id: "about", label: "cat about.md", category: "Navigation", action: () => navigateTo("/about", "about") },
+    { id: "projects", label: "ls ./projects", category: "Navigation", action: () => navigateTo("/projects", "projects") },
+    { id: "onchain", label: "netstat -onchain", category: "Navigation", action: () => navigateTo("/onchain") },
+    { id: "labs", label: "cat labs.experiment", category: "Navigation", action: () => navigateTo("/labs") },
+    { id: "timeline", label: "history | grep timeline", category: "Navigation", action: () => navigateTo("/timeline", "timeline") },
+    { id: "contact", label: "ping contact", category: "Navigation", action: () => navigateTo("/contact", "contact") },
     
     // Quick links to featured projects
-    { id: "p-dino", label: "./run dino-run.exe", category: "Projects", action: () => { document.getElementById("projects")?.scrollIntoView({ behavior: "smooth" }); } },
-    { id: "p-agent", label: "./run agent-stack.exe", category: "Projects", action: () => { document.getElementById("projects")?.scrollIntoView({ behavior: "smooth" }); } },
+    { id: "p-hub", label: "./run theug-hub.exe", category: "Projects", action: () => navigateTo("/projects") },
+    { id: "p-dino", label: "./run dino-run.exe", category: "Projects", action: () => navigateTo("/projects") },
+    { id: "p-agent", label: "./run agent-stack.exe", category: "Projects", action: () => navigateTo("/projects") },
     
     // System
+    { id: "sys-admin", label: "sudo sys.admin // console", category: "System", action: () => navigateTo("/admin") },
     { id: "sys-source", label: "git clone source-code", category: "System", action: () => window.open("https://github.com/TheUGultimatum", "_blank") },
     { id: "sys-resume", label: "curl -O resume.pdf", category: "System", action: () => alert("Resume download initiated...") },
   ];
