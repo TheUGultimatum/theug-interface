@@ -3,23 +3,7 @@
 
 import React, { useEffect, useRef, memo, useState, useCallback } from "react";
 import { ECOSYSTEMS_DATA, EcosystemData } from "@/config/networkData";
-import { 
-  Sparkles, 
-  Volume2, 
-  VolumeX, 
-  Pause, 
-  Play, 
-  RotateCcw,
-  ZoomIn,
-  ZoomOut,
-  ChevronLeft,
-  ChevronRight,
-  Compass,
-  Zap,
-  Radio,
-  Eye,
-  Crosshair
-} from "lucide-react";
+import { RotateCcw } from "lucide-react";
 
 type PlanetPhysics = EcosystemData & {
   angle: number;
@@ -35,7 +19,7 @@ type PlanetPhysics = EcosystemData & {
   trail: { x: number; y: number; alpha: number }[];
 };
 
-type MemeComet = {
+type MemeAsteroid = {
   active: boolean;
   id: string;
   name: string;
@@ -46,6 +30,7 @@ type MemeComet = {
   vx: number;
   vy: number;
   alpha: number;
+  size: number;
   trail: { x: number; y: number; alpha: number }[];
   age: number;
   lifespan: number;
@@ -65,11 +50,13 @@ interface SolarSystemProps {
   onSelect: (ecosystem: EcosystemData) => void;
 }
 
-const MEME_COMET_TYPES = [
-  { id: "doge", name: "DOGE", color: "#FBBF24", file: "doge.svg" },
+// 5 Iconic Meme Tokens as Falling Asteroids / Comets
+const MEME_ASTEROID_TYPES = [
+  { id: "bonk", name: "BONK", color: "#F47D20", file: "bonk.svg" },
+  { id: "pengu", name: "PENGU", color: "#38BDF8", file: "pengu.png" },
+  { id: "shiba", name: "SHIB", color: "#FFA409", file: "shiba.svg" },
+  { id: "doge", name: "DOGE", color: "#C3A634", file: "doge.svg" },
   { id: "pepe", name: "PEPE", color: "#22C55E", file: "pepe.svg" },
-  { id: "shiba", name: "SHIB", color: "#F97316", file: "shiba.svg" },
-  { id: "pengu", name: "PUDGY", color: "#38BDF8", file: "pengu.png" },
 ];
 
 const lerp = (a: number, b: number, t: number) => a * (1 - t) + b * t;
@@ -78,16 +65,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Variant Mode: 1 (hyper-core), 2 (cyber-radar), 3 (minimal-void)
-  const [variantMode, setVariantMode] = useState<"hyper-core" | "cyber-radar" | "minimal-void">("hyper-core");
   const [isDayMode, setIsDayMode] = useState<boolean>(false);
-  const [isPaused, setIsPaused] = useState<boolean>(false);
-  const [speedMultiplier, setSpeedMultiplier] = useState<number>(1.0);
-  const [isSoundActive, setIsSoundActive] = useState<boolean>(false);
-  const [fps, setFps] = useState<number>(120);
-
-  // Audio refs
-  const audioCtxRef = useRef<AudioContext | null>(null);
 
   // Camera & Gesture navigation
   const cameraRef = useRef({
@@ -114,52 +92,24 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
   const mouseRef = useRef({ x: 0, y: 0 });
   const dprRef = useRef(1);
   const coronaAngle = useRef(0);
-  const pulseRadius = useRef(0);
-  const radarSweepAngle = useRef(0);
 
   // Animation refs
   const rafRef = useRef<number>();
   const lastTimeRef = useRef<number>(0);
-  const frameCountRef = useRef(0);
-  const lastFpsUpdateRef = useRef(0);
   const planetsRef = useRef<PlanetPhysics[]>([]);
   const starsRef = useRef<Star[]>([]);
   const logosRef = useRef<Record<string, HTMLImageElement>>({});
   const memeBitmaps = useRef<Record<string, HTMLImageElement>>({});
   const sunImgRef = useRef<HTMLImageElement | null>(null);
 
-  // Meme Comets Pool (4 slots)
-  const cometsRef = useRef<MemeComet[]>([
-    { active: false, id: "doge", name: "DOGE", color: "#FBBF24", file: "doge.svg", x: 0, y: 0, vx: 0, vy: 0, alpha: 0, trail: [], age: 0, lifespan: 0 },
-    { active: false, id: "pepe", name: "PEPE", color: "#22C55E", file: "pepe.svg", x: 0, y: 0, vx: 0, vy: 0, alpha: 0, trail: [], age: 0, lifespan: 0 },
-    { active: false, id: "shiba", name: "SHIB", color: "#F97316", file: "shiba.svg", x: 0, y: 0, vx: 0, vy: 0, alpha: 0, trail: [], age: 0, lifespan: 0 },
-    { active: false, id: "pengu", name: "PUDGY", color: "#38BDF8", file: "pengu.png", x: 0, y: 0, vx: 0, vy: 0, alpha: 0, trail: [], age: 0, lifespan: 0 },
+  // Pool of falling meme asteroids (5 active concurrent slots)
+  const asteroidsRef = useRef<MemeAsteroid[]>([
+    { active: false, id: "bonk", name: "BONK", color: "#F47D20", file: "bonk.svg", x: 0, y: 0, vx: 0, vy: 0, alpha: 0, size: 24, trail: [], age: 0, lifespan: 0 },
+    { active: false, id: "pengu", name: "PENGU", color: "#38BDF8", file: "pengu.png", x: 0, y: 0, vx: 0, vy: 0, alpha: 0, size: 24, trail: [], age: 0, lifespan: 0 },
+    { active: false, id: "shiba", name: "SHIB", color: "#FFA409", file: "shiba.svg", x: 0, y: 0, vx: 0, vy: 0, alpha: 0, size: 24, trail: [], age: 0, lifespan: 0 },
+    { active: false, id: "doge", name: "DOGE", color: "#C3A634", file: "doge.svg", x: 0, y: 0, vx: 0, vy: 0, alpha: 0, size: 24, trail: [], age: 0, lifespan: 0 },
+    { active: false, id: "pepe", name: "PEPE", color: "#22C55E", file: "pepe.svg", x: 0, y: 0, vx: 0, vy: 0, alpha: 0, size: 24, trail: [], age: 0, lifespan: 0 },
   ]);
-
-  // Audio feedback synthesizer
-  const playSoundBlip = useCallback((freq = 560, duration = 0.08) => {
-    if (!isSoundActive) return;
-    try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (!audioCtxRef.current) audioCtxRef.current = new AudioCtx();
-      const ctx = audioCtxRef.current;
-      if (ctx.state === "suspended") ctx.resume();
-
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(freq, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(freq * 1.4, ctx.currentTime + duration);
-
-      gain.gain.setValueAtTime(0.035, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + duration);
-    } catch {}
-  }, [isSoundActive]);
 
   // 1. WATCH THEME
   useEffect(() => {
@@ -173,52 +123,26 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
     return () => observer.disconnect();
   }, []);
 
-  // 2. TOGGLE AMBIENT DRONE
-  const toggleSound = () => {
-    if (!isSoundActive) {
-      try {
-        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-        const ctx = new AudioCtx();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-
-        osc.type = "triangle";
-        osc.frequency.setValueAtTime(55, ctx.currentTime);
-        gain.gain.setValueAtTime(0.015, ctx.currentTime);
-
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-
-        audioCtxRef.current = ctx;
-        setIsSoundActive(true);
-      } catch {}
-    } else {
-      try {
-        audioCtxRef.current?.close();
-      } catch {}
-      setIsSoundActive(false);
-    }
-  };
-
-  // 3. LAUNCH MEME COIN COMET
-  const triggerMemeComet = useCallback(() => {
-    const slot = cometsRef.current.find(m => !m.active);
+  // 2. SPAWN FALLING MEME ASTEROIDS / COMETS NEAR PLANETS
+  const spawnMemeAsteroid = useCallback(() => {
+    const slot = asteroidsRef.current.find(m => !m.active);
     if (!slot) return;
 
     const w = containerRef.current?.clientWidth || 1000;
     const h = containerRef.current?.clientHeight || 750;
 
-    const fromLeft = Math.random() > 0.5;
-    const startX = fromLeft ? -60 : w + 60;
+    // Fall diagonally across the orbits (from upper-left or upper-right)
+    const fromLeft = Math.random() > 0.45;
+    const startX = fromLeft ? -40 - Math.random() * 80 : w + 40 + Math.random() * 80;
     const startY = Math.random() * (h * 0.45);
 
-    const targetX = w * (0.15 + Math.random() * 0.7);
-    const targetY = h * 0.55 + Math.random() * (h * 0.45);
+    // Aim toward the middle-lower region near the orbiting planets
+    const targetX = w * (0.2 + Math.random() * 0.6);
+    const targetY = h * 0.6 + Math.random() * (h * 0.4);
 
     const angle = Math.atan2(targetY - startY, targetX - startX);
-    const velocity = 8.5 + Math.random() * 5.0;
-    const meme = MEME_COMET_TYPES[Math.floor(Math.random() * MEME_COMET_TYPES.length)];
+    const velocity = 5.5 + Math.random() * 3.5;
+    const meme = MEME_ASTEROID_TYPES[Math.floor(Math.random() * MEME_ASTEROID_TYPES.length)];
 
     Object.assign(slot, {
       active: true,
@@ -231,23 +155,24 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       vx: Math.cos(angle) * velocity,
       vy: Math.sin(angle) * velocity,
       alpha: 1.0,
+      size: 22 + Math.random() * 6,
       trail: [],
       age: 0,
-      lifespan: 140
+      lifespan: 160 + Math.floor(Math.random() * 40)
     });
+  }, []);
 
-    playSoundBlip(780, 0.12);
-  }, [playSoundBlip]);
-
-  // Periodic automatic meme coin comets flyby (every 3.6 seconds)
+  // Natural continuous falling asteroids cadence (every 2.8 seconds)
   useEffect(() => {
-    const cometInterval = setInterval(() => {
-      triggerMemeComet();
-    }, 3600);
-    return () => clearInterval(cometInterval);
-  }, [triggerMemeComet]);
+    // Initial burst
+    spawnMemeAsteroid();
+    const timer = setInterval(() => {
+      spawnMemeAsteroid();
+    }, 2800);
+    return () => clearInterval(timer);
+  }, [spawnMemeAsteroid]);
 
-  // 4. PRELOAD PLANET ASSETS & SETUP PHYSICS
+  // 3. PRELOAD PLANET & MEME ASSETS
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -259,14 +184,12 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       logosRef.current[eco.id] = img;
     });
 
-    // Preload meme coin comets
-    MEME_COMET_TYPES.forEach(m => {
+    MEME_ASTEROID_TYPES.forEach(m => {
       const img = new window.Image();
       img.src = `/meme/${m.file}`;
       memeBitmaps.current[m.id] = img;
     });
 
-    // Preload pookie face central sun
     const pookieImg = new window.Image();
     pookieImg.src = "/images/pookie-sun.png";
     sunImgRef.current = pookieImg;
@@ -294,22 +217,22 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       };
     });
 
-    const starCount = isMobile ? 65 : 140;
+    const starCount = isMobile ? 55 : 110;
     const stars: Star[] = [];
     for (let i = 0; i < starCount; i++) {
       stars.push({
         x: Math.random() * (window.innerWidth || 1200),
         y: Math.random() * 900,
-        size: Math.random() * 1.5 + 0.4,
-        baseAlpha: Math.random() * 0.45 + 0.1,
-        twinkleSpeed: Math.random() * 0.003 + 0.0008,
+        size: Math.random() * 1.3 + 0.3,
+        baseAlpha: Math.random() * 0.35 + 0.08,
+        twinkleSpeed: Math.random() * 0.0025 + 0.0006,
         twinkleOffset: Math.random() * Math.PI * 2,
       });
     }
     starsRef.current = stars;
   }, []);
 
-  // 5. RESIZE HANDLER
+  // 4. RESIZE HANDLER
   useEffect(() => {
     const handleResize = () => {
       const canvas = canvasRef.current;
@@ -339,41 +262,32 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // 6. KEYBOARD ACCESSIBILITY (Left/Right arrow keys cycle worlds)
+  // 5. KEYBOARD ACCESSIBILITY
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight" || e.key === "ArrowDown") {
         const idx = ECOSYSTEMS_DATA.findIndex(p => p.id === selectedId);
         const nextIdx = (idx + 1) % ECOSYSTEMS_DATA.length;
         onSelect(ECOSYSTEMS_DATA[nextIdx]);
-        playSoundBlip(580, 0.06);
       } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
         const idx = ECOSYSTEMS_DATA.findIndex(p => p.id === selectedId);
         const prevIdx = (idx - 1 + ECOSYSTEMS_DATA.length) % ECOSYSTEMS_DATA.length;
         onSelect(ECOSYSTEMS_DATA[prevIdx]);
-        playSoundBlip(520, 0.06);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedId, onSelect, playSoundBlip]);
+  }, [selectedId, onSelect]);
 
-  // Reset Camera View
   const handleResetCamera = () => {
     cameraRef.current.targetZoom = 1.0;
     cameraRef.current.targetRotation = 0;
     cameraRef.current.targetPanX = 0;
     cameraRef.current.targetPanY = 0;
-    playSoundBlip(480, 0.08);
   };
 
-  const handleZoom = (delta: number) => {
-    cameraRef.current.targetZoom = Math.max(0.55, Math.min(2.0, cameraRef.current.targetZoom + delta));
-    playSoundBlip(540, 0.06);
-  };
-
-  // 7. MAIN 120 FPS PURE CANVAS SOLAR SYSTEM RENDERER
+  // 6. MAIN 120 FPS PURE CANVAS SOLAR SYSTEM (VOID MINIMAL)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -388,20 +302,12 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       lastTimeRef.current = time;
       const dt = Math.min(rawDt, 32);
 
-      frameCountRef.current++;
-      if (time - lastFpsUpdateRef.current >= 600) {
-        const measuredFps = Math.round((frameCountRef.current * 1000) / (time - lastFpsUpdateRef.current));
-        setFps(Math.min(120, Math.max(60, measuredFps)));
-        frameCountRef.current = 0;
-        lastFpsUpdateRef.current = time;
-      }
-
       const w = containerRef.current?.clientWidth || 1000;
       const h = containerRef.current?.clientHeight || 750;
       const isMobile = w < 768;
 
       const cx = w / 2;
-      const cy = h / 2 - (isMobile ? 25 : 10);
+      const cy = h / 2 - (isMobile ? 20 : 10);
 
       ctx.clearRect(0, 0, w, h);
 
@@ -419,11 +325,11 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       const isDay = isDayMode;
       const tilt = isMobile ? 0.72 : 0.60;
 
-      // ─── A. STARFIELD PARTICLES ─────────────────────────────────
+      // ─── A. STARFIELD (DELICATE, QUIET TWINKLE) ─────────────────
       const stars = starsRef.current;
       for (let i = 0; i < stars.length; i++) {
         const s = stars[i];
-        const alpha = Math.max(0.04, Math.min(s.baseAlpha + Math.sin(time * s.twinkleSpeed + s.twinkleOffset) * 0.2, 0.85));
+        const alpha = Math.max(0.04, Math.min(s.baseAlpha + Math.sin(time * s.twinkleSpeed + s.twinkleOffset) * 0.15, 0.75));
         ctx.fillStyle = isDay ? `rgba(71, 85, 105, ${alpha * 0.35})` : `rgba(255, 255, 255, ${alpha})`;
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
@@ -436,77 +342,16 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       ctx.scale(cam.zoom, cam.zoom);
       ctx.rotate(cam.rotation);
 
-      // ─── VARIANT 2: CYBERNETIC RADAR BACKGROUND GRID ───
-      if (variantMode === "cyber-radar") {
-        radarSweepAngle.current += 0.02 * speedMultiplier;
-        // Concentric Range Rings
-        ctx.strokeStyle = isDay ? "rgba(2, 132, 199, 0.15)" : "rgba(0, 217, 255, 0.14)";
-        ctx.lineWidth = 1;
-        ctx.setLineDash([4, 6]);
-        [120, 240, 360, 480].forEach(r => {
-          ctx.beginPath();
-          ctx.arc(0, 0, r * (isMobile ? 0.65 : 1.0), 0, Math.PI * 2);
-          ctx.stroke();
-        });
-        ctx.setLineDash([]);
-
-        // 8 Radial Azimuth Axis Lines
-        ctx.strokeStyle = isDay ? "rgba(2, 132, 199, 0.08)" : "rgba(0, 217, 255, 0.08)";
-        for (let a = 0; a < 8; a++) {
-          const ang = (a / 8) * Math.PI * 2;
-          ctx.beginPath();
-          ctx.moveTo(0, 0);
-          ctx.lineTo(Math.cos(ang) * 550, Math.sin(ang) * 550);
-          ctx.stroke();
-        }
-
-        // Rotating Green/Cyan Radar Scanner Sweep
-        const sweepGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, 450);
-        sweepGrad.addColorStop(0, "rgba(0, 217, 255, 0.25)");
-        sweepGrad.addColorStop(1, "transparent");
-        ctx.fillStyle = sweepGrad;
+      // Fine, quiet void guide rings
+      ctx.strokeStyle = isDay ? "rgba(100, 116, 139, 0.07)" : "rgba(255, 255, 255, 0.03)";
+      ctx.lineWidth = 0.6;
+      [140, 280, 440].forEach(r => {
         ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.arc(0, 0, 450, radarSweepAngle.current, radarSweepAngle.current + 0.35);
-        ctx.closePath();
-        ctx.fill();
-      } else if (variantMode === "minimal-void") {
-        // ─── VARIANT 3: MINIMALIST VOID BACKGROUND RINGS ───
-        ctx.strokeStyle = isDay ? "rgba(100, 116, 139, 0.08)" : "rgba(255, 255, 255, 0.035)";
-        ctx.lineWidth = 0.6;
-        [150, 320, 480].forEach(r => {
-          ctx.beginPath();
-          ctx.arc(0, 0, r * (isMobile ? 0.60 : 0.95), 0, Math.PI * 2);
-          ctx.stroke();
-        });
-      } else {
-        // ─── VARIANT 1: LUMINOUS HYPER-CORE COORDINATE RINGS ───
-        ctx.strokeStyle = isDay ? "rgba(22, 163, 74, 0.12)" : "rgba(0, 255, 102, 0.08)";
-        ctx.lineWidth = 1;
-        ctx.setLineDash([2, 8]);
-        [90, 200, 320, 440].forEach(r => {
-          ctx.beginPath();
-          ctx.arc(0, 0, r * (isMobile ? 0.60 : 0.95), 0, Math.PI * 2);
-          ctx.stroke();
-        });
-        ctx.setLineDash([]);
+        ctx.arc(0, 0, r * (isMobile ? 0.60 : 0.95), 0, Math.PI * 2);
+        ctx.stroke();
+      });
 
-        // Neon Solar Pulse Waves
-        pulseRadius.current = (pulseRadius.current + (isPaused ? 0.06 : 0.42 * speedMultiplier)) % 380;
-        for (let ring = 0; ring < 3; ring++) {
-          const r = (pulseRadius.current + ring * 125) % 380;
-          const fade = Math.max(0, 1 - r / 380);
-          ctx.strokeStyle = isDay 
-            ? `rgba(22, 163, 74, ${fade * 0.18})` 
-            : `rgba(0, 255, 102, ${fade * 0.16})`;
-          ctx.lineWidth = 1.4;
-          ctx.beginPath();
-          ctx.ellipse(0, 0, r, r * tilt, 0, 0, Math.PI * 2);
-          ctx.stroke();
-        }
-      }
-
-      // ─── C. ORBITAL TRACKS ──────────────────────────────────────
+      // ─── C. REFINED ELLIPTICAL ORBITS ───────────────────────────
       planetsRef.current.forEach(p => {
         const isSelected = selectedId === p.id;
         const isHovered = p.isHovered;
@@ -516,39 +361,37 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
 
         if (isSelected) {
           ctx.strokeStyle = p.color;
-          ctx.lineWidth = variantMode === "minimal-void" ? 1.8 : 2.4;
+          ctx.lineWidth = 1.8;
           ctx.shadowColor = p.color;
-          ctx.shadowBlur = variantMode === "minimal-void" ? 8 : 18;
+          ctx.shadowBlur = 12;
           ctx.stroke();
           ctx.shadowBlur = 0;
 
           // Flowing energy photon on selected orbit
-          const leadPhase = (time * 0.0006 * speedMultiplier) % 1;
+          const leadPhase = (time * 0.0005) % 1;
           const leadAngle = leadPhase * Math.PI * 2;
           const lx = Math.cos(leadAngle) * p.baseRadius;
           const ly = Math.sin(leadAngle) * (p.baseRadius * tilt);
 
           ctx.fillStyle = "#ffffff";
           ctx.shadowColor = p.color;
-          ctx.shadowBlur = 10;
+          ctx.shadowBlur = 8;
           ctx.beginPath();
-          ctx.arc(lx, ly, 3.2, 0, Math.PI * 2);
+          ctx.arc(lx, ly, 2.8, 0, Math.PI * 2);
           ctx.fill();
           ctx.shadowBlur = 0;
         } else if (isHovered) {
-          ctx.strokeStyle = isDay ? "rgba(15, 23, 42, 0.45)" : "rgba(255, 255, 255, 0.45)";
-          ctx.lineWidth = 1.4;
+          ctx.strokeStyle = isDay ? "rgba(15, 23, 42, 0.4)" : "rgba(255, 255, 255, 0.35)";
+          ctx.lineWidth = 1.2;
           ctx.stroke();
         } else {
-          ctx.strokeStyle = variantMode === "minimal-void"
-            ? (isDay ? "rgba(100, 116, 139, 0.10)" : "rgba(255, 255, 255, 0.04)")
-            : (isDay ? "rgba(100, 116, 139, 0.14)" : "rgba(255, 255, 255, 0.065)");
-          ctx.lineWidth = variantMode === "minimal-void" ? 0.6 : 0.85;
+          ctx.strokeStyle = isDay ? "rgba(100, 116, 139, 0.12)" : "rgba(255, 255, 255, 0.05)";
+          ctx.lineWidth = 0.75;
           ctx.stroke();
         }
       });
 
-      // ─── D. ADVANCE PLANETS & KINETIC SLINGSHOT ──────────────────
+      // ─── D. ADVANCE PLANETS & KINETIC MOTION ─────────────────────
       const invCos = Math.cos(-cam.rotation);
       const invSin = Math.sin(-cam.rotation);
       const relMouseX = (mouseRef.current.x - (cx + cam.panX)) / cam.zoom;
@@ -557,8 +400,8 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       const worldMouseY = relMouseX * invSin + relMouseY * invCos;
 
       planetsRef.current.forEach(p => {
-        if (!isPaused && !p.isDragging) {
-          p.angle += p.baseSpeed * dt * 0.06 * speedMultiplier;
+        if (!p.isDragging) {
+          p.angle += p.baseSpeed * dt * 0.05;
         }
 
         const naturalOrbitX = Math.cos(p.angle) * p.baseRadius;
@@ -581,109 +424,43 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
 
         p.z = Math.sin(p.angle);
 
-        if (!isPaused) {
-          p.trail.push({ x: p.x, y: p.y, alpha: 0.5 });
-          if (p.trail.length > 8) p.trail.shift();
-        }
+        p.trail.push({ x: p.x, y: p.y, alpha: 0.4 });
+        if (p.trail.length > 6) p.trail.shift();
 
         const hitDist = Math.hypot(p.x - worldMouseX, p.y - worldMouseY);
         p.isHovered = hitDist < (isMobile ? 26 : 22);
       });
 
-      // ─── E. THE CENTRAL SUN: theUG_ (POOKIE FACE SUN) ───────────
-      coronaAngle.current += 0.012;
-      const sunCoreR = isMobile ? 38 : 48;
+      // ─── E. CENTRAL SUN: USMAAN GANI (POOKIE FACE SUN) ───────────
+      coronaAngle.current += 0.010;
+      const sunCoreR = isMobile ? 38 : 46;
 
-      if (variantMode === "cyber-radar") {
-        // ── VARIANT 2: CYBERNETIC RADAR SUN ──
-        ctx.save();
-        ctx.rotate(coronaAngle.current * 0.7);
-        ctx.strokeStyle = isDay ? "rgba(2, 132, 199, 0.45)" : "rgba(0, 217, 255, 0.55)";
-        ctx.lineWidth = 1.8;
+      // Soft Celestial Atmospheric Halo
+      const halo = ctx.createRadialGradient(0, 0, sunCoreR * 0.5, 0, 0, sunCoreR * 2.4);
+      halo.addColorStop(0, isDay ? "rgba(22, 163, 74, 0.35)" : "rgba(0, 255, 102, 0.4)");
+      halo.addColorStop(0.6, isDay ? "rgba(22, 163, 74, 0.10)" : "rgba(0, 255, 102, 0.12)");
+      halo.addColorStop(1, "transparent");
+      ctx.fillStyle = halo;
+      ctx.beginPath();
+      ctx.arc(0, 0, sunCoreR * 2.4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Gentle Solar Prominence Rays
+      ctx.save();
+      ctx.rotate(coronaAngle.current);
+      for (let f = 0; f < 12; f++) {
+        const fAngle = (f / 12) * Math.PI * 2;
+        const flareLen = (f % 2 === 0 ? 12 : 7) * (isMobile ? 0.8 : 1.0);
+        ctx.strokeStyle = isDay ? "rgba(22, 163, 74, 0.25)" : "rgba(0, 255, 102, 0.32)";
+        ctx.lineWidth = 1.6;
         ctx.beginPath();
-        ctx.arc(0, 0, sunCoreR + 12, 0, Math.PI * 2);
+        ctx.moveTo(Math.cos(fAngle) * (sunCoreR + 2), Math.sin(fAngle) * (sunCoreR + 2));
+        ctx.lineTo(Math.cos(fAngle) * (sunCoreR + flareLen), Math.sin(fAngle) * (sunCoreR + flareLen));
         ctx.stroke();
-
-        // 4 Axis Cardinal Crosshairs (000°, 090°, 180°, 270°)
-        for (let a = 0; a < 4; a++) {
-          const ang = (a * Math.PI) / 2;
-          ctx.beginPath();
-          ctx.moveTo(Math.cos(ang) * (sunCoreR + 4), Math.sin(ang) * (sunCoreR + 4));
-          ctx.lineTo(Math.cos(ang) * (sunCoreR + 22), Math.sin(ang) * (sunCoreR + 22));
-          ctx.stroke();
-        }
-        ctx.restore();
-
-        // Holographic Cyan Edge Glow
-        ctx.shadowColor = "#00D9FF";
-        ctx.shadowBlur = isDay ? 18 : 32;
-        ctx.strokeStyle = "#00D9FF";
-        ctx.lineWidth = 3.0;
-        ctx.beginPath();
-        ctx.arc(0, 0, sunCoreR + 2, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-
-      } else if (variantMode === "minimal-void") {
-        // ── VARIANT 3: MINIMALIST VOID SUN ──
-        const halo = ctx.createRadialGradient(0, 0, sunCoreR * 0.6, 0, 0, sunCoreR * 2.2);
-        halo.addColorStop(0, isDay ? "rgba(20, 24, 39, 0.25)" : "rgba(255, 255, 255, 0.35)");
-        halo.addColorStop(0.5, isDay ? "rgba(20, 24, 39, 0.08)" : "rgba(255, 255, 255, 0.1)");
-        halo.addColorStop(1, "transparent");
-        ctx.fillStyle = halo;
-        ctx.beginPath();
-        ctx.arc(0, 0, sunCoreR * 2.2, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.strokeStyle = isDay ? "rgba(0,0,0,0.35)" : "rgba(255, 255, 255, 0.45)";
-        ctx.lineWidth = 1.4;
-        ctx.beginPath();
-        ctx.arc(0, 0, sunCoreR + 2, 0, Math.PI * 2);
-        ctx.stroke();
-
-      } else {
-        // ── VARIANT 1: LUMINOUS HYPER-CORE SUN (DEFAULT) ──
-        // Outer Neon-Lime Coronal Glow Ring
-        const outerGlow = ctx.createRadialGradient(0, 0, sunCoreR * 0.5, 0, 0, sunCoreR * 2.8);
-        outerGlow.addColorStop(0, isDay ? "rgba(22, 163, 74, 0.45)" : "rgba(0, 255, 102, 0.55)");
-        outerGlow.addColorStop(0.5, isDay ? "rgba(16, 185, 129, 0.18)" : "rgba(0, 255, 102, 0.2)");
-        outerGlow.addColorStop(1, "transparent");
-        ctx.fillStyle = outerGlow;
-        ctx.beginPath();
-        ctx.arc(0, 0, sunCoreR * 2.8, 0, Math.PI * 2);
-        ctx.fill();
-
-        // 12 Rotating Solar Flares
-        ctx.save();
-        ctx.rotate(coronaAngle.current);
-        for (let f = 0; f < 12; f++) {
-          const fAngle = (f / 12) * Math.PI * 2;
-          const flareLen = (f % 2 === 0 ? 18 : 10) * (isMobile ? 0.8 : 1.1);
-          ctx.strokeStyle = isDay ? "rgba(22, 163, 74, 0.35)" : "rgba(204, 255, 0, 0.45)";
-          ctx.lineWidth = 2.0;
-          ctx.beginPath();
-          ctx.moveTo(Math.cos(fAngle) * (sunCoreR + 2), Math.sin(fAngle) * (sunCoreR + 2));
-          ctx.lineTo(Math.cos(fAngle) * (sunCoreR + flareLen), Math.sin(fAngle) * (sunCoreR + flareLen));
-          ctx.stroke();
-        }
-        ctx.restore();
-
-        // 8 Counter-Rotating Inner Energy Halo
-        ctx.save();
-        ctx.rotate(-coronaAngle.current * 0.85);
-        for (let f = 0; f < 8; f++) {
-          const fAngle = (f / 8) * Math.PI * 2 + 0.2;
-          ctx.strokeStyle = isDay ? "rgba(5, 150, 105, 0.4)" : "rgba(0, 255, 102, 0.4)";
-          ctx.lineWidth = 2.4;
-          ctx.beginPath();
-          ctx.moveTo(Math.cos(fAngle) * (sunCoreR + 3), Math.sin(fAngle) * (sunCoreR + 3));
-          ctx.lineTo(Math.cos(fAngle) * (sunCoreR + 13), Math.sin(fAngle) * (sunCoreR + 13));
-          ctx.stroke();
-        }
-        ctx.restore();
       }
+      ctx.restore();
 
-      // 4. Pookie Face Central Sun Body (Circular Clipped)
+      // Pookie Face Portrait Center
       const pookieImg = sunImgRef.current;
       if (pookieImg && pookieImg.complete) {
         ctx.save();
@@ -691,72 +468,61 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
         ctx.arc(0, 0, sunCoreR, 0, Math.PI * 2);
         ctx.clip();
 
-        // Dark background base
         ctx.fillStyle = "#000000";
         ctx.fill();
 
-        // Centered face portrait
         const imgScale = sunCoreR * 2.35;
         ctx.drawImage(pookieImg, -imgScale / 2, -imgScale / 2 + (sunCoreR * 0.08), imgScale, imgScale);
         ctx.restore();
 
-        // Radiant Solar Ring Border
-        const borderColor = variantMode === "cyber-radar" ? "#00D9FF" : (variantMode === "minimal-void" ? "#FFFFFF" : (isDay ? "#16A34A" : "#00FF66"));
-        ctx.shadowColor = borderColor;
-        ctx.shadowBlur = isDay ? 18 : 30;
-        ctx.strokeStyle = borderColor;
-        ctx.lineWidth = 3.0;
+        // Elegant Neon-Lime Rim Ring
+        ctx.shadowColor = isDay ? "#16A34A" : "#00FF66";
+        ctx.shadowBlur = isDay ? 14 : 24;
+        ctx.strokeStyle = isDay ? "#16A34A" : "#00FF66";
+        ctx.lineWidth = 2.4;
         ctx.beginPath();
         ctx.arc(0, 0, sunCoreR, 0, Math.PI * 2);
         ctx.stroke();
         ctx.shadowBlur = 0;
       } else {
-        // Fallback luminous neon-lime core if image is loading
-        ctx.shadowColor = isDay ? "rgba(22, 163, 74, 0.6)" : "rgba(0, 255, 102, 0.9)";
-        ctx.shadowBlur = isDay ? 22 : 38;
-        const coreGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, sunCoreR);
-        coreGrad.addColorStop(0, "#FFFFFF");
-        coreGrad.addColorStop(0.3, isDay ? "#A7F3D0" : "#CCFF00");
-        coreGrad.addColorStop(0.75, isDay ? "#16A34A" : "#00FF66");
-        coreGrad.addColorStop(1, isDay ? "#065F46" : "#04381C");
-        ctx.fillStyle = coreGrad;
+        ctx.shadowColor = isDay ? "#16A34A" : "#00FF66";
+        ctx.shadowBlur = 24;
+        ctx.fillStyle = isDay ? "#16A34A" : "#00FF66";
         ctx.beginPath();
         ctx.arc(0, 0, sunCoreR, 0, Math.PI * 2);
         ctx.fill();
         ctx.shadowBlur = 0;
       }
 
-      // 5. Sun Core Identity Typography
+      // Identity Label Underneath Sun
       ctx.save();
       ctx.rotate(-cam.rotation);
-
-      const labelY = sunCoreR + (isMobile ? 18 : 22);
+      const labelY = sunCoreR + (isMobile ? 16 : 20);
       ctx.fillStyle = isDay ? "#0F172A" : "#FFFFFF";
       ctx.font = `bold ${isMobile ? 9.5 : 11}px "Space Grotesk", sans-serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText("USMAAN GANI", 0, labelY);
 
-      ctx.fillStyle = variantMode === "cyber-radar" ? "#00D9FF" : (variantMode === "minimal-void" ? (isDay ? "#475569" : "#CBD5E1") : (isDay ? "#16A34A" : "#00FF66"));
+      ctx.fillStyle = isDay ? "#16A34A" : "#00FF66";
       ctx.font = `bold ${isMobile ? 7.5 : 8.5}px "IBM Plex Mono", monospace`;
-      ctx.fillText("theUG_ // WEB3 CREATOR", 0, labelY + (isMobile ? 13 : 15));
-
+      ctx.fillText("theUG_ // WEB3 BUILDER", 0, labelY + (isMobile ? 13 : 15));
       ctx.restore();
 
-      // ─── F. RENDER THE 11 WORLDS (DEPTH-SORTED) ──────────────────
+      // ─── F. RENDER THE 11 PLANETARY WORLDS ────────────────────────
       const sortedPlanets = [...planetsRef.current].sort((a, b) => a.z - b.z);
 
       sortedPlanets.forEach(p => {
         const isSelected = selectedId === p.id;
-        const depthScale = lerp(0.82, 1.18, (p.z + 1) / 2);
-        const radius = (isSelected ? 23 : (p.isHovered ? 20 : 17)) * (isMobile ? 0.88 : 1.0) * depthScale;
+        const depthScale = lerp(0.84, 1.16, (p.z + 1) / 2);
+        const radius = (isSelected ? 22 : (p.isHovered ? 19 : 16)) * (isMobile ? 0.88 : 1.0) * depthScale;
 
-        // Slingshot elastic tether
+        // Slingshot elastic tether line if dragging
         if (p.isDragging) {
           const naturalOrbitX = Math.cos(p.angle) * p.baseRadius;
           const naturalOrbitY = Math.sin(p.angle) * (p.baseRadius * tilt);
-          ctx.strokeStyle = `${p.color}cc`;
-          ctx.lineWidth = 1.5;
+          ctx.strokeStyle = `${p.color}aa`;
+          ctx.lineWidth = 1.4;
           ctx.setLineDash([3, 3]);
           ctx.beginPath();
           ctx.moveTo(naturalOrbitX, naturalOrbitY);
@@ -765,65 +531,53 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
           ctx.setLineDash([]);
         }
 
-        // Particle comet dust
-        if (p.trail.length > 1) {
-          ctx.beginPath();
-          ctx.moveTo(p.trail[0].x, p.trail[0].y);
-          for (let ti = 1; ti < p.trail.length; ti++) {
-            ctx.lineTo(p.trail[ti].x, p.trail[ti].y);
-          }
-          ctx.strokeStyle = `${p.color}38`;
-          ctx.lineWidth = 2.0;
-          ctx.stroke();
-        }
-
-        // Selected Reticle & Sun Laser Lock Line
+        // Selected Sun Laser Lock Line
         if (isSelected) {
-          ctx.strokeStyle = `${p.color}88`;
-          ctx.setLineDash([4, 4]);
-          ctx.lineWidth = 1.2;
+          ctx.strokeStyle = `${p.color}66`;
+          ctx.setLineDash([3, 3]);
+          ctx.lineWidth = 1.0;
           ctx.beginPath();
           ctx.moveTo(0, 0);
           ctx.lineTo(p.x, p.y);
           ctx.stroke();
           ctx.setLineDash([]);
 
-          // 4-corner holographic targeting reticle
+          // 4-corner targeting bracket reticle
           ctx.strokeStyle = p.color;
-          ctx.lineWidth = 1.8;
+          ctx.lineWidth = 1.6;
           ctx.shadowColor = p.color;
-          ctx.shadowBlur = 14;
+          ctx.shadowBlur = 10;
 
-          const bSize = radius + 8;
+          const bSize = radius + 6;
           ctx.beginPath();
-          ctx.moveTo(p.x - bSize, p.y - bSize + 6);
+          ctx.moveTo(p.x - bSize, p.y - bSize + 5);
           ctx.lineTo(p.x - bSize, p.y - bSize);
-          ctx.lineTo(p.x - bSize + 6, p.y - bSize);
+          ctx.lineTo(p.x - bSize + 5, p.y - bSize);
 
-          ctx.moveTo(p.x + bSize - 6, p.y - bSize);
+          ctx.moveTo(p.x + bSize - 5, p.y - bSize);
           ctx.lineTo(p.x + bSize, p.y - bSize);
-          ctx.lineTo(p.x + bSize, p.y - bSize + 6);
+          ctx.lineTo(p.x + bSize, p.y - bSize + 5);
 
-          ctx.moveTo(p.x - bSize, p.y + bSize - 6);
+          ctx.moveTo(p.x - bSize, p.y + bSize - 5);
           ctx.lineTo(p.x - bSize, p.y + bSize);
-          ctx.lineTo(p.x - bSize + 6, p.y + bSize);
+          ctx.lineTo(p.x - bSize + 5, p.y + bSize);
 
-          ctx.moveTo(p.x + bSize - 6, p.y + bSize);
+          ctx.moveTo(p.x + bSize - 5, p.y + bSize);
           ctx.lineTo(p.x + bSize, p.y + bSize);
-          ctx.lineTo(p.x + bSize, p.y + bSize - 6);
+          ctx.lineTo(p.x + bSize, p.y + bSize - 5);
           ctx.stroke();
           ctx.shadowBlur = 0;
         }
 
-        // Planet Sphere
+        // Planet Sphere Body
         ctx.save();
         ctx.fillStyle = isDay ? "#FFFFFF" : "#0D0E12";
-        ctx.strokeStyle = isSelected ? p.color : (isDay ? "rgba(100, 116, 139, 0.4)" : "rgba(255, 255, 255, 0.25)");
-        ctx.lineWidth = isSelected ? 2.6 : 1.2;
+        ctx.strokeStyle = isSelected ? p.color : (isDay ? "rgba(100, 116, 139, 0.4)" : "rgba(255, 255, 255, 0.22)");
+        ctx.lineWidth = isSelected ? 2.2 : 1.2;
 
         if (isSelected || p.isHovered) {
           ctx.shadowColor = p.color;
-          ctx.shadowBlur = 18;
+          ctx.shadowBlur = 14;
         }
 
         ctx.beginPath();
@@ -832,14 +586,14 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
         ctx.stroke();
         ctx.shadowBlur = 0;
 
-        // Vector Logo
+        // Centered Vector Logo
         const img = logosRef.current[p.id];
         if (img && img.complete) {
           const iconSize = radius * 1.15;
           ctx.drawImage(img, p.x - iconSize / 2, p.y - iconSize / 2, iconSize, iconSize);
         }
 
-        // Upright readable tag badge
+        // Planet Text Badge
         ctx.save();
         ctx.translate(p.x, p.y);
         ctx.rotate(-cam.rotation);
@@ -848,7 +602,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
         ctx.font = `bold ${Math.round((isMobile ? 8.5 : 9.5) * depthScale)}px "IBM Plex Mono", monospace`;
         const textMetrics = ctx.measureText(badgeLabel);
         const padX = 5;
-        const bgY = radius + 6;
+        const bgY = radius + 5;
 
         ctx.fillStyle = isDay ? "rgba(255, 255, 255, 0.95)" : "rgba(13, 14, 18, 0.90)";
         ctx.strokeStyle = isSelected ? p.color : (isDay ? "rgba(100, 116, 139, 0.3)" : "rgba(255, 255, 255, 0.15)");
@@ -858,7 +612,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
           -textMetrics.width / 2 - padX,
           bgY,
           textMetrics.width + padX * 2,
-          14 * depthScale,
+          13 * depthScale,
           3
         );
         ctx.fill();
@@ -867,34 +621,35 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
         ctx.fillStyle = isDay ? "#0F172A" : "#FFFFFF";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(badgeLabel, 0, bgY + (7 * depthScale));
+        ctx.fillText(badgeLabel, 0, bgY + (6.5 * depthScale));
         ctx.restore();
 
         ctx.restore();
       });
 
-      // ─── G. MEME COIN METEORITES / COMETS PASSING BY ───────────────
-      cometsRef.current.forEach(m => {
+      // ─── G. ANIMATED FALLING MEME ASTEROIDS / COMETS ─────────────
+      // Bonk, Pengu, Shiba, Doge, Pepe gliding across the space near planets
+      asteroidsRef.current.forEach(m => {
         if (!m.active) return;
         m.age++;
-        m.x += m.vx * speedMultiplier;
-        m.y += m.vy * speedMultiplier;
+        m.x += m.vx;
+        m.y += m.vy;
 
         m.trail.push({ x: m.x, y: m.y, alpha: m.alpha });
-        if (m.trail.length > 12) m.trail.shift();
+        if (m.trail.length > 10) m.trail.shift();
 
-        // 1. Blazing Comet Tail
+        // Soft, elegant comet tail
         if (m.trail.length > 1) {
           ctx.save();
           const tailGrad = ctx.createLinearGradient(m.trail[0].x, m.trail[0].y, m.x, m.y);
           tailGrad.addColorStop(0, "transparent");
-          tailGrad.addColorStop(0.5, `${m.color}40`);
-          tailGrad.addColorStop(1, `${m.color}ee`);
+          tailGrad.addColorStop(0.6, `${m.color}35`);
+          tailGrad.addColorStop(1, `${m.color}cc`);
 
           ctx.strokeStyle = tailGrad;
-          ctx.lineWidth = variantMode === "minimal-void" ? 1.8 : 3.2;
+          ctx.lineWidth = 2.0;
           ctx.shadowColor = m.color;
-          ctx.shadowBlur = variantMode === "minimal-void" ? 6 : 14;
+          ctx.shadowBlur = 8;
 
           ctx.beginPath();
           ctx.moveTo(m.trail[0].x, m.trail[0].y);
@@ -906,41 +661,24 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
           ctx.restore();
         }
 
-        // 2. Comet Head & Meme Avatar
+        // Asteroid Meme Token Head
         const mImg = memeBitmaps.current[m.id];
         ctx.save();
         ctx.shadowColor = m.color;
-        ctx.shadowBlur = 16;
+        ctx.shadowBlur = 12;
 
         if (mImg && mImg.complete) {
-          const mSize = 26;
+          const mSize = m.size;
           ctx.drawImage(mImg, m.x - mSize / 2, m.y - mSize / 2, mSize, mSize);
         } else {
           ctx.fillStyle = m.color;
           ctx.beginPath();
-          ctx.arc(m.x, m.y, 10, 0, Math.PI * 2);
+          ctx.arc(m.x, m.y, 8, 0, Math.PI * 2);
           ctx.fill();
         }
-
-        // 3. Cyber-Radar Mode: Tactical HUD Lead Vector Line
-        if (variantMode === "cyber-radar") {
-          ctx.strokeStyle = `${m.color}aa`;
-          ctx.lineWidth = 1;
-          ctx.setLineDash([3, 3]);
-          ctx.beginPath();
-          ctx.moveTo(m.x, m.y);
-          ctx.lineTo(m.x + m.vx * 6, m.y + m.vy * 6);
-          ctx.stroke();
-          ctx.setLineDash([]);
-
-          ctx.fillStyle = m.color;
-          ctx.font = `bold 8px "IBM Plex Mono", monospace`;
-          ctx.fillText(`[${m.name} // COMET]`, m.x + 14, m.y - 6);
-        }
-
         ctx.restore();
 
-        if (m.age >= m.lifespan || m.x < -120 || m.x > w + 120 || m.y > h + 120) {
+        if (m.age >= m.lifespan || m.x < -100 || m.x > w + 100 || m.y > h + 100) {
           m.active = false;
         }
       });
@@ -957,7 +695,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       isUnmounted = true;
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [isDayMode, isPaused, speedMultiplier, selectedId, variantMode]);
+  }, [isDayMode, selectedId]);
 
   // Pointer interactions
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -969,7 +707,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
     const w = rect.width;
     const h = rect.height;
     const cx = w / 2;
-    const cy = h / 2 - (w < 768 ? 25 : 10);
+    const cy = h / 2 - (w < 768 ? 20 : 10);
     const cam = cameraRef.current;
 
     const invCos = Math.cos(-cam.rotation);
@@ -985,7 +723,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
     interactionRef.current.hasMoved = false;
 
     let hitPlanet: PlanetPhysics | null = null;
-    let minD = w < 768 ? 32 : 24;
+    let minD = w < 768 ? 30 : 22;
 
     planetsRef.current.forEach(p => {
       const d = Math.hypot(p.x - worldX, p.y - worldY);
@@ -1002,7 +740,6 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       hitPlanet.dragX = worldX;
       hitPlanet.dragY = worldY;
       onSelect(hitPlanet);
-      playSoundBlip(640, 0.08);
     } else {
       interactionRef.current.dragPlanetId = null;
       interactionRef.current.isSlingshot = false;
@@ -1030,7 +767,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
     const w = rect.width;
     const h = rect.height;
     const cx = w / 2;
-    const cy = h / 2 - (w < 768 ? 25 : 10);
+    const cy = h / 2 - (w < 768 ? 20 : 10);
     const cam = cameraRef.current;
 
     if (interactionRef.current.isSlingshot && interactionRef.current.dragPlanetId) {
@@ -1071,7 +808,6 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
         p.isDragging = false;
         p.vx = (naturalOrbitX - p.dragX) * 0.28;
         p.vy = (naturalOrbitY - p.dragY) * 0.28;
-        playSoundBlip(720, 0.12);
       }
     }
     interactionRef.current.isPointerDown = false;
@@ -1082,141 +818,38 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
   const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     const zoomDelta = e.deltaY * -0.0012;
-    cameraRef.current.targetZoom = Math.max(0.55, Math.min(2.0, cameraRef.current.targetZoom + zoomDelta));
+    cameraRef.current.targetZoom = Math.max(0.65, Math.min(1.8, cameraRef.current.targetZoom + zoomDelta));
   };
 
   return (
     <section 
       ref={containerRef}
-      className="relative w-full h-[580px] sm:h-[640px] md:h-[720px] lg:h-[760px] overflow-hidden select-none border-b border-[var(--color-border)] rounded-2xl"
-      aria-label="Interactive Web3 Solar System: TheUG Conviction Universe"
+      className="relative w-full h-[540px] sm:h-[600px] md:h-[680px] lg:h-[720px] overflow-hidden select-none border border-[var(--color-border)] rounded-2xl bg-[var(--color-void)]"
+      aria-label="On-Chain Conviction: Web3 Solar System with Usmaan Gani"
     >
       {/* ─────────────────────────────────────────────────────
-          TOP HUD CONTROLS: 3 VARIANTS + TELEMETRY + ACTIONS
+          CLEAN, PEACEFUL TOP OVERLAY (NO BUTTON CLUTTER)
           ───────────────────────────────────────────────────── */}
-      <div className="absolute top-3 left-3 right-3 md:top-4 md:left-6 md:right-6 z-30 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
-        
-        {/* Left: System Status & 3 Variant Selector */}
-        <div className="flex items-center gap-2 pointer-events-auto">
-          {/* Coordinates readout */}
-          <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)]/90 backdrop-blur-md">
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-online)] animate-pulse" />
-            <span className="font-mono text-[9.5px] text-[var(--color-text-primary)] font-bold tracking-wider">
-              {fps} FPS // SOLARIS
-            </span>
-          </div>
-
-          {/* 3 INTERACTIVE SOLAR SYSTEM VARIANTS */}
-          <div className="flex items-center gap-1 rounded-xl border border-[var(--color-border-bright)] bg-[var(--color-surface)]/95 backdrop-blur-md p-1 shadow-lg">
-            <button
-              onClick={() => { setVariantMode("hyper-core"); playSoundBlip(520, 0.08); }}
-              className={`px-2.5 py-1 rounded-lg text-[10px] font-mono tracking-wider transition-all cursor-pointer flex items-center gap-1.5 ${
-                variantMode === "hyper-core"
-                  ? "bg-[rgba(0,255,102,0.18)] text-[var(--color-online)] border border-[var(--color-online)] font-bold shadow-[0_0_12px_rgba(0,255,102,0.35)]"
-                  : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
-              }`}
-              title="Variant 1: Luminous Neon-Lime Solar Core & Fiery Comets"
-            >
-              <Sparkles size={11} className={variantMode === "hyper-core" ? "text-[var(--color-online)] animate-spin" : ""} />
-              <span>1: HYPER-CORE</span>
-            </button>
-
-            <button
-              onClick={() => { setVariantMode("cyber-radar"); playSoundBlip(640, 0.08); }}
-              className={`px-2.5 py-1 rounded-lg text-[10px] font-mono tracking-wider transition-all cursor-pointer flex items-center gap-1.5 ${
-                variantMode === "cyber-radar"
-                  ? "bg-[rgba(0,217,255,0.18)] text-[var(--color-cyan)] border border-[var(--color-cyan)] font-bold shadow-[0_0_12px_rgba(0,217,255,0.35)]"
-                  : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
-              }`}
-              title="Variant 2: Cybernetic Planetary Radar HUD & Target Reticles"
-            >
-              <Crosshair size={11} className={variantMode === "cyber-radar" ? "text-[var(--color-cyan)] animate-pulse" : ""} />
-              <span>2: CYBER-RADAR</span>
-            </button>
-
-            <button
-              onClick={() => { setVariantMode("minimal-void"); playSoundBlip(760, 0.08); }}
-              className={`px-2.5 py-1 rounded-lg text-[10px] font-mono tracking-wider transition-all cursor-pointer flex items-center gap-1.5 ${
-                variantMode === "minimal-void"
-                  ? "bg-[var(--color-elevated)] text-[var(--color-text-primary)] border border-[var(--color-border-bright)] font-bold shadow-[0_0_10px_rgba(255,255,255,0.2)]"
-                  : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
-              }`}
-              title="Variant 3: Celestial Void Minimalist & Clean Diamond Orbits"
-            >
-              <Eye size={11} />
-              <span>3: VOID-MINIMAL</span>
-            </button>
-          </div>
+      <div className="absolute top-3 left-4 right-4 z-30 flex items-center justify-between pointer-events-none">
+        <div className="flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-online)]" />
+          <span className="font-mono text-[9px] text-[var(--color-text-muted)] tracking-widest uppercase">
+            SOLAR SYSTEM // 11 ORBITING WORLDS
+          </span>
         </div>
 
-        {/* Right: Actions & Comet Summoner */}
-        <div className="flex items-center gap-1.5 pointer-events-auto">
-          {/* Launch Meme Coin Comet */}
-          <button
-            onClick={() => { triggerMemeComet(); playSoundBlip(880, 0.12); }}
-            className="px-2.5 py-1.5 rounded-lg border border-[var(--color-amber)]/60 bg-[rgba(234,88,12,0.12)] text-[var(--color-amber-bright)] hover:bg-[rgba(234,88,12,0.22)] text-[10px] font-mono flex items-center gap-1.5 cursor-pointer transition-all shadow-[0_0_12px_rgba(234,88,12,0.25)] font-bold"
-            title="Launch meme coin comet (Doge / Pepe / Shib / Pengu)"
-          >
-            <Zap size={12} className="animate-pulse" />
-            <span className="hidden sm:inline">LAUNCH</span> COMET
-          </button>
-
-          {/* Reset Camera */}
-          <button
-            onClick={handleResetCamera}
-            className="p-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/90 backdrop-blur-md text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer"
-            title="Reset Solar View"
-          >
-            <RotateCcw size={13} />
-          </button>
-
-          {/* Zoom In/Out */}
-          <div className="hidden sm:flex items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/90 backdrop-blur-md p-0.5">
-            <button
-              onClick={() => handleZoom(0.15)}
-              className="p-1.5 rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] cursor-pointer"
-              title="Zoom In"
-            >
-              <ZoomIn size={13} />
-            </button>
-            <button
-              onClick={() => handleZoom(-0.15)}
-              className="p-1.5 rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] cursor-pointer"
-              title="Zoom Out"
-            >
-              <ZoomOut size={13} />
-            </button>
-          </div>
-
-          {/* Pause / Play */}
-          <button
-            onClick={() => {
-              setIsPaused(!isPaused);
-              playSoundBlip(480, 0.06);
-            }}
-            className="p-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/90 backdrop-blur-md text-[var(--color-text-primary)] cursor-pointer"
-            title={isPaused ? "Resume orbits" : "Pause orbits"}
-          >
-            {isPaused ? <Play size={13} className="text-[var(--color-online)]" /> : <Pause size={13} />}
-          </button>
-
-          {/* Audio Hum */}
-          <button
-            onClick={toggleSound}
-            className={`p-1.5 rounded-lg border backdrop-blur-md transition-all cursor-pointer ${
-              isSoundActive
-                ? "border-[var(--color-cyan)] bg-[rgba(0,217,255,0.15)] text-[var(--color-cyan)] shadow-[0_0_12px_rgba(0,217,255,0.25)]"
-                : "border-[var(--color-border)] bg-[var(--color-surface)]/90 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
-            }`}
-            title={isSoundActive ? "Mute audio drone" : "Activate 55Hz space drone"}
-          >
-            {isSoundActive ? <Volume2 size={13} /> : <VolumeX size={13} />}
-          </button>
-        </div>
+        {/* Small subtle camera reset if user drags */}
+        <button
+          onClick={handleResetCamera}
+          className="p-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/80 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] pointer-events-auto transition-colors cursor-pointer"
+          title="Reset View"
+        >
+          <RotateCcw size={12} />
+        </button>
       </div>
 
       {/* ─────────────────────────────────────────────────────
-          CANVAS SURFACE: 120 FPS PLANETARY MOTION
+          120 FPS PURE CANVAS SOLAR SYSTEM SURFACE
           ───────────────────────────────────────────────────── */}
       <canvas
         ref={canvasRef}
@@ -1230,25 +863,19 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       />
 
       {/* ─────────────────────────────────────────────────────
-          BOTTOM INTERACTIVE QUICK SELECTOR (CAROUSEL)
+          BOTTOM CLEAN PLANET SELECTOR CAROUSEL
           ───────────────────────────────────────────────────── */}
-      <div className="absolute bottom-3 left-3 right-3 md:left-8 md:right-8 z-30 flex items-center gap-1.5 overflow-x-auto scrollbar-none pointer-events-auto pb-0.5">
-        <span className="font-mono text-[9px] text-[var(--color-text-muted)] tracking-wider shrink-0 hidden md:inline">
-          ORBIT TARGET:
-        </span>
+      <div className="absolute bottom-3 left-3 right-3 md:left-6 md:right-6 z-30 flex items-center gap-1.5 overflow-x-auto scrollbar-none pointer-events-auto pb-0.5">
         {ECOSYSTEMS_DATA.map((eco) => {
           const isSelected = selectedId === eco.id;
           return (
             <button
               key={eco.id}
-              onClick={() => {
-                onSelect(eco);
-                playSoundBlip(620, 0.08);
-              }}
+              onClick={() => onSelect(eco)}
               className={`px-2.5 py-1 rounded-full font-mono text-[9px] tracking-wider transition-all cursor-pointer shrink-0 flex items-center gap-1.5 ${
                 isSelected
                   ? "bg-[var(--color-surface)] border-2 font-bold shadow-md"
-                  : "bg-[var(--color-surface)]/85 border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+                  : "bg-[var(--color-surface)]/80 border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
               }`}
               style={{
                 borderColor: isSelected ? eco.color : undefined,

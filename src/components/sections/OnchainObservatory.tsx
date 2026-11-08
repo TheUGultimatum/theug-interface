@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { ECOSYSTEMS_DATA, EcosystemData } from "@/config/networkData";
 import { SolarSystem } from "@/components/sections/SolarSystem";
-import { Terminal, ArrowUpRight, Compass } from "lucide-react";
+import { Terminal, ArrowUpRight } from "lucide-react";
 
 export function OnchainObservatory() {
   const [selectedEcosystem, setSelectedEcosystem] = useState<EcosystemData>(ECOSYSTEMS_DATA[3]); // Base by default
@@ -13,25 +13,25 @@ export function OnchainObservatory() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen px-4 md:px-8 lg:px-12 py-8 max-w-[1400px] mx-auto w-full">
+    <div className="flex flex-col min-h-screen px-4 md:px-8 lg:px-12 py-8 max-w-[1300px] mx-auto w-full">
       {/* ─────────────────────────────────────────────────────
-          1. COMPACT SECTION HEADER // ONE SENTENCE INTRO
+          1. COMPACT, HUMAN SECTION HEADER (NO AI SLOP)
           ───────────────────────────────────────────────────── */}
-      <div className="pb-5 mb-6 border-b border-[var(--color-border)]">
-        <div className="flex items-center gap-2 mb-2 text-[var(--color-cyan)] text-[10px] font-mono tracking-widest uppercase font-bold">
-          <Terminal size={13} />
-          <span>03 / ON-CHAIN CONVICTION · CELESTIAL UNIVERSE</span>
+      <div className="pb-4 mb-5 border-b border-[var(--color-border)]">
+        <div className="flex items-center gap-2 mb-1.5 text-[var(--color-cyan)] text-[10px] font-mono tracking-widest uppercase font-bold">
+          <Terminal size={12} />
+          <span>03 / ON-CHAIN CONVICTION</span>
         </div>
-        <h1 className="text-2xl md:text-4xl font-bold tracking-wider font-mono text-[var(--color-text-primary)]">
+        <h1 className="text-2xl md:text-3xl font-bold tracking-wider font-mono text-[var(--color-text-primary)]">
           ON-CHAIN CONVICTION
         </h1>
-        <p className="text-xs md:text-sm text-[var(--color-text-secondary)] font-sans max-w-2xl mt-1.5 leading-relaxed">
-          My personal Web3 journey and long-term ecosystem convictions — anchored by my identity at the center, with my favorite networks and settlement layers orbiting around it.
+        <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] font-sans max-w-2xl mt-1 leading-relaxed">
+          My personal Web3 universe — my face at the center, surrounded by the networks and ecosystems I explore, build on, and follow.
         </p>
       </div>
 
       {/* ─────────────────────────────────────────────────────
-          2. THE 120 FPS INTERACTIVE SOLAR SYSTEM (THE MAIN EXPERIENCE)
+          2. THE 120 FPS VOID MINIMAL SOLAR SYSTEM
           ───────────────────────────────────────────────────── */}
       <div className="mb-4">
         <SolarSystem 
@@ -41,13 +41,12 @@ export function OnchainObservatory() {
       </div>
 
       {/* ─────────────────────────────────────────────────────
-          3. COMPACT CONTEXTUAL INFORMATION AREA (SELECTED WORLD)
+          3. COMPACT CONTEXTUAL CARD FOR SELECTED WORLD
           ───────────────────────────────────────────────────── */}
       <div 
         className="p-4 sm:p-5 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 backdrop-blur-md flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all"
         style={{
           borderLeft: `4px solid ${selectedEcosystem.color}`,
-          boxShadow: `0 4px 20px ${selectedEcosystem.color}0a`
         }}
       >
         <div className="flex items-start sm:items-center gap-3.5">
