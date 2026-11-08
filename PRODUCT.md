@@ -16,9 +16,10 @@ The official personal developer portfolio of Usmaan Gani (theUG). Communicates p
 An authentic, technical Web3 developer workspace and celestial observatory. Unlike generic portfolio templates, it preserves a distinctive terminal/hacker identity where the developer's identity is the central Sun, and 11 curated Web3 ecosystems orbit around it in a slow, interactive, 120 FPS solar system.
 
 ## Operating Context
-- Current URL: `https://theug.vercel.app/`
-- Target Custom Domain: `theOG.in` (subject to verified domain spelling check prior to DNS changes).
-- Scope Boundary: Strictly personal developer portfolio. Must NEVER be merged with or confused with theUG Hub (`hub.theUG.in`).
+- Official Main Domain: `https://theug.in`
+- Current Vercel Deployment: `https://theug.vercel.app/`
+- Community Hub (CT): Future project at `hub.theug.in` dedicated to the Crypto Twitter community and ecosystem tools.
+- Scope Boundary: This repository is strictly Usmaan Gani's personal developer portfolio (`theug.in`), separate from the CT community hub (`hub.theug.in`).
 
 ## Capabilities and Constraints
 - Sections: Home, About, Projects, Labs, On-Chain Conviction, Timeline, Contact.

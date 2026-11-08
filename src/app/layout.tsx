@@ -30,7 +30,7 @@ const bebasNeue = Bebas_Neue({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://theug.vercel.app"),
+  metadataBase: new URL("https://theug.in"),
   title: "theUG — Usmaan Gani | AI Engineer • Web3 Builder • Developer",
   description:
     "Official portfolio of Usmaan Gani (theUG), independent AI engineer, Web3 developer, automation builder, blockchain researcher and creative technologist from Jharkhand, India.",
@@ -68,7 +68,7 @@ export const metadata: Metadata = {
     title: "theUG — Usmaan Gani",
     description:
       "AI Engineer • Web3 Builder • Independent Developer",
-    url: "https://theug.vercel.app",
+    url: "https://theug.in",
     siteName: "theUG",
     images: [
       {
@@ -87,6 +87,10 @@ export const metadata: Metadata = {
     description:
       "AI Engineer • Web3 Builder • Independent Developer",
     images: ["/opengraph-image.png"],
+  },
+
+  alternates: {
+    canonical: "https://theug.in",
   },
 };
 
@@ -138,8 +142,8 @@ export default function RootLayout({
               "@type": "Person",
               name: "Usmaan Gani",
               alternateName: "theUG",
-              url: "https://theug.vercel.app",
-              image: "https://theug.vercel.app/images/portrait.png",
+              url: "https://theug.in",
+              image: "https://theug.in/images/portrait.png",
               sameAs: [
                 "https://x.com/Usmaangani252",
                 "https://github.com/TheUGultimatum",
