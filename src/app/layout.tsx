@@ -174,8 +174,17 @@ export default function RootLayout({
           </main>
         </div>
       {/* impeccable-live-start */}
-<script src="http://localhost:8400/live.js?token=bbcc6c75-c3cf-43db-b914-1c98654644c5"></script>
-{/* impeccable-live-end */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+            var s = document.createElement('script');
+            s.src = 'http://localhost:8400/live.js?token=bbcc6c75-c3cf-43db-b914-1c98654644c5';
+            s.async = true;
+            document.head.appendChild(s);
+          }`,
+        }}
+      />
+      {/* impeccable-live-end */}
 </body>
     </html>
   );

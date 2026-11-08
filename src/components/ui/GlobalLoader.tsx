@@ -12,20 +12,27 @@ export function GlobalLoader() {
     }
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
 
-    // Wait for everything to settle
+    let isDone = false;
     const hideLoader = () => {
-      // Small delay to ensure smooth transition and fonts loaded
+      if (isDone) return;
+      isDone = true;
       setTimeout(() => {
         window.scrollTo({ top: 0, left: 0, behavior: "auto" });
         setLoading(false);
-      }, 500);
+      }, 300);
     };
+
+    // Absolute safety timeout: NEVER stall for more than 800ms
+    const safetyTimer = setTimeout(hideLoader, 800);
 
     if (document.readyState === "complete") {
       hideLoader();
     } else {
       window.addEventListener("load", hideLoader);
-      return () => window.removeEventListener("load", hideLoader);
+      return () => {
+        clearTimeout(safetyTimer);
+        window.removeEventListener("load", hideLoader);
+      };
     }
   }, []);
 
@@ -35,7 +42,7 @@ export function GlobalLoader() {
     <div 
       className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#050810]"
       style={{
-        transition: "opacity 0.6s ease-out, visibility 0.6s",
+        transition: "opacity 0.4s ease-out, visibility 0.4s",
         opacity: loading ? 1 : 0,
         visibility: loading ? "visible" : "hidden",
       }}
