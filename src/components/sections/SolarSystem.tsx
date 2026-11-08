@@ -431,80 +431,141 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
         p.isHovered = hitDist < (isMobile ? 26 : 22);
       });
 
-      // ─── E. CENTRAL SUN: USMAAN GANI (POOKIE FACE SUN) ───────────
-      coronaAngle.current += 0.010;
-      const sunCoreR = isMobile ? 38 : 46;
+      // ─── E. REDESIGNED CENTRAL SUN & INNER CELESTIAL ORBITS ───────────
+      coronaAngle.current += 0.012;
+      const sunCoreR = isMobile ? 40 : 48;
+      const breathe = Math.sin(time * 0.0025);
+      const pulseR = sunCoreR * (1 + breathe * 0.04);
 
-      // Soft Celestial Atmospheric Halo
-      const halo = ctx.createRadialGradient(0, 0, sunCoreR * 0.5, 0, 0, sunCoreR * 2.4);
-      halo.addColorStop(0, isDay ? "rgba(22, 163, 74, 0.35)" : "rgba(0, 255, 102, 0.4)");
-      halo.addColorStop(0.6, isDay ? "rgba(22, 163, 74, 0.10)" : "rgba(0, 255, 102, 0.12)");
-      halo.addColorStop(1, "transparent");
+      // 1. Dual-Tone Chromatic Atmospheric Halo (Cosmic Cyan & Violet Aura)
+      const haloR = sunCoreR * (2.5 + breathe * 0.15);
+      const halo = ctx.createRadialGradient(0, 0, sunCoreR * 0.4, 0, 0, haloR);
+      if (isDay) {
+        halo.addColorStop(0, "rgba(2, 132, 199, 0.45)");
+        halo.addColorStop(0.45, "rgba(124, 58, 237, 0.18)");
+        halo.addColorStop(0.8, "rgba(16, 185, 129, 0.08)");
+        halo.addColorStop(1, "transparent");
+      } else {
+        halo.addColorStop(0, "rgba(0, 229, 255, 0.55)");
+        halo.addColorStop(0.35, "rgba(168, 85, 247, 0.28)");
+        halo.addColorStop(0.75, "rgba(0, 255, 102, 0.12)");
+        halo.addColorStop(1, "transparent");
+      }
       ctx.fillStyle = halo;
       ctx.beginPath();
-      ctx.arc(0, 0, sunCoreR * 2.4, 0, Math.PI * 2);
+      ctx.arc(0, 0, haloR, 0, Math.PI * 2);
       ctx.fill();
 
-      // Gentle Solar Prominence Rays
+      // 2. Harmonic Center Orbit Rings (Counter-Rotating Celestial Bands)
+      // Inner Orbit Track
+      const innerOrbitR = sunCoreR + 14 + breathe * 2;
       ctx.save();
-      ctx.rotate(coronaAngle.current);
-      for (let f = 0; f < 12; f++) {
-        const fAngle = (f / 12) * Math.PI * 2;
-        const flareLen = (f % 2 === 0 ? 12 : 7) * (isMobile ? 0.8 : 1.0);
-        ctx.strokeStyle = isDay ? "rgba(22, 163, 74, 0.25)" : "rgba(0, 255, 102, 0.32)";
+      ctx.rotate(coronaAngle.current * 0.5);
+      ctx.strokeStyle = isDay ? "rgba(2, 132, 199, 0.4)" : "rgba(0, 229, 255, 0.45)";
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([4, 6]);
+      ctx.beginPath();
+      ctx.arc(0, 0, innerOrbitR, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Orbiting Celestial Energy Beads on the Center Ring
+      for (let b = 0; b < 3; b++) {
+        const beadAngle = (b / 3) * Math.PI * 2;
+        const bx = Math.cos(beadAngle) * innerOrbitR;
+        const by = Math.sin(beadAngle) * innerOrbitR;
+        ctx.fillStyle = isDay ? "#0284C7" : "#00E5FF";
+        ctx.shadowColor = "#00E5FF";
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(bx, by, 2.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+      ctx.restore();
+
+      // Outer Counter-Rotating Micro-Dash Ring
+      const outerOrbitR = sunCoreR + 25;
+      ctx.save();
+      ctx.rotate(-coronaAngle.current * 0.35);
+      ctx.strokeStyle = isDay ? "rgba(124, 58, 237, 0.3)" : "rgba(168, 85, 247, 0.35)";
+      ctx.lineWidth = 1.0;
+      ctx.setLineDash([2, 8]);
+      ctx.beginPath();
+      ctx.arc(0, 0, outerOrbitR, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+
+      // 3. Shimmering Solar Prominence Rays (Breathe & Flare)
+      ctx.save();
+      ctx.rotate(coronaAngle.current * 0.8);
+      for (let f = 0; f < 16; f++) {
+        const fAngle = (f / 16) * Math.PI * 2;
+        const wave = Math.sin(time * 0.004 + f * 0.8);
+        const flareLen = (f % 2 === 0 ? 14 + wave * 4 : 8 + wave * 2) * (isMobile ? 0.8 : 1.05);
+        ctx.strokeStyle = isDay
+          ? (f % 2 === 0 ? "rgba(2, 132, 199, 0.35)" : "rgba(124, 58, 237, 0.3)")
+          : (f % 2 === 0 ? "rgba(0, 229, 255, 0.55)" : "rgba(168, 85, 247, 0.45)");
         ctx.lineWidth = 1.6;
         ctx.beginPath();
-        ctx.moveTo(Math.cos(fAngle) * (sunCoreR + 2), Math.sin(fAngle) * (sunCoreR + 2));
-        ctx.lineTo(Math.cos(fAngle) * (sunCoreR + flareLen), Math.sin(fAngle) * (sunCoreR + flareLen));
+        ctx.moveTo(Math.cos(fAngle) * (pulseR + 1), Math.sin(fAngle) * (pulseR + 1));
+        ctx.lineTo(Math.cos(fAngle) * (pulseR + flareLen), Math.sin(fAngle) * (pulseR + flareLen));
         ctx.stroke();
       }
       ctx.restore();
 
-      // Pookie Face Portrait Center
+      // 4. Center Pookie Face Sun Portrait
       const pookieImg = sunImgRef.current;
       if (pookieImg && pookieImg.complete) {
         ctx.save();
         ctx.beginPath();
-        ctx.arc(0, 0, sunCoreR, 0, Math.PI * 2);
+        ctx.arc(0, 0, pulseR, 0, Math.PI * 2);
         ctx.clip();
 
         ctx.fillStyle = "#000000";
         ctx.fill();
 
-        const imgScale = sunCoreR * 2.35;
-        ctx.drawImage(pookieImg, -imgScale / 2, -imgScale / 2 + (sunCoreR * 0.08), imgScale, imgScale);
+        const imgScale = pulseR * 2.35;
+        ctx.drawImage(pookieImg, -imgScale / 2, -imgScale / 2 + (pulseR * 0.08), imgScale, imgScale);
         ctx.restore();
 
-        // Elegant Neon-Lime Rim Ring
-        ctx.shadowColor = isDay ? "#16A34A" : "#00FF66";
-        ctx.shadowBlur = isDay ? 14 : 24;
-        ctx.strokeStyle = isDay ? "#16A34A" : "#00FF66";
+        // Dual-Color Chromatic Luminous Rim Border (Electric Cyan & Neon Violet)
+        ctx.shadowColor = isDay ? "#0284C7" : "#00E5FF";
+        ctx.shadowBlur = isDay ? 14 : 26;
+        ctx.strokeStyle = isDay ? "#0284C7" : "#00E5FF";
         ctx.lineWidth = 2.4;
         ctx.beginPath();
-        ctx.arc(0, 0, sunCoreR, 0, Math.PI * 2);
+        ctx.arc(0, 0, pulseR, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Inner glowing thin accent ring
+        ctx.strokeStyle = isDay ? "rgba(124, 58, 237, 0.6)" : "rgba(168, 85, 247, 0.8)";
+        ctx.lineWidth = 1.0;
+        ctx.beginPath();
+        ctx.arc(0, 0, pulseR - 2, 0, Math.PI * 2);
         ctx.stroke();
         ctx.shadowBlur = 0;
       } else {
-        ctx.shadowColor = isDay ? "#16A34A" : "#00FF66";
+        ctx.shadowColor = "#00E5FF";
         ctx.shadowBlur = 24;
-        ctx.fillStyle = isDay ? "#16A34A" : "#00FF66";
+        ctx.fillStyle = "#00E5FF";
         ctx.beginPath();
-        ctx.arc(0, 0, sunCoreR, 0, Math.PI * 2);
+        ctx.arc(0, 0, pulseR, 0, Math.PI * 2);
         ctx.fill();
         ctx.shadowBlur = 0;
       }
 
-      // Identity Label Underneath Sun
+      // 5. Identity Label Underneath Sun
       ctx.save();
       ctx.rotate(-cam.rotation);
-      const labelY = sunCoreR + (isMobile ? 16 : 20);
+      const labelY = pulseR + (isMobile ? 18 : 22);
       ctx.fillStyle = isDay ? "#0F172A" : "#FFFFFF";
       ctx.font = `bold ${isMobile ? 9.5 : 11}px "Space Grotesk", sans-serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText("USMAAN GANI", 0, labelY);
 
-      ctx.fillStyle = isDay ? "#16A34A" : "#00FF66";
+      ctx.fillStyle = isDay ? "#0284C7" : "#00E5FF";
       ctx.font = `bold ${isMobile ? 7.5 : 8.5}px "IBM Plex Mono", monospace`;
       ctx.fillText("theUG_ // WEB3 BUILDER", 0, labelY + (isMobile ? 13 : 15));
       ctx.restore();
