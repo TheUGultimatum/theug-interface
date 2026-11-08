@@ -12,6 +12,8 @@ The core concept:
 ## Files Changed & Created
 
 ### Created Components & Modules:
+- `public/images/pookie-sun.png`: The user's iconic heart-eyes pookie face image used as the radiant core of the central Sun.
+- `src/components/sections/OperatorNodes.tsx`: Verified node infrastructure cluster (Drosera, DAC Chain, Quip, Aztec Sequencer).
 - `src/components/sections/SolarSystem.tsx`: High-performance 120 FPS pure 2D Canvas celestial engine rendering the central Sun, 11 orbits, glowing planetary atmospheres, slingshot physics, and camera controls.
 - `src/components/sections/EcosystemInfoPanel.tsx`: Elegant, responsive telemetry panel displaying classification, personal interest, observations, relevant projects, tech stack, and official documentation links.
 - `src/components/sections/ConvictionPillars.tsx`: Personal Web3 philosophy section with 5 core conviction pillars.
