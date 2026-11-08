@@ -203,9 +203,9 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       memeBitmaps.current[m.id] = img;
     });
 
-    const pookieImg = new window.Image();
-    pookieImg.src = "/images/pookie-sun.png";
-    sunImgRef.current = pookieImg;
+    const avatarImg = new window.Image();
+    avatarImg.src = "/images/avatar-sun.png";
+    sunImgRef.current = avatarImg;
 
     const isMobile = window.innerWidth < 768;
     const count = ECOSYSTEMS_DATA.length;
@@ -524,9 +524,9 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       }
       ctx.restore();
 
-      // 4. Center Pookie Face Sun Portrait
-      const pookieImg = sunImgRef.current;
-      if (pookieImg && pookieImg.complete) {
+      // 4. Center Avatar Sun Portrait (Thug-Life Crown Avatar)
+      const avatarImg = sunImgRef.current;
+      if (avatarImg && avatarImg.complete) {
         ctx.save();
         ctx.beginPath();
         ctx.arc(0, 0, pulseR, 0, Math.PI * 2);
@@ -535,8 +535,8 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
         ctx.fillStyle = "#000000";
         ctx.fill();
 
-        const imgScale = pulseR * 2.35;
-        ctx.drawImage(pookieImg, -imgScale / 2, -imgScale / 2 + (pulseR * 0.08), imgScale, imgScale);
+        const imgScale = pulseR * 2.16;
+        ctx.drawImage(avatarImg, -imgScale / 2, -imgScale / 2, imgScale, imgScale);
         ctx.restore();
 
         // Solar Amber Luminous Rim Border
