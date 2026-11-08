@@ -13,6 +13,10 @@ colors:
   text-primary: "#FFFFFF"
   text-secondary: "#A1A1AA"
   text-muted: "#71717A"
+  meme-doge: "#FBBF24"
+  meme-pepe: "#22C55E"
+  meme-shib: "#F97316"
+  meme-pudgy: "#38BDF8"
 typography:
   display:
     fontFamily: "var(--font-space-grotesk), Space Grotesk, sans-serif"
