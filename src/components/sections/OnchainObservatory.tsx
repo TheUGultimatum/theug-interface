@@ -6,7 +6,7 @@ import { SolarSystem } from "@/components/sections/SolarSystem";
 import { ArrowUpRight } from "lucide-react";
 
 export function OnchainObservatory() {
-  const [selectedEcosystem, setSelectedEcosystem] = useState<EcosystemData>(ECOSYSTEMS_DATA[0]); // Bitcoin by default, matching reference
+  const [selectedEcosystem, setSelectedEcosystem] = useState<EcosystemData>(ECOSYSTEMS_DATA[0]); // Bitcoin by default
 
   const handleSelect = (ecosystem: EcosystemData) => {
     setSelectedEcosystem(ecosystem);
@@ -22,10 +22,10 @@ export function OnchainObservatory() {
           <span>&gt;</span>
           <span>05 / ON-CHAIN CONVICTION</span>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-black tracking-tight font-mono text-white leading-tight">
+        <h1 className="text-3xl sm:text-4xl font-black tracking-tight font-mono text-[var(--color-text-primary)] leading-tight">
           <span>ON-CHAIN</span>
           <br />
-          <span className="text-[var(--color-amber)] drop-shadow-[0_0_20px_rgba(255,123,0,0.4)]">
+          <span className="text-[var(--color-amber)] drop-shadow-[0_0_20px_rgba(255,123,0,0.35)]">
             CONVICTION
           </span>
         </h1>
@@ -38,17 +38,17 @@ export function OnchainObservatory() {
       {/* ─────────────────────────────────────────────────────────
           COSMIC COCKPIT STAGE: Full Desktop & Responsive Canvas
           ───────────────────────────────────────────────────────── */}
-      <div className="relative w-full rounded-2xl overflow-hidden border border-[var(--color-border)] bg-[var(--color-void)] shadow-[0_0_50px_rgba(0,0,0,0.9)]">
+      <div className="relative w-full rounded-2xl overflow-hidden border border-[var(--color-border)] bg-[var(--color-void)] shadow-[0_0_50px_rgba(0,0,0,0.25)]">
         {/* DESKTOP TOP-LEFT HEADER OVERLAY */}
         <div className="hidden lg:block absolute top-7 left-8 z-30 pointer-events-none max-w-md">
           <div className="flex items-center gap-2 mb-2 text-[var(--color-cyan)] text-xs font-mono tracking-widest uppercase font-bold">
             <span>&gt;</span>
             <span>05 / ON-CHAIN CONVICTION</span>
           </div>
-          <h1 className="text-4xl xl:text-5xl font-black tracking-tight font-mono text-white leading-none">
+          <h1 className="text-4xl xl:text-5xl font-black tracking-tight font-mono text-[var(--color-text-primary)] leading-none">
             <span>ON-CHAIN</span>
             <br />
-            <span className="text-[var(--color-amber)] drop-shadow-[0_0_24px_rgba(255,123,0,0.45)]">
+            <span className="text-[var(--color-amber)] drop-shadow-[0_0_24px_rgba(255,123,0,0.4)]">
               CONVICTION
             </span>
           </h1>
@@ -62,7 +62,7 @@ export function OnchainObservatory() {
 
         {/* DESKTOP RIGHT-SIDE HOLOGRAPHIC HUD CARD OVERLAY */}
         <div className="hidden lg:block absolute top-7 right-8 z-30 pointer-events-auto w-80 xl:w-88">
-          <div className="relative p-5 xl:p-6 rounded-2xl bg-[#07090e]/90 border border-[var(--color-border)] hover:border-[var(--color-border-bright)] backdrop-blur-xl shadow-2xl transition-all">
+          <div className="relative p-5 xl:p-6 rounded-2xl bg-[var(--color-surface)]/90 border border-[var(--color-border)] hover:border-[var(--color-border-bright)] backdrop-blur-xl shadow-2xl transition-all">
             {/* Cyber Corner Notches */}
             <span className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-[var(--color-cyan)]" />
             <span className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-[var(--color-amber)]" />
@@ -93,11 +93,11 @@ export function OnchainObservatory() {
               </div>
 
               <div className="flex-1 min-w-0">
-                <h3 className="font-mono font-bold text-base xl:text-lg text-white truncate tracking-wide">
+                <h3 className="font-mono font-bold text-base xl:text-lg text-[var(--color-text-primary)] truncate tracking-wide">
                   {selectedEcosystem.name} {selectedEcosystem.ticker ? `(${selectedEcosystem.ticker})` : ""}
                 </h3>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-[9px] px-2 py-0.5 rounded font-mono uppercase font-bold tracking-wider bg-white/5 border border-white/10 text-white/80">
+                  <span className="text-[9px] px-2 py-0.5 rounded font-mono uppercase font-bold tracking-wider bg-[var(--color-elevated)] border border-[var(--color-border)] text-[var(--color-text-primary)]">
                     {selectedEcosystem.classification}
                   </span>
                   <div className="flex items-center gap-1 text-[9px] font-mono text-[var(--color-online)] font-bold">
@@ -122,7 +122,7 @@ export function OnchainObservatory() {
                 {(selectedEcosystem.relevantProjects || []).slice(0, 3).map((item) => (
                   <span
                     key={item}
-                    className="text-[10px] font-mono px-2.5 py-1 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)]"
+                    className="text-[10px] font-mono px-2.5 py-1 rounded-md border border-[var(--color-border)] bg-[var(--color-elevated)] text-[var(--color-text-secondary)]"
                   >
                     {item}
                   </span>
@@ -152,7 +152,7 @@ export function OnchainObservatory() {
         />
 
         {/* BOTTOM TELEMETRY BAR (Matching Reference Image) */}
-        <div className="px-6 py-3.5 border-t border-[var(--color-border)] bg-[var(--color-void)]/90 backdrop-blur-md flex items-center justify-between text-[11px] font-mono">
+        <div className="px-6 py-3.5 border-t border-[var(--color-border)] bg-[var(--color-surface)]/90 backdrop-blur-md flex items-center justify-between text-[11px] font-mono">
           <div className="flex items-center gap-2 text-[var(--color-text-muted)] tracking-widest uppercase">
             <span className="text-[var(--color-cyan)]">//</span>
             <span>WEB3 UNIVERSE</span>
@@ -168,7 +168,7 @@ export function OnchainObservatory() {
           MOBILE / TABLET CONTEXTUAL CARD (Displayed on < lg screens)
           ───────────────────────────────────────────────────────── */}
       <div className="lg:hidden mt-4">
-        <div className="relative p-5 rounded-2xl bg-[#07090e]/95 border border-[var(--color-border)] shadow-xl">
+        <div className="relative p-5 rounded-2xl bg-[var(--color-surface)]/95 border border-[var(--color-border)] shadow-xl">
           {/* Cyber Corner Notches */}
           <span className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-[var(--color-cyan)]" />
           <span className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-[var(--color-amber)]" />
@@ -198,11 +198,11 @@ export function OnchainObservatory() {
             </div>
 
             <div className="flex-1 min-w-0">
-              <h3 className="font-mono font-bold text-base text-white truncate">
+              <h3 className="font-mono font-bold text-base text-[var(--color-text-primary)] truncate">
                 {selectedEcosystem.name} {selectedEcosystem.ticker ? `(${selectedEcosystem.ticker})` : ""}
               </h3>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-[9px] px-2 py-0.5 rounded font-mono uppercase font-bold bg-white/5 border border-white/10 text-white/80">
+                <span className="text-[9px] px-2 py-0.5 rounded font-mono uppercase font-bold bg-[var(--color-elevated)] border border-[var(--color-border)] text-[var(--color-text-primary)]">
                   {selectedEcosystem.classification}
                 </span>
                 <span className="text-[9px] font-mono text-[var(--color-online)] font-bold">
@@ -220,7 +220,7 @@ export function OnchainObservatory() {
             {(selectedEcosystem.relevantProjects || []).slice(0, 3).map((item) => (
               <span
                 key={item}
-                className="text-[9.5px] font-mono px-2 py-0.5 rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)]"
+                className="text-[9.5px] font-mono px-2 py-0.5 rounded border border-[var(--color-border)] bg-[var(--color-elevated)] text-[var(--color-text-secondary)]"
               >
                 {item}
               </span>

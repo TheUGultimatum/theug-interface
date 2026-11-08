@@ -515,7 +515,9 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
         const fAngle = (f / 18) * Math.PI * 2;
         const wave = Math.sin(time * 0.004 + f * 0.8);
         const flareLen = (f % 2 === 0 ? 16 + wave * 5 : 9 + wave * 3) * (isMobile ? 0.85 : 1.1);
-        ctx.strokeStyle = f % 2 === 0 ? "rgba(255, 123, 0, 0.75)" : "rgba(0, 217, 255, 0.65)";
+        ctx.strokeStyle = f % 2 === 0
+          ? (isDay ? "rgba(216, 67, 21, 0.85)" : "rgba(255, 123, 0, 0.75)")
+          : (isDay ? "rgba(2, 132, 199, 0.75)" : "rgba(0, 217, 255, 0.65)");
         ctx.lineWidth = 1.8;
         ctx.beginPath();
         ctx.moveTo(Math.cos(fAngle) * (pulseR + 1), Math.sin(fAngle) * (pulseR + 1));
@@ -532,7 +534,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
         ctx.arc(0, 0, pulseR, 0, Math.PI * 2);
         ctx.clip();
 
-        ctx.fillStyle = "#000000";
+        ctx.fillStyle = isDay ? "#FFFFFF" : "#000000";
         ctx.fill();
 
         const imgScale = pulseR * 2.16;
@@ -540,25 +542,25 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
         ctx.restore();
 
         // Solar Amber Luminous Rim Border
-        ctx.shadowColor = "#FF7B00";
-        ctx.shadowBlur = isDay ? 16 : 28;
-        ctx.strokeStyle = "#FF7B00";
+        ctx.shadowColor = isDay ? "#D84315" : "#FF7B00";
+        ctx.shadowBlur = isDay ? 14 : 28;
+        ctx.strokeStyle = isDay ? "#D84315" : "#FF7B00";
         ctx.lineWidth = 2.8;
         ctx.beginPath();
         ctx.arc(0, 0, pulseR, 0, Math.PI * 2);
         ctx.stroke();
 
         // Inner glowing Cyber Cyan accent ring
-        ctx.strokeStyle = "rgba(0, 217, 255, 0.85)";
+        ctx.strokeStyle = isDay ? "rgba(2, 132, 199, 0.85)" : "rgba(0, 217, 255, 0.85)";
         ctx.lineWidth = 1.1;
         ctx.beginPath();
         ctx.arc(0, 0, pulseR - 2.5, 0, Math.PI * 2);
         ctx.stroke();
         ctx.shadowBlur = 0;
       } else {
-        ctx.shadowColor = "#FF7B00";
+        ctx.shadowColor = isDay ? "#D84315" : "#FF7B00";
         ctx.shadowBlur = 24;
-        ctx.fillStyle = "#FF7B00";
+        ctx.fillStyle = isDay ? "#D84315" : "#FF7B00";
         ctx.beginPath();
         ctx.arc(0, 0, pulseR, 0, Math.PI * 2);
         ctx.fill();
@@ -572,10 +574,10 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       const badgeH = isMobile ? 22 : 26;
       const badgeY = pulseR - (badgeH * 0.45); // Docked overlapping bottom edge
 
-      ctx.shadowColor = "rgba(255, 123, 0, 0.6)";
-      ctx.shadowBlur = 12;
+      ctx.shadowColor = isDay ? "rgba(0, 0, 0, 0.15)" : "rgba(255, 123, 0, 0.6)";
+      ctx.shadowBlur = isDay ? 8 : 12;
       ctx.fillStyle = isDay ? "#FFFFFF" : "#07090E";
-      ctx.strokeStyle = "#FF7B00";
+      ctx.strokeStyle = isDay ? "#D84315" : "#FF7B00";
       ctx.lineWidth = 1.6;
       ctx.beginPath();
       ctx.roundRect(-badgeW / 2, badgeY, badgeW, badgeH, badgeH / 2);
@@ -584,8 +586,8 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       ctx.shadowBlur = 0;
 
       // Small cyan live telemetry dot inside pill
-      ctx.fillStyle = "#00D9FF";
-      ctx.shadowColor = "#00D9FF";
+      ctx.fillStyle = isDay ? "#0284C7" : "#00D9FF";
+      ctx.shadowColor = isDay ? "#0284C7" : "#00D9FF";
       ctx.shadowBlur = 6;
       ctx.beginPath();
       ctx.arc(-badgeW / 2 + 12, badgeY + badgeH / 2, 2.5, 0, Math.PI * 2);
@@ -593,7 +595,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       ctx.shadowBlur = 0;
 
       // theUG_ Text
-      ctx.fillStyle = isDay ? "#0F172A" : "#FFFFFF";
+      ctx.fillStyle = isDay ? "#1A1A1E" : "#FFFFFF";
       ctx.font = `bold ${isMobile ? 11 : 12.5}px "IBM Plex Mono", monospace`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
@@ -694,25 +696,32 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
         const hy = p.y + ny * (radius * 0.32);
 
         const sphereGrad = ctx.createRadialGradient(hx, hy, radius * 0.06, p.x, p.y, radius);
-        sphereGrad.addColorStop(0, "#ffffff");
-        sphereGrad.addColorStop(0.24, p.color);
-        sphereGrad.addColorStop(0.70, shadeColor(p.color, -0.45));
-        sphereGrad.addColorStop(1, "#030408");
+        if (isDay) {
+          sphereGrad.addColorStop(0, "#ffffff");
+          sphereGrad.addColorStop(0.35, p.color);
+          sphereGrad.addColorStop(0.80, shadeColor(p.color, -0.22));
+          sphereGrad.addColorStop(1, shadeColor(p.color, -0.42));
+        } else {
+          sphereGrad.addColorStop(0, "#ffffff");
+          sphereGrad.addColorStop(0.24, p.color);
+          sphereGrad.addColorStop(0.70, shadeColor(p.color, -0.45));
+          sphereGrad.addColorStop(1, "#030408");
+        }
 
         ctx.save();
         if (isSelected || p.isHovered) {
           ctx.shadowColor = p.color;
-          ctx.shadowBlur = 18;
+          ctx.shadowBlur = isDay ? 12 : 18;
         }
 
-        ctx.fillStyle = isDay ? "#FFFFFF" : sphereGrad;
+        ctx.fillStyle = sphereGrad;
         ctx.beginPath();
         ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
         ctx.fill();
 
         // Planet Atmosphere Rim Stroke
-        ctx.strokeStyle = isSelected ? p.color : (isDay ? "rgba(100, 116, 139, 0.4)" : `${p.color}bb`);
-        ctx.lineWidth = isSelected ? 2.4 : 1.2;
+        ctx.strokeStyle = isSelected ? p.color : (isDay ? `${p.color}dd` : `${p.color}bb`);
+        ctx.lineWidth = isSelected ? 2.4 : 1.3;
         ctx.stroke();
         ctx.shadowBlur = 0;
 
@@ -730,14 +739,14 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
           ctx.rotate(ringAngle);
           ctx.beginPath();
           ctx.ellipse(0, 0, ringRx, ringRy, 0, 0, Math.PI);
-          ctx.strokeStyle = `${p.color}cc`;
+          ctx.strokeStyle = isDay ? `${p.color}ee` : `${p.color}cc`;
           ctx.lineWidth = Math.max(2.5, radius * 0.22);
           ctx.stroke();
 
           // Outer sharp edge
           ctx.beginPath();
           ctx.ellipse(0, 0, ringRx + 2, ringRy + 1, 0, 0, Math.PI);
-          ctx.strokeStyle = `${p.color}66`;
+          ctx.strokeStyle = isDay ? `${p.color}88` : `${p.color}66`;
           ctx.lineWidth = 1;
           ctx.stroke();
           ctx.restore();
@@ -756,8 +765,8 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
         const badgeW = textMetrics.width + padX * 2;
         const badgeH = 14 * depthScale;
 
-        ctx.fillStyle = isDay ? "rgba(255, 255, 255, 0.96)" : "rgba(8, 10, 15, 0.90)";
-        ctx.strokeStyle = isSelected ? p.color : (p.isHovered ? p.color : "rgba(255, 255, 255, 0.22)");
+        ctx.fillStyle = isDay ? "rgba(255, 255, 255, 0.98)" : "rgba(8, 10, 15, 0.90)";
+        ctx.strokeStyle = isSelected ? p.color : (p.isHovered ? p.color : (isDay ? "rgba(100, 116, 139, 0.35)" : "rgba(255, 255, 255, 0.22)"));
         ctx.lineWidth = isSelected ? 1.6 : 1;
         if (isSelected || p.isHovered) {
           ctx.shadowColor = p.color;
@@ -770,7 +779,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
         ctx.stroke();
         ctx.shadowBlur = 0;
 
-        ctx.fillStyle = isSelected ? p.color : (isDay ? "#0F172A" : "#FFFFFF");
+        ctx.fillStyle = isSelected ? p.color : (isDay ? "#1A1A1E" : "#FFFFFF");
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(badgeLabel, 0, bgY + (badgeH / 2));
