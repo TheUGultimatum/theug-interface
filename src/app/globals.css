@@ -754,9 +754,74 @@ body {
 .anim-hidden { opacity: 0; }
 
 /* ============================================
-   CUSTOM CURSOR
+   CUSTOM CURSOR (DESKTOP FINE POINTER ONLY)
 ============================================ */
-*, a, button, [role="button"] { cursor: none !important; }
+@media (hover: hover) and (pointer: fine) {
+  body.has-custom-cursor,
+  body.has-custom-cursor a,
+  body.has-custom-cursor button,
+  body.has-custom-cursor [role="button"] {
+    cursor: none !important;
+  }
+  body.has-custom-cursor input,
+  body.has-custom-cursor textarea,
+  body.has-custom-cursor select {
+    cursor: text !important;
+  }
+}
+
+/* ============================================
+   DAY MODE POLISH FOR SYSTEM COMPATIBILITY
+============================================ */
+.day-mode {
+  color-scheme: light;
+}
+
+.day-mode input,
+.day-mode textarea,
+.day-mode select {
+  background-color: #FFFFFF !important;
+  color: #1A1A1E !important;
+  border-color: #D2D2D6 !important;
+}
+
+.day-mode input::placeholder,
+.day-mode textarea::placeholder {
+  color: #8E8E93 !important;
+}
+
+.day-mode .panel {
+  background-color: #FFFFFF;
+  border-color: #E2E2E6;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.day-mode .panel-header {
+  background-color: #F4F4F6;
+  border-color: #E2E2E6;
+}
+
+.day-mode .btn-primary {
+  color: #FFFFFF !important;
+  background-color: #D84315 !important;
+  border-color: #D84315 !important;
+}
+
+.day-mode .btn-primary:hover {
+  background-color: #BF360C !important;
+  box-shadow: 0 4px 14px rgba(216, 67, 21, 0.25) !important;
+}
+
+.day-mode .btn-secondary {
+  color: #1A1A1E !important;
+  background-color: #EDEDF0 !important;
+  border-color: #D2D2D6 !important;
+}
+
+.day-mode .btn-secondary:hover {
+  background-color: #E2E2E6 !important;
+  border-color: #8E8E93 !important;
+}
 
 /* ============================================
    RESPONSIVE HELPERS

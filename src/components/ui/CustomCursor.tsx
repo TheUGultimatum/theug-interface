@@ -26,6 +26,8 @@ export function CustomCursor() {
     setMounted(true);
     if (window.matchMedia("(hover: none) and (pointer: coarse)").matches) {
       setIsTouch(true);
+    } else {
+      document.body.classList.add("has-custom-cursor");
     }
     
     // prefers-reduced-motion check

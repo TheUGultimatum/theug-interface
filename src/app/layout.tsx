@@ -112,10 +112,21 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              if ('scrollRestoration' in history) {
-                history.scrollRestoration = 'manual';
-              }
-              window.scrollTo(0, 0);
+              (function() {
+                try {
+                  var saved = localStorage.getItem('theug-theme');
+                  var prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+                  if (saved === 'light' || (!saved && prefersLight)) {
+                    document.documentElement.classList.add('day-mode');
+                  } else {
+                    document.documentElement.classList.remove('day-mode');
+                  }
+                } catch(e) {}
+                if ('scrollRestoration' in history) {
+                  history.scrollRestoration = 'manual';
+                }
+                window.scrollTo(0, 0);
+              })();
             `,
           }}
         />

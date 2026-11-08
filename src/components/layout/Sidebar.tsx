@@ -18,6 +18,7 @@ import {
   Network,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toggleTheme as toggleGlobalTheme } from "@/lib/theme";
 
 const NAV_ITEMS = [
   { href: "/", label: "HOME", icon: Home },
@@ -53,13 +54,7 @@ function DesktopSidebar() {
   }, []);
 
   const toggleTheme = () => {
-    const nextMode = !dayMode;
-    setDayMode(nextMode);
-    if (nextMode) {
-      document.documentElement.classList.add("day-mode");
-    } else {
-      document.documentElement.classList.remove("day-mode");
-    }
+    toggleGlobalTheme();
   };
 
   return (

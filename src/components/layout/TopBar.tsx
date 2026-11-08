@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Sun, Moon } from "lucide-react";
+import { toggleTheme as toggleGlobalTheme } from "@/lib/theme";
 
 function LiveClock({ align = "right" }: { align?: "left" | "right" }) {
   const [time, setTime] = useState("");
@@ -43,13 +44,7 @@ export function TopBar() {
   }, []);
 
   const toggleTheme = () => {
-    const nextMode = !dayMode;
-    setDayMode(nextMode);
-    if (nextMode) {
-      document.documentElement.classList.add("day-mode");
-    } else {
-      document.documentElement.classList.remove("day-mode");
-    }
+    toggleGlobalTheme();
   };
 
   return (
