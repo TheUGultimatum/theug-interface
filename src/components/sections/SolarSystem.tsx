@@ -61,6 +61,19 @@ const MEME_ASTEROID_TYPES = [
 
 const lerp = (a: number, b: number, t: number) => a * (1 - t) + b * t;
 
+function shadeColor(hex: string, percent: number): string {
+  const cleanHex = hex.replace("#", "");
+  const num = parseInt(cleanHex.length === 3 ? cleanHex.split("").map(c => c + c).join("") : cleanHex, 16);
+  if (isNaN(num)) return "#05070a";
+  let r = (num >> 16);
+  let g = ((num >> 8) & 0x00ff);
+  let b = (num & 0x0000ff);
+  r = Math.max(0, Math.min(255, Math.floor(r * (1 + percent))));
+  g = Math.max(0, Math.min(255, Math.floor(g * (1 + percent))));
+  b = Math.max(0, Math.min(255, Math.floor(b * (1 + percent))));
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
 export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -437,18 +450,18 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       const breathe = Math.sin(time * 0.0025);
       const pulseR = sunCoreR * (1 + breathe * 0.04);
 
-      // 1. Dual-Tone Chromatic Atmospheric Halo (Cosmic Cyan & Violet Aura)
-      const haloR = sunCoreR * (2.5 + breathe * 0.15);
-      const halo = ctx.createRadialGradient(0, 0, sunCoreR * 0.4, 0, 0, haloR);
+      // 1. Warm Solar Amber & Cyber Cyan Atmospheric Halo (Warm Cosmic Energy)
+      const haloR = sunCoreR * (2.6 + breathe * 0.18);
+      const halo = ctx.createRadialGradient(0, 0, sunCoreR * 0.35, 0, 0, haloR);
       if (isDay) {
-        halo.addColorStop(0, "rgba(2, 132, 199, 0.45)");
-        halo.addColorStop(0.45, "rgba(124, 58, 237, 0.18)");
-        halo.addColorStop(0.8, "rgba(16, 185, 129, 0.08)");
+        halo.addColorStop(0, "rgba(255, 123, 0, 0.45)");
+        halo.addColorStop(0.40, "rgba(255, 94, 58, 0.20)");
+        halo.addColorStop(0.75, "rgba(0, 217, 255, 0.10)");
         halo.addColorStop(1, "transparent");
       } else {
-        halo.addColorStop(0, "rgba(0, 229, 255, 0.55)");
-        halo.addColorStop(0.35, "rgba(168, 85, 247, 0.28)");
-        halo.addColorStop(0.75, "rgba(0, 255, 102, 0.12)");
+        halo.addColorStop(0, "rgba(255, 123, 0, 0.65)");
+        halo.addColorStop(0.35, "rgba(255, 94, 58, 0.35)");
+        halo.addColorStop(0.70, "rgba(0, 217, 255, 0.16)");
         halo.addColorStop(1, "transparent");
       }
       ctx.fillStyle = halo;
@@ -457,11 +470,10 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       ctx.fill();
 
       // 2. Harmonic Center Orbit Rings (Counter-Rotating Celestial Bands)
-      // Inner Orbit Track
-      const innerOrbitR = sunCoreR + 14 + breathe * 2;
+      const innerOrbitR = sunCoreR + 15 + breathe * 2;
       ctx.save();
       ctx.rotate(coronaAngle.current * 0.5);
-      ctx.strokeStyle = isDay ? "rgba(2, 132, 199, 0.4)" : "rgba(0, 229, 255, 0.45)";
+      ctx.strokeStyle = isDay ? "rgba(255, 123, 0, 0.4)" : "rgba(255, 123, 0, 0.55)";
       ctx.lineWidth = 1.2;
       ctx.setLineDash([4, 6]);
       ctx.beginPath();
@@ -473,21 +485,21 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
         const beadAngle = (b / 3) * Math.PI * 2;
         const bx = Math.cos(beadAngle) * innerOrbitR;
         const by = Math.sin(beadAngle) * innerOrbitR;
-        ctx.fillStyle = isDay ? "#0284C7" : "#00E5FF";
-        ctx.shadowColor = "#00E5FF";
+        ctx.fillStyle = "#FF7B00";
+        ctx.shadowColor = "#FF7B00";
         ctx.shadowBlur = 8;
         ctx.beginPath();
-        ctx.arc(bx, by, 2.4, 0, Math.PI * 2);
+        ctx.arc(bx, by, 2.5, 0, Math.PI * 2);
         ctx.fill();
         ctx.shadowBlur = 0;
       }
       ctx.restore();
 
-      // Outer Counter-Rotating Micro-Dash Ring
-      const outerOrbitR = sunCoreR + 25;
+      // Outer Counter-Rotating Micro-Dash Ring (Cyber Cyan)
+      const outerOrbitR = sunCoreR + 26;
       ctx.save();
       ctx.rotate(-coronaAngle.current * 0.35);
-      ctx.strokeStyle = isDay ? "rgba(124, 58, 237, 0.3)" : "rgba(168, 85, 247, 0.35)";
+      ctx.strokeStyle = isDay ? "rgba(0, 217, 255, 0.3)" : "rgba(0, 217, 255, 0.45)";
       ctx.lineWidth = 1.0;
       ctx.setLineDash([2, 8]);
       ctx.beginPath();
@@ -496,17 +508,15 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       ctx.setLineDash([]);
       ctx.restore();
 
-      // 3. Shimmering Solar Prominence Rays (Breathe & Flare)
+      // 3. Shimmering Solar Prominence Rays (Warm Solar Amber & Cyber Cyan)
       ctx.save();
       ctx.rotate(coronaAngle.current * 0.8);
-      for (let f = 0; f < 16; f++) {
-        const fAngle = (f / 16) * Math.PI * 2;
+      for (let f = 0; f < 18; f++) {
+        const fAngle = (f / 18) * Math.PI * 2;
         const wave = Math.sin(time * 0.004 + f * 0.8);
-        const flareLen = (f % 2 === 0 ? 14 + wave * 4 : 8 + wave * 2) * (isMobile ? 0.8 : 1.05);
-        ctx.strokeStyle = isDay
-          ? (f % 2 === 0 ? "rgba(2, 132, 199, 0.35)" : "rgba(124, 58, 237, 0.3)")
-          : (f % 2 === 0 ? "rgba(0, 229, 255, 0.55)" : "rgba(168, 85, 247, 0.45)");
-        ctx.lineWidth = 1.6;
+        const flareLen = (f % 2 === 0 ? 16 + wave * 5 : 9 + wave * 3) * (isMobile ? 0.85 : 1.1);
+        ctx.strokeStyle = f % 2 === 0 ? "rgba(255, 123, 0, 0.75)" : "rgba(0, 217, 255, 0.65)";
+        ctx.lineWidth = 1.8;
         ctx.beginPath();
         ctx.moveTo(Math.cos(fAngle) * (pulseR + 1), Math.sin(fAngle) * (pulseR + 1));
         ctx.lineTo(Math.cos(fAngle) * (pulseR + flareLen), Math.sin(fAngle) * (pulseR + flareLen));
@@ -529,54 +539,78 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
         ctx.drawImage(pookieImg, -imgScale / 2, -imgScale / 2 + (pulseR * 0.08), imgScale, imgScale);
         ctx.restore();
 
-        // Dual-Color Chromatic Luminous Rim Border (Electric Cyan & Neon Violet)
-        ctx.shadowColor = isDay ? "#0284C7" : "#00E5FF";
-        ctx.shadowBlur = isDay ? 14 : 26;
-        ctx.strokeStyle = isDay ? "#0284C7" : "#00E5FF";
-        ctx.lineWidth = 2.4;
+        // Solar Amber Luminous Rim Border
+        ctx.shadowColor = "#FF7B00";
+        ctx.shadowBlur = isDay ? 16 : 28;
+        ctx.strokeStyle = "#FF7B00";
+        ctx.lineWidth = 2.8;
         ctx.beginPath();
         ctx.arc(0, 0, pulseR, 0, Math.PI * 2);
         ctx.stroke();
 
-        // Inner glowing thin accent ring
-        ctx.strokeStyle = isDay ? "rgba(124, 58, 237, 0.6)" : "rgba(168, 85, 247, 0.8)";
-        ctx.lineWidth = 1.0;
+        // Inner glowing Cyber Cyan accent ring
+        ctx.strokeStyle = "rgba(0, 217, 255, 0.85)";
+        ctx.lineWidth = 1.1;
         ctx.beginPath();
-        ctx.arc(0, 0, pulseR - 2, 0, Math.PI * 2);
+        ctx.arc(0, 0, pulseR - 2.5, 0, Math.PI * 2);
         ctx.stroke();
         ctx.shadowBlur = 0;
       } else {
-        ctx.shadowColor = "#00E5FF";
+        ctx.shadowColor = "#FF7B00";
         ctx.shadowBlur = 24;
-        ctx.fillStyle = "#00E5FF";
+        ctx.fillStyle = "#FF7B00";
         ctx.beginPath();
         ctx.arc(0, 0, pulseR, 0, Math.PI * 2);
         ctx.fill();
         ctx.shadowBlur = 0;
       }
 
-      // 5. Identity Label Underneath Sun
+      // 5. Docked theUG_ Pill Badge Anchored At The Bottom Rim Of Portrait
       ctx.save();
       ctx.rotate(-cam.rotation);
-      const labelY = pulseR + (isMobile ? 18 : 22);
+      const badgeW = isMobile ? 74 : 88;
+      const badgeH = isMobile ? 22 : 26;
+      const badgeY = pulseR - (badgeH * 0.45); // Docked overlapping bottom edge
+
+      ctx.shadowColor = "rgba(255, 123, 0, 0.6)";
+      ctx.shadowBlur = 12;
+      ctx.fillStyle = isDay ? "#FFFFFF" : "#07090E";
+      ctx.strokeStyle = "#FF7B00";
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.roundRect(-badgeW / 2, badgeY, badgeW, badgeH, badgeH / 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // Small cyan live telemetry dot inside pill
+      ctx.fillStyle = "#00D9FF";
+      ctx.shadowColor = "#00D9FF";
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      ctx.arc(-badgeW / 2 + 12, badgeY + badgeH / 2, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // theUG_ Text
       ctx.fillStyle = isDay ? "#0F172A" : "#FFFFFF";
-      ctx.font = `bold ${isMobile ? 9.5 : 11}px "Space Grotesk", sans-serif`;
+      ctx.font = `bold ${isMobile ? 11 : 12.5}px "IBM Plex Mono", monospace`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText("USMAAN GANI", 0, labelY);
-
-      ctx.fillStyle = isDay ? "#0284C7" : "#00E5FF";
-      ctx.font = `bold ${isMobile ? 7.5 : 8.5}px "IBM Plex Mono", monospace`;
-      ctx.fillText("theUG_ // WEB3 BUILDER", 0, labelY + (isMobile ? 13 : 15));
+      ctx.fillText("theUG_", 4, badgeY + badgeH / 2);
       ctx.restore();
 
-      // ─── F. RENDER THE 11 PLANETARY WORLDS ────────────────────────
+      // ─── F. RENDER THE 11 PLANETARY WORLDS WITH 3D SPHERES & SATURN RINGS ─
       const sortedPlanets = [...planetsRef.current].sort((a, b) => a.z - b.z);
 
       sortedPlanets.forEach(p => {
         const isSelected = selectedId === p.id;
         const depthScale = lerp(0.84, 1.16, (p.z + 1) / 2);
-        const radius = (isSelected ? 22 : (p.isHovered ? 19 : 16)) * (isMobile ? 0.88 : 1.0) * depthScale;
+        const radius = (isSelected ? 23 : (p.isHovered ? 20 : 17)) * (isMobile ? 0.88 : 1.0) * depthScale;
+        const hasRing = p.id === "eth" || p.id === "btc" || p.id === "hype";
+        const ringRx = radius * 2.15;
+        const ringRy = radius * 0.60;
+        const ringAngle = -0.38;
 
         // Slingshot elastic tether line if dragging
         if (p.isDragging) {
@@ -609,7 +643,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
           ctx.shadowColor = p.color;
           ctx.shadowBlur = 10;
 
-          const bSize = radius + 6;
+          const bSize = radius + 7;
           ctx.beginPath();
           ctx.moveTo(p.x - bSize, p.y - bSize + 5);
           ctx.lineTo(p.x - bSize, p.y - bSize);
@@ -630,59 +664,116 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
           ctx.shadowBlur = 0;
         }
 
-        // Planet Sphere Body
-        ctx.save();
-        ctx.fillStyle = isDay ? "#FFFFFF" : "#0D0E12";
-        ctx.strokeStyle = isSelected ? p.color : (isDay ? "rgba(100, 116, 139, 0.4)" : "rgba(255, 255, 255, 0.22)");
-        ctx.lineWidth = isSelected ? 2.2 : 1.2;
+        // 1. Tilted Planetary Rings - Back Half (drawn behind planet)
+        if (hasRing) {
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(ringAngle);
+          ctx.beginPath();
+          ctx.ellipse(0, 0, ringRx, ringRy, 0, Math.PI, Math.PI * 2);
+          ctx.strokeStyle = `${p.color}88`;
+          ctx.lineWidth = Math.max(2.5, radius * 0.22);
+          ctx.stroke();
 
-        if (isSelected || p.isHovered) {
-          ctx.shadowColor = p.color;
-          ctx.shadowBlur = 14;
+          // Outer sharp edge
+          ctx.beginPath();
+          ctx.ellipse(0, 0, ringRx + 2, ringRy + 1, 0, Math.PI, Math.PI * 2);
+          ctx.strokeStyle = `${p.color}44`;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          ctx.restore();
         }
 
+        // 2. 3D Spherical Planet Body with Solar Radial Illumination
+        const lightDx = -p.x;
+        const lightDy = -p.y;
+        const lightDist = Math.hypot(lightDx, lightDy) || 1;
+        const nx = lightDx / lightDist;
+        const ny = lightDy / lightDist;
+        const hx = p.x + nx * (radius * 0.32);
+        const hy = p.y + ny * (radius * 0.32);
+
+        const sphereGrad = ctx.createRadialGradient(hx, hy, radius * 0.06, p.x, p.y, radius);
+        sphereGrad.addColorStop(0, "#ffffff");
+        sphereGrad.addColorStop(0.24, p.color);
+        sphereGrad.addColorStop(0.70, shadeColor(p.color, -0.45));
+        sphereGrad.addColorStop(1, "#030408");
+
+        ctx.save();
+        if (isSelected || p.isHovered) {
+          ctx.shadowColor = p.color;
+          ctx.shadowBlur = 18;
+        }
+
+        ctx.fillStyle = isDay ? "#FFFFFF" : sphereGrad;
         ctx.beginPath();
         ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
         ctx.fill();
+
+        // Planet Atmosphere Rim Stroke
+        ctx.strokeStyle = isSelected ? p.color : (isDay ? "rgba(100, 116, 139, 0.4)" : `${p.color}bb`);
+        ctx.lineWidth = isSelected ? 2.4 : 1.2;
         ctx.stroke();
         ctx.shadowBlur = 0;
 
         // Centered Vector Logo
         const img = logosRef.current[p.id];
         if (img && img.complete) {
-          const iconSize = radius * 1.15;
+          const iconSize = radius * 1.10;
           ctx.drawImage(img, p.x - iconSize / 2, p.y - iconSize / 2, iconSize, iconSize);
         }
 
-        // Planet Text Badge
+        // 3. Tilted Planetary Rings - Front Half (drawn in front of planet)
+        if (hasRing) {
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(ringAngle);
+          ctx.beginPath();
+          ctx.ellipse(0, 0, ringRx, ringRy, 0, 0, Math.PI);
+          ctx.strokeStyle = `${p.color}cc`;
+          ctx.lineWidth = Math.max(2.5, radius * 0.22);
+          ctx.stroke();
+
+          // Outer sharp edge
+          ctx.beginPath();
+          ctx.ellipse(0, 0, ringRx + 2, ringRy + 1, 0, 0, Math.PI);
+          ctx.strokeStyle = `${p.color}66`;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // 4. Sharp Ticker Pill Badge Docked Near Planet
         ctx.save();
         ctx.translate(p.x, p.y);
         ctx.rotate(-cam.rotation);
 
-        const badgeLabel = p.ticker ? `${p.name} · ${p.ticker}` : p.name;
+        const badgeLabel = (p.ticker || p.name).toUpperCase();
         ctx.font = `bold ${Math.round((isMobile ? 8.5 : 9.5) * depthScale)}px "IBM Plex Mono", monospace`;
         const textMetrics = ctx.measureText(badgeLabel);
-        const padX = 5;
-        const bgY = radius + 5;
+        const padX = 6;
+        const bgY = radius + 6;
+        const badgeW = textMetrics.width + padX * 2;
+        const badgeH = 14 * depthScale;
 
-        ctx.fillStyle = isDay ? "rgba(255, 255, 255, 0.95)" : "rgba(13, 14, 18, 0.90)";
-        ctx.strokeStyle = isSelected ? p.color : (isDay ? "rgba(100, 116, 139, 0.3)" : "rgba(255, 255, 255, 0.15)");
-        ctx.lineWidth = 1;
+        ctx.fillStyle = isDay ? "rgba(255, 255, 255, 0.96)" : "rgba(8, 10, 15, 0.90)";
+        ctx.strokeStyle = isSelected ? p.color : (p.isHovered ? p.color : "rgba(255, 255, 255, 0.22)");
+        ctx.lineWidth = isSelected ? 1.6 : 1;
+        if (isSelected || p.isHovered) {
+          ctx.shadowColor = p.color;
+          ctx.shadowBlur = 8;
+        }
+
         ctx.beginPath();
-        ctx.roundRect(
-          -textMetrics.width / 2 - padX,
-          bgY,
-          textMetrics.width + padX * 2,
-          13 * depthScale,
-          3
-        );
+        ctx.roundRect(-badgeW / 2, bgY, badgeW, badgeH, 3);
         ctx.fill();
         ctx.stroke();
+        ctx.shadowBlur = 0;
 
-        ctx.fillStyle = isDay ? "#0F172A" : "#FFFFFF";
+        ctx.fillStyle = isSelected ? p.color : (isDay ? "#0F172A" : "#FFFFFF");
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(badgeLabel, 0, bgY + (6.5 * depthScale));
+        ctx.fillText(badgeLabel, 0, bgY + (badgeH / 2));
         ctx.restore();
 
         ctx.restore();
@@ -883,29 +974,21 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
   };
 
   return (
-    <section 
+    <div 
       ref={containerRef}
-      className="relative w-full h-[540px] sm:h-[600px] md:h-[680px] lg:h-[720px] overflow-hidden select-none border border-[var(--color-border)] rounded-2xl bg-[var(--color-void)]"
+      className="relative w-full h-[520px] sm:h-[600px] md:h-[680px] lg:h-[750px] xl:h-[780px] overflow-hidden select-none bg-[var(--color-void)]"
       aria-label="On-Chain Conviction: Web3 Solar System with Usmaan Gani"
     >
       {/* ─────────────────────────────────────────────────────
-          CLEAN, PEACEFUL TOP OVERLAY (NO BUTTON CLUTTER)
+          SUBTLE CELESTIAL CAMERA RESET
           ───────────────────────────────────────────────────── */}
-      <div className="absolute top-3 left-4 right-4 z-30 flex items-center justify-between pointer-events-none">
-        <div className="flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-online)]" />
-          <span className="font-mono text-[9px] text-[var(--color-text-muted)] tracking-widest uppercase">
-            SOLAR SYSTEM // 11 ORBITING WORLDS
-          </span>
-        </div>
-
-        {/* Small subtle camera reset if user drags */}
+      <div className="absolute top-4 right-4 lg:top-7 lg:right-[380px] xl:lg:right-[420px] z-30 pointer-events-auto">
         <button
           onClick={handleResetCamera}
-          className="p-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/80 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] pointer-events-auto transition-colors cursor-pointer"
-          title="Reset View"
+          className="p-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/80 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-bright)] transition-colors cursor-pointer"
+          title="Reset Camera View"
         >
-          <RotateCcw size={12} />
+          <RotateCcw size={13} />
         </button>
       </div>
 
@@ -924,9 +1007,9 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       />
 
       {/* ─────────────────────────────────────────────────────
-          BOTTOM CLEAN PLANET SELECTOR CAROUSEL
+          MOBILE/TABLET CLEAN PLANET SELECTOR CAROUSEL
           ───────────────────────────────────────────────────── */}
-      <div className="absolute bottom-3 left-3 right-3 md:left-6 md:right-6 z-30 flex items-center gap-1.5 overflow-x-auto scrollbar-none pointer-events-auto pb-0.5">
+      <div className="lg:hidden absolute bottom-3 left-3 right-3 z-30 flex items-center gap-1.5 overflow-x-auto scrollbar-none pointer-events-auto pb-0.5">
         {ECOSYSTEMS_DATA.map((eco) => {
           const isSelected = selectedId === eco.id;
           return (
@@ -949,7 +1032,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
           );
         })}
       </div>
-    </section>
+    </div>
   );
 }
 

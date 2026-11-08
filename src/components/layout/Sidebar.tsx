@@ -106,51 +106,126 @@ function DesktopSidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex flex-col gap-2 px-5 py-8 flex-1 overflow-y-auto">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-          const isActive = pathname === href;
-          return (
-            <Link
-              key={href}
-              href={href}
-              prefetch={true}
-              className={cn(
-                "flex items-center gap-4 px-4 py-3.5 rounded-lg transition-all duration-300 group relative overflow-hidden",
-                isActive
-                  ? "bg-transparent"
-                  : "hover:bg-[rgba(255,255,255,0.02)]"
-              )}
-              style={{
-                color: isActive
-                  ? "var(--color-amber)"
-                  : "var(--color-text-muted)",
-                background: isActive ? "linear-gradient(90deg, rgba(0,212,255,0.06) 0%, rgba(255,150,50,0.01) 100%)" : "transparent"
-              }}
-            >
-              <span
-                className={cn(
-                  "absolute left-0 top-2 bottom-2 w-[3px] rounded-r-md transition-all duration-300",
-                  isActive ? "bg-[var(--color-amber)] opacity-100 scale-y-100 shadow-[0_0_8px_var(--color-amber)]" : "bg-transparent opacity-0 scale-y-0"
-                )}
-              />
-              
-              <Icon
-                size={18}
-                className={cn(
-                  "shrink-0 transition-all duration-300 group-hover:translate-x-[2px]",
-                  isActive ? "drop-shadow-[0_0_8px_rgba(0,212,255,0.4)]" : "group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]"
-                )}
-                style={{
-                  color: isActive ? "var(--color-amber)" : "var(--color-text-muted)",
-                }}
-              />
-              <span className="font-mono text-[11px] tracking-widest font-medium">
-                {label}
-              </span>
-            </Link>
-          );
-        })}
-      </nav>
+      <div data-impeccable-session="feeecdba">
+        <style data-impeccable-css="feeecdba">{`
+          @scope ([data-impeccable-variant="1"]) {
+            :scope .nav-tactical a {
+              position: relative;
+              transition: all 0.25s ease;
+            }
+            :scope .nav-tactical a.active-tactical {
+              background: linear-gradient(90deg, rgba(255, 123, 0, 0.12) 0%, rgba(0, 217, 255, 0.04) 100%);
+              border: 1px solid rgba(255, 123, 0, 0.35);
+              box-shadow: 0 0 16px rgba(255, 123, 0, 0.15);
+            }
+          }
+          @scope ([data-impeccable-variant="2"]) {
+            :scope .nav-cosmic a.active-cosmic {
+              background: linear-gradient(90deg, rgba(0, 217, 255, 0.14) 0%, rgba(130, 71, 229, 0.06) 100%);
+              border-left: 3px solid #00d9ff;
+              box-shadow: inset 4px 0 12px rgba(0, 217, 255, 0.2);
+            }
+          }
+          @scope ([data-impeccable-variant="3"]) {
+            :scope .nav-matrix a.active-matrix {
+              background: #000000;
+              border: 1px dashed rgba(255, 123, 0, 0.5);
+              box-shadow: 0 0 12px rgba(255, 123, 0, 0.2);
+            }
+          }
+        `}</style>
+        <div data-impeccable-variant="1" style={{ display: 'contents' }}>
+          <nav className="nav-tactical flex flex-col gap-2 px-5 py-8 flex-1 overflow-y-auto">
+            {NAV_ITEMS.map(({ href, label, icon: Icon }, idx) => {
+              const isActive = pathname === href;
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  prefetch={true}
+                  className={cn(
+                    "flex items-center gap-3.5 px-3.5 py-3 rounded-lg transition-all duration-200 group relative border",
+                    isActive
+                      ? "active-tactical border-[var(--color-amber)] text-[var(--color-amber)]"
+                      : "border-transparent text-[var(--color-text-muted)] hover:border-[var(--color-border)] hover:bg-[rgba(255,255,255,0.02)]"
+                  )}
+                >
+                  <span className="font-mono text-[9px] text-[var(--color-text-dim)] tracking-wider">
+                    0{idx + 1}
+                  </span>
+                  <Icon
+                    size={17}
+                    className={cn(
+                      "shrink-0 transition-transform duration-200 group-hover:scale-110",
+                      isActive ? "text-[var(--color-amber)] drop-shadow-[0_0_8px_var(--color-amber)]" : "text-[var(--color-text-muted)]"
+                    )}
+                  />
+                  <span className="font-mono text-[11px] tracking-wider font-semibold">
+                    {label}
+                  </span>
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+        <div data-impeccable-variant="2" style={{ display: 'none' }}>
+          <nav className="nav-cosmic flex flex-col gap-1.5 px-5 py-8 flex-1 overflow-y-auto">
+            {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+              const isActive = pathname === href;
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  prefetch={true}
+                  className={cn(
+                    "flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 group relative",
+                    isActive
+                      ? "active-cosmic text-[var(--color-cyan)]"
+                      : "text-[var(--color-text-muted)] hover:text-white hover:bg-[rgba(255,255,255,0.03)]"
+                  )}
+                >
+                  <Icon
+                    size={18}
+                    className={cn(
+                      "shrink-0 transition-transform duration-300 group-hover:translate-x-1",
+                      isActive ? "text-[var(--color-cyan)] drop-shadow-[0_0_10px_rgba(0,217,255,0.6)]" : "text-[var(--color-text-muted)]"
+                    )}
+                  />
+                  <span className="font-sans text-[12px] tracking-wide font-medium">
+                    {label}
+                  </span>
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+        <div data-impeccable-variant="3" style={{ display: 'none' }}>
+          <nav className="nav-matrix flex flex-col gap-2 px-5 py-8 flex-1 overflow-y-auto">
+            {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+              const isActive = pathname === href;
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  prefetch={true}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 transition-all duration-150 font-mono text-[11px] group",
+                    isActive
+                      ? "active-matrix text-[var(--color-amber)]"
+                      : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:border-l-2 hover:border-[var(--color-amber)]"
+                  )}
+                >
+                  <span className={isActive ? "text-[var(--color-amber)] font-bold" : "text-transparent"}>&gt;</span>
+                  <Icon size={16} className="shrink-0" />
+                  <span className="tracking-widest">[{label}]</span>
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+        {/* Variants: insert below this line */}
+        {/* impeccable-variants-end feeecdba */}
+      </div>
 
       {/* Footer Socials */}
       <div className="px-7 pb-8 pt-4">
