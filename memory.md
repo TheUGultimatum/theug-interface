@@ -63,3 +63,4 @@ The core concept:
 3. **Planet Selection**: Verified each planet correctly highlights in canvas and updates the `EcosystemInfoPanel`.
 4. **Responsiveness**: Verified layout stability across 1440px, 1024px, 768px, and 390px.
 5. **Theme Testing**: Verified high contrast in both Dark mode (`#07080B`) and Light mode (`.day-mode`).
+

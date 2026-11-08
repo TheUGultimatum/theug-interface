@@ -6,6 +6,7 @@ import { SolarSystem } from "@/components/sections/SolarSystem";
 import { EcosystemInfoPanel } from "@/components/sections/EcosystemInfoPanel";
 import { ConvictionPillars } from "@/components/sections/ConvictionPillars";
 import { EcosystemFootprint } from "@/components/sections/EcosystemFootprint";
+import { OperatorNodes } from "@/components/sections/OperatorNodes";
 import { Compass, Sparkles, Terminal } from "lucide-react";
 
 export function OnchainObservatory() {
@@ -61,14 +62,22 @@ export function OnchainObservatory() {
       {/* ─────────────────────────────────────────────────────
           5. PROTOCOL & ECOSYSTEM FOOTPRINT (11 WORLDS)
           ───────────────────────────────────────────────────── */}
-      <div className="mb-16">
+      <div className="mb-12">
         <EcosystemFootprint 
           selectedId={selectedEcosystem.id} 
           onSelect={handleSelect} 
         />
+      </div>
+
+      {/* ─────────────────────────────────────────────────────
+          6. ACTIVE OPERATOR NODE INFRASTRUCTURE CLUSTER
+          ───────────────────────────────────────────────────── */}
+      <div className="mb-16">
+        <OperatorNodes />
       </div>
     </div>
   );
 }
 
 export default OnchainObservatory;
+

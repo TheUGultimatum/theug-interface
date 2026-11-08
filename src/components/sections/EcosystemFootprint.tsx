@@ -111,3 +111,4 @@ export function EcosystemFootprint({ selectedId, onSelect }: EcosystemFootprintP
     </section>
   );
 }
+

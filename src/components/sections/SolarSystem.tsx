@@ -95,6 +95,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
   const planetsRef = useRef<PlanetPhysics[]>([]);
   const starsRef = useRef<Star[]>([]);
   const logosRef = useRef<Record<string, HTMLImageElement>>({});
+  const sunImgRef = useRef<HTMLImageElement | null>(null);
 
   // Audio feedback synthesizer
   const playSoundBlip = useCallback((freq = 560, duration = 0.08) => {
@@ -172,6 +173,11 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       img.src = `/logos/${eco.id}.svg`;
       logosRef.current[eco.id] = img;
     });
+
+    // Preload pookie face central sun
+    const pookieImg = new window.Image();
+    pookieImg.src = "/images/pookie-sun.png";
+    sunImgRef.current = pookieImg;
 
     const isMobile = window.innerWidth < 768;
     const count = ECOSYSTEMS_DATA.length;
@@ -446,15 +452,14 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
         p.isHovered = hitDist < (isMobile ? 26 : 22);
       });
 
-      // ─── F. THE CENTRAL SUN: theUG_ ──────────────────────────────
-      // "My identity is the Sun. Large central Sun with neon-lime energy core, luminous surface, multiple glowing rings, subtle solar flares, and theUG typography."
+      // ─── F. THE CENTRAL SUN: theUG_ (POOKIE FACE SUN) ───────────
       coronaAngle.current += 0.012;
-      const sunCoreR = isMobile ? 32 : 40;
+      const sunCoreR = isMobile ? 38 : 48;
 
       // 1. Outer Neon-Lime Coronal Glow Ring
       const outerGlow = ctx.createRadialGradient(0, 0, sunCoreR * 0.5, 0, 0, sunCoreR * 2.8);
-      outerGlow.addColorStop(0, isDay ? "rgba(22, 163, 74, 0.4)" : "rgba(0, 255, 102, 0.45)");
-      outerGlow.addColorStop(0.5, isDay ? "rgba(16, 185, 129, 0.15)" : "rgba(0, 255, 102, 0.15)");
+      outerGlow.addColorStop(0, isDay ? "rgba(22, 163, 74, 0.45)" : "rgba(0, 255, 102, 0.5)");
+      outerGlow.addColorStop(0.5, isDay ? "rgba(16, 185, 129, 0.18)" : "rgba(0, 255, 102, 0.18)");
       outerGlow.addColorStop(1, "transparent");
       ctx.fillStyle = outerGlow;
       ctx.beginPath();
@@ -466,9 +471,9 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       ctx.rotate(coronaAngle.current);
       for (let f = 0; f < 12; f++) {
         const fAngle = (f / 12) * Math.PI * 2;
-        const flareLen = (f % 2 === 0 ? 18 : 10) * (isMobile ? 0.75 : 1.0);
-        ctx.strokeStyle = isDay ? "rgba(22, 163, 74, 0.25)" : "rgba(204, 255, 0, 0.35)";
-        ctx.lineWidth = 1.8;
+        const flareLen = (f % 2 === 0 ? 18 : 10) * (isMobile ? 0.8 : 1.1);
+        ctx.strokeStyle = isDay ? "rgba(22, 163, 74, 0.35)" : "rgba(204, 255, 0, 0.45)";
+        ctx.lineWidth = 2.0;
         ctx.beginPath();
         ctx.moveTo(Math.cos(fAngle) * (sunCoreR + 2), Math.sin(fAngle) * (sunCoreR + 2));
         ctx.lineTo(Math.cos(fAngle) * (sunCoreR + flareLen), Math.sin(fAngle) * (sunCoreR + flareLen));
@@ -476,48 +481,80 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       }
       ctx.restore();
 
-      // 3. Counter-Rotating Inner Flares
+      // 3. Counter-Rotating Inner Energy Halo
       ctx.save();
-      ctx.rotate(-coronaAngle.current * 0.8);
+      ctx.rotate(-coronaAngle.current * 0.85);
       for (let f = 0; f < 8; f++) {
         const fAngle = (f / 8) * Math.PI * 2 + 0.2;
-        ctx.strokeStyle = isDay ? "rgba(5, 150, 105, 0.3)" : "rgba(0, 255, 102, 0.3)";
-        ctx.lineWidth = 2.2;
+        ctx.strokeStyle = isDay ? "rgba(5, 150, 105, 0.4)" : "rgba(0, 255, 102, 0.4)";
+        ctx.lineWidth = 2.4;
         ctx.beginPath();
         ctx.moveTo(Math.cos(fAngle) * (sunCoreR + 3), Math.sin(fAngle) * (sunCoreR + 3));
-        ctx.lineTo(Math.cos(fAngle) * (sunCoreR + 12), Math.sin(fAngle) * (sunCoreR + 12));
+        ctx.lineTo(Math.cos(fAngle) * (sunCoreR + 13), Math.sin(fAngle) * (sunCoreR + 13));
         ctx.stroke();
       }
       ctx.restore();
 
-      // 4. Luminous Neon-Lime Core Body
-      ctx.shadowColor = isDay ? "rgba(22, 163, 74, 0.6)" : "rgba(0, 255, 102, 0.9)";
-      ctx.shadowBlur = isDay ? 22 : 38;
-      const coreGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, sunCoreR);
-      coreGrad.addColorStop(0, "#FFFFFF");
-      coreGrad.addColorStop(0.3, isDay ? "#A7F3D0" : "#CCFF00");
-      coreGrad.addColorStop(0.75, isDay ? "#16A34A" : "#00FF66");
-      coreGrad.addColorStop(1, isDay ? "#065F46" : "#04381C");
-      ctx.fillStyle = coreGrad;
-      ctx.beginPath();
-      ctx.arc(0, 0, sunCoreR, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.shadowBlur = 0;
+      // 4. Pookie Face Central Sun Body
+      const pookieImg = sunImgRef.current;
+      if (pookieImg && pookieImg.complete) {
+        // Render Circular Clipped Pookie Face
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(0, 0, sunCoreR, 0, Math.PI * 2);
+        ctx.clip();
+
+        // Background dark base
+        ctx.fillStyle = "#000000";
+        ctx.fill();
+
+        // Draw image centered inside the circular sun
+        const imgScale = sunCoreR * 2.35;
+        ctx.drawImage(pookieImg, -imgScale / 2, -imgScale / 2 + (sunCoreR * 0.08), imgScale, imgScale);
+        ctx.restore();
+
+        // Radiant Neon-Lime Solar Ring Border
+        ctx.shadowColor = isDay ? "rgba(22, 163, 74, 0.7)" : "rgba(0, 255, 102, 0.95)";
+        ctx.shadowBlur = isDay ? 20 : 32;
+        ctx.strokeStyle = isDay ? "#16A34A" : "#00FF66";
+        ctx.lineWidth = 3.2;
+        ctx.beginPath();
+        ctx.arc(0, 0, sunCoreR, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      } else {
+        // Fallback luminous neon-lime core if image is loading
+        ctx.shadowColor = isDay ? "rgba(22, 163, 74, 0.6)" : "rgba(0, 255, 102, 0.9)";
+        ctx.shadowBlur = isDay ? 22 : 38;
+        const coreGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, sunCoreR);
+        coreGrad.addColorStop(0, "#FFFFFF");
+        coreGrad.addColorStop(0.3, isDay ? "#A7F3D0" : "#CCFF00");
+        coreGrad.addColorStop(0.75, isDay ? "#16A34A" : "#00FF66");
+        coreGrad.addColorStop(1, isDay ? "#065F46" : "#04381C");
+        ctx.fillStyle = coreGrad;
+        ctx.beginPath();
+        ctx.arc(0, 0, sunCoreR, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
 
       // 5. Sun Core Identity Typography (Counter-rotated so text is always straight!)
       ctx.save();
       ctx.rotate(-cam.rotation);
 
-      // Central "theUG_"
-      ctx.fillStyle = "#021A0C";
-      ctx.font = `bold ${isMobile ? 12 : 14}px "IBM Plex Mono", monospace`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText("theUG_", 0, -2);
-
       // Status indicator ring below the sun
       const labelY = sunCoreR + (isMobile ? 18 : 22);
       ctx.fillStyle = isDay ? "#0F172A" : "#FFFFFF";
+      ctx.font = `bold ${isMobile ? 10 : 11}px "Space Grotesk", sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("USMAAN GANI", 0, labelY);
+
+      ctx.fillStyle = isDay ? "#16A34A" : "#00FF66";
+      ctx.font = `bold ${isMobile ? 7.5 : 8.5}px "IBM Plex Mono", monospace`;
+      ctx.fillText("theUG_ // WEB3 CREATOR", 0, labelY + (isMobile ? 13 : 15));
+
+      ctx.restore();
       ctx.font = `bold ${isMobile ? 9.5 : 10.5}px "Space Grotesk", sans-serif`;
       ctx.fillText("USMAAN GANI", 0, labelY);
 
@@ -708,6 +745,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
     });
 
     if (hitPlanet) {
+      try { e.currentTarget.setPointerCapture?.(e.pointerId); } catch {}
       interactionRef.current.dragPlanetId = hitPlanet.id;
       interactionRef.current.isSlingshot = true;
       hitPlanet.isDragging = true;
@@ -929,3 +967,4 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
 }
 
 export default memo(SolarSystem);
+
