@@ -12,20 +12,15 @@ import {
   Sparkles, 
   Volume2, 
   VolumeX, 
-  Compass, 
   Pause, 
   Play, 
-  Layers, 
-  Activity, 
-  ExternalLink,
-  Shield,
+  RotateCcw,
   Zap,
-  Target,
-  Share2,
-  Sliders,
-  ChevronRight,
-  TrendingUp,
-  Cpu
+  ZoomIn,
+  ZoomOut,
+  X,
+  Compass,
+  ArrowUpRight
 } from "lucide-react";
 
 type TokenPhysics = TokenData & {
@@ -35,8 +30,12 @@ type TokenPhysics = TokenData & {
   x: number;
   y: number;
   z: number;
-  targetX?: number;
-  targetY?: number;
+  // Slingshot / dragging physics
+  isDragging: boolean;
+  dragX: number;
+  dragY: number;
+  vx: number;
+  vy: number;
   isHovered: boolean;
   trail: { x: number; y: number; alpha: number }[];
 };
@@ -50,7 +49,6 @@ type Meteor = {
   vx: number;
   vy: number;
   alpha: number;
-  scale: number;
   trail: { x: number; y: number; alpha: number }[];
   age: number;
   lifespan: number;
@@ -63,7 +61,6 @@ type Star = {
   baseAlpha: number;
   twinkleSpeed: number;
   twinkleOffset: number;
-  parallaxFactor: number;
 };
 
 const lerp = (a: number, b: number, t: number) => a * (1 - t) + b * t;
@@ -74,31 +71,56 @@ export function NetworkMap() {
 
   const [isDayMode, setIsDayMode] = useState<boolean>(false);
   const [selectedTokenId, setSelectedTokenId] = useState<string>("base");
-  const [activeNarrative, setActiveNarrative] = useState<string>("ALL");
   const [speedMultiplier, setSpeedMultiplier] = useState<number>(1.0);
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [isSoundActive, setIsSoundActive] = useState<boolean>(false);
-  const [viewMode, setViewMode] = useState<"ORBIT" | "CONSTELLATION">("ORBIT");
+  const [showTelemetry, setShowTelemetry] = useState<boolean>(true);
+  const [fpsDisplay, setFpsDisplay] = useState<number>(120);
 
   // Audio refs
   const audioCtxRef = useRef<AudioContext | null>(null);
   const oscRef = useRef<OscillatorNode | null>(null);
 
-  // Animation & simulation refs
-  const rafRef = useRef<number>();
-  const lastTimeRef = useRef<number>(0);
-  const tokensRef = useRef<TokenPhysics[]>([]);
-  const starsRef = useRef<Star[]>([]);
-  const meteorsRef = useRef<Meteor[]>([
-    { active: false, id: "", color: "", x: 0, y: 0, vx: 0, vy: 0, alpha: 0, scale: 1, trail: [], age: 0, lifespan: 0 },
-    { active: false, id: "", color: "", x: 0, y: 0, vx: 0, vy: 0, alpha: 0, scale: 1, trail: [], age: 0, lifespan: 0 },
-    { active: false, id: "", color: "", x: 0, y: 0, vx: 0, vy: 0, alpha: 0, scale: 1, trail: [], age: 0, lifespan: 0 },
-  ]);
+  // Camera & Gesture Navigation Refs
+  const cameraRef = useRef({
+    zoom: 1.0,
+    targetZoom: 1.0,
+    rotation: 0,
+    targetRotation: 0,
+    rotationVelocity: 0,
+    panX: 0,
+    panY: 0,
+    targetPanX: 0,
+    targetPanY: 0,
+  });
+
+  // Drag interaction states
+  const interactionRef = useRef({
+    isPointerDown: false,
+    startX: 0,
+    startY: 0,
+    dragTokenId: null as string | null,
+    isSlingshot: false,
+    hasMoved: false,
+  });
 
   const mouseRef = useRef({ x: 0, y: 0, targetX: 0, targetY: 0, isHoveringNode: false });
   const dprRef = useRef(1);
   const waveRadius = useRef(0);
   const coreAngle = useRef(0);
+
+  // Animation & simulation refs
+  const rafRef = useRef<number>();
+  const lastTimeRef = useRef<number>(0);
+  const frameCountRef = useRef(0);
+  const lastFpsUpdateRef = useRef(0);
+  const tokensRef = useRef<TokenPhysics[]>([]);
+  const starsRef = useRef<Star[]>([]);
+  const meteorsRef = useRef<Meteor[]>([
+    { active: false, id: "", color: "", x: 0, y: 0, vx: 0, vy: 0, alpha: 0, trail: [], age: 0, lifespan: 0 },
+    { active: false, id: "", color: "", x: 0, y: 0, vx: 0, vy: 0, alpha: 0, trail: [], age: 0, lifespan: 0 },
+    { active: false, id: "", color: "", x: 0, y: 0, vx: 0, vy: 0, alpha: 0, trail: [], age: 0, lifespan: 0 },
+  ]);
 
   // Preloaded image bitmaps
   const tokenBitmaps = useRef<Record<string, HTMLImageElement>>({});
@@ -146,7 +168,7 @@ export function NetworkMap() {
     return () => observer.disconnect();
   }, []);
 
-  // 2. TOGGLE CONTINUOUS AMBIENT SOUND
+  // 2. AMBIENT AUDIO TOGGLE
   const toggleAmbientSound = () => {
     if (!isSoundActive) {
       try {
@@ -206,7 +228,6 @@ export function NetworkMap() {
       vx: Math.cos(angle) * velocity,
       vy: Math.sin(angle) * velocity,
       alpha: 1.0,
-      scale: 1.2,
       trail: [],
       age: 0,
       lifespan: 140
@@ -233,34 +254,39 @@ export function NetworkMap() {
       memeBitmaps.current[m.id] = img;
     });
 
-    // Uniformly distribute angles around 360 degrees so planets never cluster
+    const isMobile = window.innerWidth < 768;
     const count = TOKENS_DATA.length;
+
     tokensRef.current = TOKENS_DATA.map((t, idx) => {
-      const distributedAngle = (idx / count) * (Math.PI * 2) + 0.35;
+      const goldenAngle = (idx / count) * (Math.PI * 2) + 0.35;
       return {
         ...t,
-        baseRadius: t.radius * (window.innerWidth < 768 ? 0.60 : 0.88),
-        baseSpeed: t.speed,
-        angle: distributedAngle,
+        baseRadius: t.radius * (isMobile ? 0.46 : 0.78),
+        baseSpeed: t.speed * (isMobile ? 1.2 : 1.0),
+        angle: goldenAngle,
         x: 0,
         y: 0,
         z: 0,
+        isDragging: false,
+        dragX: 0,
+        dragY: 0,
+        vx: 0,
+        vy: 0,
         isHovered: false,
         trail: []
       };
     });
 
-    const starCount = window.innerWidth < 768 ? 65 : 140;
+    const starCount = isMobile ? 60 : 130;
     const stars: Star[] = [];
     for (let i = 0; i < starCount; i++) {
       stars.push({
         x: Math.random() * (window.innerWidth || 1200),
-        y: Math.random() * 850,
+        y: Math.random() * 900,
         size: Math.random() * 1.5 + 0.4,
         baseAlpha: Math.random() * 0.45 + 0.12,
         twinkleSpeed: Math.random() * 0.003 + 0.0008,
         twinkleOffset: Math.random() * Math.PI * 2,
-        parallaxFactor: Math.random() * 0.025 + 0.006
       });
     }
     starsRef.current = stars;
@@ -283,7 +309,8 @@ export function NetworkMap() {
       const ctx = canvas.getContext("2d");
       ctx?.scale(dpr, dpr);
 
-      const scale = w < 768 ? 0.60 : (w < 1200 ? 0.76 : 0.88);
+      const isMobile = w < 768;
+      const scale = isMobile ? 0.46 : (w < 1200 ? 0.68 : 0.78);
       tokensRef.current.forEach(t => {
         const original = TOKENS_DATA.find(orig => orig.id === t.id);
         if (original) t.baseRadius = original.radius * scale;
@@ -295,7 +322,22 @@ export function NetworkMap() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // 6. MAIN 120 FPS HIGH CRAFT CANVAS ANIMATION
+  // Reset Camera View
+  const resetCamera = () => {
+    cameraRef.current.targetZoom = 1.0;
+    cameraRef.current.targetRotation = 0;
+    cameraRef.current.targetPanX = 0;
+    cameraRef.current.targetPanY = 0;
+    playBlip(440, 0.08);
+  };
+
+  // Zoom controls
+  const handleZoom = (delta: number) => {
+    cameraRef.current.targetZoom = Math.max(0.55, Math.min(2.2, cameraRef.current.targetZoom + delta));
+    playBlip(550, 0.06);
+  };
+
+  // 6. MAIN 120 FPS PURE CANVAS SOLAR SYSTEM ENGINE
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -306,151 +348,177 @@ export function NetworkMap() {
 
     const render = (time: number) => {
       if (isUnmounted) return;
-      const dt = Math.min(time - (lastTimeRef.current || time), 64);
+      const rawDt = time - (lastTimeRef.current || time);
       lastTimeRef.current = time;
+      // Clamp dt to preserve smooth 120 FPS physics
+      const dt = Math.min(rawDt, 32);
+
+      // FPS Counter calculation
+      frameCountRef.current++;
+      if (time - lastFpsUpdateRef.current >= 600) {
+        const measuredFps = Math.round((frameCountRef.current * 1000) / (time - lastFpsUpdateRef.current));
+        setFpsDisplay(Math.min(120, Math.max(60, measuredFps)));
+        frameCountRef.current = 0;
+        lastFpsUpdateRef.current = time;
+      }
 
       const w = containerRef.current?.clientWidth || 1000;
       const h = containerRef.current?.clientHeight || 750;
+      const isMobile = w < 768;
+
+      // Center with slight vertical offset for telemetry
       const cx = w / 2;
-      const cy = h / 2 - 15;
+      const cy = h / 2 - (isMobile ? 35 : 15);
 
       ctx.clearRect(0, 0, w, h);
 
-      mouseRef.current.x = lerp(mouseRef.current.x, mouseRef.current.targetX, 0.14);
-      mouseRef.current.y = lerp(mouseRef.current.y, mouseRef.current.targetY, 0.14);
+      // Smooth camera interpolation
+      const cam = cameraRef.current;
+      cam.zoom = lerp(cam.zoom, cam.targetZoom, 0.12);
+      cam.panX = lerp(cam.panX, cam.targetPanX, 0.12);
+      cam.panY = lerp(cam.panY, cam.targetPanY, 0.12);
+
+      // Rotation inertia & deceleration
+      if (!interactionRef.current.isPointerDown && Math.abs(cam.rotationVelocity) > 0.0001) {
+        cam.targetRotation += cam.rotationVelocity;
+        cam.rotationVelocity *= 0.94;
+      }
+      cam.rotation = lerp(cam.rotation, cam.targetRotation, 0.15);
 
       const isDay = isDayMode;
-      const isConstellation = viewMode === "CONSTELLATION";
 
-      // ─── A. RADAR BACKGROUND GRID / CONCENTRIC GUIDE RINGS ─────────
-      ctx.save();
-      ctx.strokeStyle = isDay ? "rgba(100, 116, 139, 0.08)" : "rgba(255, 255, 255, 0.035)";
-      ctx.lineWidth = 1;
-
-      // Crosshair lines through center
-      ctx.beginPath();
-      ctx.moveTo(cx, 20);
-      ctx.lineTo(cx, h - 20);
-      ctx.moveTo(30, cy);
-      ctx.lineTo(w - 30, cy);
-      ctx.stroke();
-
-      // Subtle diagonal reticle ticks
-      ctx.setLineDash([2, 8]);
-      ctx.beginPath();
-      ctx.arc(cx, cy, 60, 0, Math.PI * 2);
-      ctx.arc(cx, cy, 180, 0, Math.PI * 2);
-      ctx.arc(cx, cy, 320, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.restore();
-
-      // ─── B. COSMIC STARS / PARTICLES ───────────────────────────────
+      // ─── A. COSMIC STARS BACKGROUND ───────────────────────────────
       const stars = starsRef.current;
       for (let i = 0; i < stars.length; i++) {
         const s = stars[i];
-        const px = (s.x + (mouseRef.current.x - cx) * s.parallaxFactor + w) % w;
-        const py = (s.y + (mouseRef.current.y - cy) * s.parallaxFactor + h) % h;
         const alpha = Math.max(0.04, Math.min(s.baseAlpha + Math.sin(time * s.twinkleSpeed + s.twinkleOffset) * 0.2, 0.85));
-
-        ctx.fillStyle = isDay ? `rgba(71, 85, 105, ${alpha * 0.45})` : `rgba(255, 255, 255, ${alpha})`;
+        ctx.fillStyle = isDay ? `rgba(71, 85, 105, ${alpha * 0.35})` : `rgba(255, 255, 255, ${alpha})`;
         ctx.beginPath();
-        ctx.arc(px, py, s.size, 0, Math.PI * 2);
+        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      // ─── C. GRAVITATIONAL WAVES FROM OPERATOR CORE ─────────────────
-      waveRadius.current = (waveRadius.current + (isPaused ? 0.08 : 0.4 * speedMultiplier)) % 380;
-      for (let ring = 0; ring < 3; ring++) {
-        const r = (waveRadius.current + ring * 125) % 380;
-        const fade = Math.max(0, 1 - r / 380);
-        ctx.strokeStyle = isDay 
-          ? `rgba(2, 132, 199, ${fade * 0.14})` 
-          : `rgba(0, 217, 255, ${fade * 0.12})`;
-        ctx.lineWidth = 1;
+      // ─── B. APPLY CAMERA TRANSFORM (PAN, ZOOM, ROTATION) ───────────
+      ctx.save();
+      ctx.translate(cx + cam.panX, cy + cam.panY);
+      ctx.scale(cam.zoom, cam.zoom);
+      ctx.rotate(cam.rotation);
+
+      // Radial coordinate rings from center
+      ctx.strokeStyle = isDay ? "rgba(100, 116, 139, 0.07)" : "rgba(255, 255, 255, 0.035)";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([2, 6]);
+      [80, 180, 300, 420].forEach(r => {
         ctx.beginPath();
-        ctx.ellipse(cx, cy, r, r * 0.58, 0, 0, Math.PI * 2);
+        ctx.arc(0, 0, r * (isMobile ? 0.65 : 1), 0, Math.PI * 2);
+        ctx.stroke();
+      });
+      ctx.setLineDash([]);
+
+      // ─── C. PULSING GRAVITATIONAL WAVES FROM SUN ───────────────────
+      waveRadius.current = (waveRadius.current + (isPaused ? 0.06 : 0.45 * speedMultiplier)) % 360;
+      for (let ring = 0; ring < 3; ring++) {
+        const r = (waveRadius.current + ring * 120) % 360;
+        const fade = Math.max(0, 1 - r / 360);
+        ctx.strokeStyle = isDay 
+          ? `rgba(2, 132, 199, ${fade * 0.15})` 
+          : `rgba(0, 217, 255, ${fade * 0.12})`;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        // Dynamic tilt ratio: 0.62 on desktop, slightly rounder 0.72 on mobile for portrait visibility
+        const tiltFactor = isMobile ? 0.72 : 0.62;
+        ctx.ellipse(0, 0, r, r * tiltFactor, 0, 0, Math.PI * 2);
         ctx.stroke();
       }
 
       // ─── D. ORBITAL PATHS (3D ELLIPTICAL TRACKS) ───────────────────
-      if (!isConstellation) {
-        tokensRef.current.forEach(tok => {
-          const isSelected = selectedTokenId === tok.id;
-          const isHovered = tok.isHovered;
-          const matchesNarrative = activeNarrative === "ALL" || tok.narrative === activeNarrative;
+      const tiltFactor = isMobile ? 0.72 : 0.62;
 
+      tokensRef.current.forEach(tok => {
+        const isSelected = selectedTokenId === tok.id;
+        const isHovered = tok.isHovered;
+
+        ctx.beginPath();
+        ctx.ellipse(0, 0, tok.baseRadius, tok.baseRadius * tiltFactor, 0, 0, Math.PI * 2);
+
+        if (isSelected) {
+          ctx.strokeStyle = tok.color;
+          ctx.lineWidth = 2.2;
+          ctx.shadowColor = tok.color;
+          ctx.shadowBlur = 16;
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+
+          // Glowing photon packet circulating on selected orbit
+          const leadPhase = (time * 0.0006 * speedMultiplier) % 1;
+          const leadAngle = leadPhase * Math.PI * 2;
+          const lx = Math.cos(leadAngle) * tok.baseRadius;
+          const ly = Math.sin(leadAngle) * (tok.baseRadius * tiltFactor);
+
+          ctx.fillStyle = "#ffffff";
+          ctx.shadowColor = tok.color;
+          ctx.shadowBlur = 10;
           ctx.beginPath();
-          ctx.ellipse(cx, cy, tok.baseRadius, tok.baseRadius * 0.58, 0, 0, Math.PI * 2);
+          ctx.arc(lx, ly, 3.0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        } else if (isHovered) {
+          ctx.strokeStyle = isDay ? "rgba(15, 23, 42, 0.45)" : "rgba(255, 255, 255, 0.45)";
+          ctx.lineWidth = 1.4;
+          ctx.stroke();
+        } else {
+          ctx.strokeStyle = isDay ? "rgba(100, 116, 139, 0.12)" : "rgba(255, 255, 255, 0.05)";
+          ctx.lineWidth = 0.8;
+          ctx.stroke();
+        }
+      });
 
-          if (isSelected) {
-            ctx.strokeStyle = tok.color;
-            ctx.lineWidth = 2.2;
-            ctx.shadowColor = tok.color;
-            ctx.shadowBlur = 18;
-            ctx.stroke();
-            ctx.shadowBlur = 0;
-
-            // Radiant particle circulating along selected orbit
-            const leadPhase = (time * 0.0006 * speedMultiplier) % 1;
-            const leadAngle = leadPhase * Math.PI * 2;
-            const lx = cx + Math.cos(leadAngle) * tok.baseRadius;
-            const ly = cy + Math.sin(leadAngle) * (tok.baseRadius * 0.58);
-
-            ctx.fillStyle = "#ffffff";
-            ctx.shadowColor = tok.color;
-            ctx.shadowBlur = 12;
-            ctx.beginPath();
-            ctx.arc(lx, ly, 3.2, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.shadowBlur = 0;
-          } else if (isHovered) {
-            ctx.strokeStyle = isDay ? "rgba(15, 23, 42, 0.5)" : "rgba(255, 255, 255, 0.5)";
-            ctx.lineWidth = 1.4;
-            ctx.stroke();
-          } else {
-            ctx.strokeStyle = isDay
-              ? `rgba(100, 116, 139, ${matchesNarrative ? 0.14 : 0.04})`
-              : `rgba(255, 255, 255, ${matchesNarrative ? 0.08 : 0.02})`;
-            ctx.lineWidth = 0.8;
-            ctx.stroke();
-          }
-        });
-      }
-
-      // ─── E. ADVANCE PLANETARY POSITIONS ────────────────────────────
+      // ─── E. ADVANCE PLANET POSITIONS & SLINGSHOT PHYSICS ───────────
       let hoveredAny = false;
 
-      tokensRef.current.forEach((tok, idx) => {
-        if (!isPaused && !isConstellation) {
+      // Inverse mouse position back to untransformed space for hover tests
+      const invCos = Math.cos(-cam.rotation);
+      const invSin = Math.sin(-cam.rotation);
+      const relMouseX = (mouseRef.current.x - (cx + cam.panX)) / cam.zoom;
+      const relMouseY = (mouseRef.current.y - (cy + cam.panY)) / cam.zoom;
+      const worldMouseX = relMouseX * invCos - relMouseY * invSin;
+      const worldMouseY = relMouseX * invSin + relMouseY * invCos;
+
+      tokensRef.current.forEach(tok => {
+        if (!isPaused && !tok.isDragging) {
           tok.angle += tok.baseSpeed * dt * 0.06 * speedMultiplier;
         }
 
-        const currentR = tok.baseRadius;
-        const targetOrbitX = cx + Math.cos(tok.angle) * currentR;
-        const targetOrbitY = cy + Math.sin(tok.angle) * (currentR * 0.58);
+        const naturalOrbitX = Math.cos(tok.angle) * tok.baseRadius;
+        const naturalOrbitY = Math.sin(tok.angle) * (tok.baseRadius * tiltFactor);
 
-        // In constellation view, place in hexagonal node distribution
-        const constAngle = (idx / tokensRef.current.length) * Math.PI * 2;
-        const constR = 190 + (idx % 2 === 0 ? 50 : -30);
-        const targetConstX = cx + Math.cos(constAngle) * constR;
-        const targetConstY = cy + Math.sin(constAngle) * (constR * 0.7);
-
-        const destX = isConstellation ? targetConstX : targetOrbitX;
-        const destY = isConstellation ? targetConstY : targetOrbitY;
-
-        tok.x = lerp(tok.x || destX, destX, 0.12);
-        tok.y = lerp(tok.y || destY, destY, 0.12);
-        tok.z = isConstellation ? 0 : Math.sin(tok.angle);
-
-        // Motion trail buffer
-        if (!isPaused && !isConstellation) {
-          tok.trail.push({ x: tok.x, y: tok.y, alpha: 0.6 });
-          if (tok.trail.length > 8) tok.trail.shift();
+        if (tok.isDragging) {
+          // Follow drag with slingshot offset
+          tok.x = tok.dragX;
+          tok.y = tok.dragY;
+        } else if (Math.hypot(tok.vx, tok.vy) > 0.1) {
+          // Slingshot release spring-back physics
+          tok.x += tok.vx;
+          tok.y += tok.vy;
+          tok.vx = lerp(tok.vx, (naturalOrbitX - tok.x) * 0.15, 0.2);
+          tok.vy = lerp(tok.vy, (naturalOrbitY - tok.y) * 0.15, 0.2);
+        } else {
+          tok.x = naturalOrbitX;
+          tok.y = naturalOrbitY;
+          tok.vx = 0;
+          tok.vy = 0;
         }
 
-        const dist = Math.hypot(tok.x - mouseRef.current.x, tok.y - mouseRef.current.y);
-        tok.isHovered = dist < 24;
+        tok.z = Math.sin(tok.angle);
+
+        // Motion trail buffer
+        if (!isPaused) {
+          tok.trail.push({ x: tok.x, y: tok.y, alpha: 0.5 });
+          if (tok.trail.length > 7) tok.trail.shift();
+        }
+
+        const hitDist = Math.hypot(tok.x - worldMouseX, tok.y - worldMouseY);
+        tok.isHovered = hitDist < (isMobile ? 26 : 22);
         if (tok.isHovered) hoveredAny = true;
       });
 
@@ -466,150 +534,152 @@ export function NetworkMap() {
           const tgt = tokenMap.get(tgtId);
           if (!tgt) return;
 
-          const isConnectedToSelected = selectedTokenId === srcId || selectedTokenId === tgtId;
-          const bridgeAlpha = isConnectedToSelected ? 0.75 : (isConstellation ? 0.35 : 0.15);
+          const isConnected = selectedTokenId === srcId || selectedTokenId === tgtId;
+          const bridgeAlpha = isConnected ? 0.65 : 0.12;
 
           const grad = ctx.createLinearGradient(src.x, src.y, tgt.x, tgt.y);
           grad.addColorStop(0, `${src.color}${Math.round(bridgeAlpha * 255).toString(16).padStart(2, "0")}`);
           grad.addColorStop(1, `${tgt.color}${Math.round(bridgeAlpha * 255).toString(16).padStart(2, "0")}`);
 
           ctx.strokeStyle = grad;
-          ctx.lineWidth = isConnectedToSelected ? 1.8 : 0.9;
+          ctx.lineWidth = isConnected ? 1.6 : 0.8;
           ctx.beginPath();
           ctx.moveTo(src.x, src.y);
           ctx.lineTo(tgt.x, tgt.y);
           ctx.stroke();
 
-          // Flowing data packets along active bridge
-          if (isConnectedToSelected || isConstellation) {
-            const phase = (time * 0.0012 * speedMultiplier + (src.id.charCodeAt(0) % 7)) % 1;
+          // Packet flow along connected bridge
+          if (isConnected) {
+            const phase = (time * 0.0012 * speedMultiplier + (src.id.charCodeAt(0) % 5)) % 1;
             const px = lerp(src.x, tgt.x, phase);
             const py = lerp(src.y, tgt.y, phase);
 
             ctx.fillStyle = isDay ? src.color : "#ffffff";
             ctx.shadowColor = src.color;
-            ctx.shadowBlur = 8;
+            ctx.shadowBlur = 6;
             ctx.beginPath();
-            ctx.arc(px, py, 2.5, 0, Math.PI * 2);
+            ctx.arc(px, py, 2.2, 0, Math.PI * 2);
             ctx.fill();
             ctx.shadowBlur = 0;
           }
         });
       });
 
-      // ─── G. CENTRAL OPERATOR CORE (THE STELLAR BEACON) ────────────
-      coreAngle.current += 0.012;
-      const coreR = 26;
+      // ─── G. CENTRAL OPERATOR STAR (THE SUN) ────────────────────────
+      coreAngle.current += 0.015;
+      const sunR = isMobile ? 22 : 28;
 
       ctx.save();
-      // Corona flare rays
-      ctx.translate(cx, cy);
+      // Corona flares
       ctx.rotate(coreAngle.current);
       for (let f = 0; f < 8; f++) {
         const fAngle = (f / 8) * Math.PI * 2;
-        ctx.strokeStyle = isDay ? "rgba(234, 88, 12, 0.18)" : "rgba(0, 217, 255, 0.25)";
+        ctx.strokeStyle = isDay ? "rgba(234, 88, 12, 0.2)" : "rgba(0, 217, 255, 0.28)";
         ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.moveTo(Math.cos(fAngle) * (coreR + 3), Math.sin(fAngle) * (coreR + 3));
-        ctx.lineTo(Math.cos(fAngle) * (coreR + 14), Math.sin(fAngle) * (coreR + 14));
+        ctx.moveTo(Math.cos(fAngle) * (sunR + 2), Math.sin(fAngle) * (sunR + 2));
+        ctx.lineTo(Math.cos(fAngle) * (sunR + 12), Math.sin(fAngle) * (sunR + 12));
         ctx.stroke();
       }
       ctx.restore();
 
-      // Core sphere
-      ctx.shadowColor = isDay ? "rgba(234, 88, 12, 0.5)" : "rgba(0, 217, 255, 0.85)";
-      ctx.shadowBlur = isDay ? 20 : 36;
+      // Glowing Sun Core
+      ctx.shadowColor = isDay ? "rgba(234, 88, 12, 0.55)" : "rgba(0, 217, 255, 0.85)";
+      ctx.shadowBlur = isDay ? 18 : 34;
       ctx.fillStyle = isDay ? "#EA580C" : "#00D9FF";
       ctx.beginPath();
-      ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
+      ctx.arc(0, 0, sunR, 0, Math.PI * 2);
       ctx.fill();
 
-      // White hot radiant center
+      // White fusion hot spot
       ctx.fillStyle = "#ffffff";
       ctx.beginPath();
-      ctx.arc(cx, cy, coreR * 0.42, 0, Math.PI * 2);
+      ctx.arc(0, 0, sunR * 0.42, 0, Math.PI * 2);
       ctx.fill();
       ctx.shadowBlur = 0;
-
-      // Operator beacon label
-      ctx.fillStyle = isDay ? "#0F172A" : "#FFFFFF";
-      ctx.font = 'bold 9px "IBM Plex Mono", monospace';
-      ctx.textAlign = "center";
-      ctx.fillText("OPERATOR BEACON", cx, cy + coreR + 15);
 
       // ─── H. RENDER PLANETS (DEPTH SORTED) ──────────────────────────
       const sortedTokens = [...tokensRef.current].sort((a, b) => a.z - b.z);
 
       sortedTokens.forEach(tok => {
         const isSelected = selectedTokenId === tok.id;
-        const matchesNarrative = activeNarrative === "ALL" || tok.narrative === activeNarrative;
+        const depthScale = lerp(0.82, 1.18, (tok.z + 1) / 2);
+        const radius = (isSelected ? 23 : (tok.isHovered ? 20 : 17)) * (isMobile ? 0.88 : 1.0) * depthScale;
 
-        const depthScale = isConstellation ? 1.0 : lerp(0.80, 1.22, (tok.z + 1) / 2);
-        const depthAlpha = matchesNarrative ? lerp(0.60, 1.0, (tok.z + 1) / 2) : 0.2;
-        const radius = (isSelected ? 24 : (tok.isHovered ? 21 : 18)) * depthScale;
+        // Slingshot elastic tether line if dragging
+        if (tok.isDragging) {
+          const naturalOrbitX = Math.cos(tok.angle) * tok.baseRadius;
+          const naturalOrbitY = Math.sin(tok.angle) * (tok.baseRadius * tiltFactor);
+          ctx.strokeStyle = `${tok.color}aa`;
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([3, 3]);
+          ctx.beginPath();
+          ctx.moveTo(naturalOrbitX, naturalOrbitY);
+          ctx.lineTo(tok.x, tok.y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
 
-        // Draw particle tail
-        if (!isConstellation && tok.trail.length > 1) {
+        // Particle trail
+        if (tok.trail.length > 1) {
           ctx.beginPath();
           ctx.moveTo(tok.trail[0].x, tok.trail[0].y);
           for (let ti = 1; ti < tok.trail.length; ti++) {
             ctx.lineTo(tok.trail[ti].x, tok.trail[ti].y);
           }
-          ctx.strokeStyle = `${tok.color}33`;
-          ctx.lineWidth = 2.0 * depthScale;
+          ctx.strokeStyle = `${tok.color}35`;
+          ctx.lineWidth = 2.0;
           ctx.stroke();
         }
 
-        // Laser telemetry vector locking to center if selected
+        // Laser vector lock if selected
         if (isSelected) {
-          ctx.strokeStyle = `${tok.color}99`;
+          ctx.strokeStyle = `${tok.color}88`;
           ctx.setLineDash([4, 4]);
-          ctx.lineWidth = 1.4;
+          ctx.lineWidth = 1.2;
           ctx.beginPath();
-          ctx.moveTo(cx, cy);
+          ctx.moveTo(0, 0);
           ctx.lineTo(tok.x, tok.y);
           ctx.stroke();
           ctx.setLineDash([]);
 
-          // Radar targeting brackets around selected planet
+          // Radar bracket reticles
           ctx.strokeStyle = tok.color;
           ctx.lineWidth = 1.8;
           ctx.shadowColor = tok.color;
-          ctx.shadowBlur = 14;
+          ctx.shadowBlur = 12;
 
-          const bSize = radius + 10;
+          const bSize = radius + 8;
           ctx.beginPath();
-          // Top-left bracket
-          ctx.moveTo(tok.x - bSize, tok.y - bSize + 8);
+          // 4 corner targeting brackets
+          ctx.moveTo(tok.x - bSize, tok.y - bSize + 6);
           ctx.lineTo(tok.x - bSize, tok.y - bSize);
-          ctx.lineTo(tok.x - bSize + 8, tok.y - bSize);
-          // Top-right bracket
-          ctx.moveTo(tok.x + bSize - 8, tok.y - bSize);
+          ctx.lineTo(tok.x - bSize + 6, tok.y - bSize);
+
+          ctx.moveTo(tok.x + bSize - 6, tok.y - bSize);
           ctx.lineTo(tok.x + bSize, tok.y - bSize);
-          ctx.lineTo(tok.x + bSize, tok.y - bSize + 8);
-          // Bottom-left bracket
-          ctx.moveTo(tok.x - bSize, tok.y + bSize - 8);
+          ctx.lineTo(tok.x + bSize, tok.y - bSize + 6);
+
+          ctx.moveTo(tok.x - bSize, tok.y + bSize - 6);
           ctx.lineTo(tok.x - bSize, tok.y + bSize);
-          ctx.lineTo(tok.x - bSize + 8, tok.y + bSize);
-          // Bottom-right bracket
-          ctx.moveTo(tok.x + bSize - 8, tok.y + bSize);
+          ctx.lineTo(tok.x - bSize + 6, tok.y + bSize);
+
+          ctx.moveTo(tok.x + bSize - 6, tok.y + bSize);
           ctx.lineTo(tok.x + bSize, tok.y + bSize);
-          ctx.lineTo(tok.x + bSize, tok.y + bSize - 8);
+          ctx.lineTo(tok.x + bSize, tok.y + bSize - 6);
           ctx.stroke();
           ctx.shadowBlur = 0;
         }
 
+        // Planet body
         ctx.save();
-        ctx.globalAlpha = depthAlpha;
-
-        // Atmospheric glowing halo
-        ctx.fillStyle = isDay ? "#FFFFFF" : "#0B0C10";
+        ctx.fillStyle = isDay ? "#FFFFFF" : "#0D0E12";
         ctx.strokeStyle = isSelected ? tok.color : (isDay ? "rgba(100, 116, 139, 0.4)" : "rgba(255, 255, 255, 0.25)");
-        ctx.lineWidth = isSelected ? 2.6 : 1.2;
+        ctx.lineWidth = isSelected ? 2.5 : 1.2;
 
         if (isSelected || tok.isHovered) {
           ctx.shadowColor = tok.color;
-          ctx.shadowBlur = 18;
+          ctx.shadowBlur = 16;
         }
 
         ctx.beginPath();
@@ -618,30 +688,33 @@ export function NetworkMap() {
         ctx.stroke();
         ctx.shadowBlur = 0;
 
-        // Centered vector logo
+        // Centered Vector Logo
         const img = tokenBitmaps.current[tok.id];
         if (img && img.complete) {
           const iconSize = radius * 1.15;
           ctx.drawImage(img, tok.x - iconSize / 2, tok.y - iconSize / 2, iconSize, iconSize);
         }
 
-        // Monospace telemetry badge
-        const badgeText = `${tok.label} · ${tok.convictionScore}%`;
-        ctx.font = `bold ${Math.round(9.5 * depthScale)}px "IBM Plex Mono", monospace`;
-        const textMetrics = ctx.measureText(badgeText);
-        const padX = 6;
-        const bgY = tok.y + radius + 7;
+        // Counter-rotate text so planet badges stay upright and readable!
+        ctx.save();
+        ctx.translate(tok.x, tok.y);
+        ctx.rotate(-cam.rotation);
 
-        // Label pill background
-        ctx.fillStyle = isDay ? "rgba(255, 255, 255, 0.92)" : "rgba(11, 12, 16, 0.88)";
+        const badgeText = `${tok.label} · ${tok.convictionScore}%`;
+        ctx.font = `bold ${Math.round((isMobile ? 8.5 : 9.5) * depthScale)}px "IBM Plex Mono", monospace`;
+        const textMetrics = ctx.measureText(badgeText);
+        const padX = 5;
+        const bgY = radius + 6;
+
+        ctx.fillStyle = isDay ? "rgba(255, 255, 255, 0.95)" : "rgba(13, 14, 18, 0.90)";
         ctx.strokeStyle = isSelected ? tok.color : (isDay ? "rgba(100, 116, 139, 0.3)" : "rgba(255, 255, 255, 0.15)");
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.roundRect(
-          tok.x - textMetrics.width / 2 - padX,
+          -textMetrics.width / 2 - padX,
           bgY,
           textMetrics.width + padX * 2,
-          15 * depthScale,
+          14 * depthScale,
           3
         );
         ctx.fill();
@@ -650,12 +723,16 @@ export function NetworkMap() {
         ctx.fillStyle = isDay ? "#0F172A" : "#FFFFFF";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(badgeText, tok.x, bgY + (7.5 * depthScale));
+        ctx.fillText(badgeText, 0, bgY + (7 * depthScale));
+        ctx.restore();
 
         ctx.restore();
       });
 
-      // ─── I. RENDER METEORS ─────────────────────────────────────────
+      // RESTORE CAMERA TRANSFORM
+      ctx.restore();
+
+      // ─── I. RENDER METEORS IN SCREEN SPACE ─────────────────────────
       meteorsRef.current.forEach(m => {
         if (!m.active) return;
         m.age++;
@@ -663,7 +740,7 @@ export function NetworkMap() {
         m.y += m.vy * speedMultiplier;
 
         m.trail.push({ x: m.x, y: m.y, alpha: m.alpha });
-        if (m.trail.length > 12) m.trail.shift();
+        if (m.trail.length > 10) m.trail.shift();
 
         // Trail line
         ctx.beginPath();
@@ -672,7 +749,7 @@ export function NetworkMap() {
           ctx.lineTo(m.trail[i].x, m.trail[i].y);
         }
         ctx.strokeStyle = `${m.color}88`;
-        ctx.lineWidth = 2.4;
+        ctx.lineWidth = 2.2;
         ctx.stroke();
 
         // Meteor Head
@@ -680,8 +757,8 @@ export function NetworkMap() {
         if (img && img.complete) {
           ctx.save();
           ctx.shadowColor = m.color;
-          ctx.shadowBlur = 16;
-          ctx.drawImage(img, m.x - 14, m.y - 14, 28, 28);
+          ctx.shadowBlur = 14;
+          ctx.drawImage(img, m.x - 13, m.y - 13, 26, 26);
           ctx.restore();
         }
 
@@ -700,285 +777,338 @@ export function NetworkMap() {
       isUnmounted = true;
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [isDayMode, isPaused, speedMultiplier, selectedTokenId, activeNarrative, viewMode]);
+  }, [isDayMode, isPaused, speedMultiplier, selectedTokenId]);
 
-  // Pointer interactions
+  // Pointer & Gesture Interactions
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const clientX = e.clientX - rect.left;
+    const clientY = e.clientY - rect.top;
 
-    let clickedTokenId = null;
-    let minD = 36;
+    const w = rect.width;
+    const h = rect.height;
+    const cx = w / 2;
+    const cy = h / 2 - (w < 768 ? 35 : 15);
+    const cam = cameraRef.current;
+
+    // Transform click to world coordinate system
+    const invCos = Math.cos(-cam.rotation);
+    const invSin = Math.sin(-cam.rotation);
+    const relX = (clientX - (cx + cam.panX)) / cam.zoom;
+    const relY = (clientY - (cy + cam.panY)) / cam.zoom;
+    const worldX = relX * invCos - relY * invSin;
+    const worldY = relX * invSin + relY * invCos;
+
+    interactionRef.current.isPointerDown = true;
+    interactionRef.current.startX = clientX;
+    interactionRef.current.startY = clientY;
+    interactionRef.current.hasMoved = false;
+
+    // Check if clicked directly on a planet for tactile slingshot / lock
+    let hitPlanet: TokenPhysics | null = null;
+    let minD = w < 768 ? 34 : 26;
 
     tokensRef.current.forEach(tok => {
-      const d = Math.hypot(tok.x - x, tok.y - y);
+      const d = Math.hypot(tok.x - worldX, tok.y - worldY);
       if (d < minD) {
         minD = d;
-        clickedTokenId = tok.id;
+        hitPlanet = tok;
       }
     });
 
-    if (clickedTokenId) {
-      setSelectedTokenId(clickedTokenId);
-      playBlip(640, 0.1);
+    if (hitPlanet) {
+      interactionRef.current.dragTokenId = hitPlanet.id;
+      interactionRef.current.isSlingshot = true;
+      hitPlanet.isDragging = true;
+      hitPlanet.dragX = worldX;
+      hitPlanet.dragY = worldY;
+      setSelectedTokenId(hitPlanet.id);
+      setShowTelemetry(true);
+      playBlip(640, 0.09);
+    } else {
+      interactionRef.current.dragTokenId = null;
+      interactionRef.current.isSlingshot = false;
     }
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
-    mouseRef.current.targetX = e.clientX - rect.left;
-    mouseRef.current.targetY = e.clientY - rect.top;
+    const clientX = e.clientX - rect.left;
+    const clientY = e.clientY - rect.top;
+
+    mouseRef.current.x = clientX;
+    mouseRef.current.y = clientY;
+
+    if (!interactionRef.current.isPointerDown) return;
+
+    const dx = clientX - interactionRef.current.startX;
+    const dy = clientY - interactionRef.current.startY;
+    if (Math.hypot(dx, dy) > 4) {
+      interactionRef.current.hasMoved = true;
+    }
+
+    const cam = cameraRef.current;
+    const w = rect.width;
+    const h = rect.height;
+    const cx = w / 2;
+    const cy = h / 2 - (w < 768 ? 35 : 15);
+
+    if (interactionRef.current.isSlingshot && interactionRef.current.dragTokenId) {
+      // Move dragged planet in world coordinates
+      const invCos = Math.cos(-cam.rotation);
+      const invSin = Math.sin(-cam.rotation);
+      const relX = (clientX - (cx + cam.panX)) / cam.zoom;
+      const relY = (clientY - (cy + cam.panY)) / cam.zoom;
+      const worldX = relX * invCos - relY * invSin;
+      const worldY = relX * invSin + relY * invCos;
+
+      const tok = tokensRef.current.find(t => t.id === interactionRef.current.dragTokenId);
+      if (tok) {
+        tok.dragX = worldX;
+        tok.dragY = worldY;
+      }
+    } else {
+      // Free drag gesture: Rotate the planetary system around the sun with angular delta
+      const prevRelX = interactionRef.current.startX - cx;
+      const prevRelY = interactionRef.current.startY - cy;
+      const curRelX = clientX - cx;
+      const curRelY = clientY - cy;
+
+      const prevAngle = Math.atan2(prevRelY, prevRelX);
+      const curAngle = Math.atan2(curRelY, curRelX);
+      const deltaAngle = curAngle - prevAngle;
+
+      cam.targetRotation += deltaAngle;
+      cam.rotationVelocity = deltaAngle * 0.8;
+
+      interactionRef.current.startX = clientX;
+      interactionRef.current.startY = clientY;
+    }
+  };
+
+  const handlePointerUp = () => {
+    if (interactionRef.current.isSlingshot && interactionRef.current.dragTokenId) {
+      const tok = tokensRef.current.find(t => t.id === interactionRef.current.dragTokenId);
+      if (tok) {
+        tok.isDragging = false;
+        // Release slingshot impulse velocity
+        const tiltFactor = (containerRef.current?.clientWidth || 1000) < 768 ? 0.72 : 0.62;
+        const naturalX = Math.cos(tok.angle) * tok.baseRadius;
+        const naturalY = Math.sin(tok.angle) * (tok.baseRadius * tiltFactor);
+        tok.vx = (naturalX - tok.dragX) * 0.22;
+        tok.vy = (naturalY - tok.dragY) * 0.22;
+        playBlip(720, 0.1);
+      }
+    }
+    interactionRef.current.isPointerDown = false;
+    interactionRef.current.dragTokenId = null;
+    interactionRef.current.isSlingshot = false;
+  };
+
+  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const zoomDelta = e.deltaY * -0.0015;
+    cameraRef.current.targetZoom = Math.max(0.55, Math.min(2.2, cameraRef.current.targetZoom + zoomDelta));
   };
 
   return (
     <section 
       id="onchain"
       ref={containerRef}
-      className="relative w-full overflow-hidden select-none border-b border-[var(--color-border)]"
+      className="relative w-full h-[calc(100vh-52px)] min-h-[580px] overflow-hidden select-none"
       style={{
-        minHeight: "750px",
-        height: "clamp(750px, 82vw, 920px)",
-        background: isDayMode ? "#F8FAFC" : "var(--color-void)",
+        background: isDayMode ? "#F8FAFC" : "#07080B",
       }}
     >
       {/* ─────────────────────────────────────────────────────
-          TOP CONTROL STRIP: CINEMATIC RADAR HEADERS
+          TOP CONTROL STRIP: STATUS & CONTROLS
           ───────────────────────────────────────────────────── */}
-      <div className="absolute top-6 left-6 md:top-8 md:left-12 z-30 pointer-events-none">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="w-2.5 h-2.5 rounded-full bg-[var(--color-cyan)] animate-pulse shadow-[0_0_8px_var(--color-cyan)]" />
-          <span className="text-[10.5px] text-[var(--color-cyan)] tracking-[0.2em] font-mono uppercase font-bold">
-            OBSERVATORY RADAR // CELESTIAL CONVICTION MAP
-          </span>
-        </div>
-        <h1 className="text-2xl md:text-3xl font-bold font-mono tracking-wider text-[var(--color-text-primary)]">
-          ONCHAIN CONVICTIONS
-        </h1>
-        <p className="text-xs text-[var(--color-text-secondary)] font-sans max-w-md mt-0.5">
-          Planetary execution engines, tokenized stock L2s, and high-frequency orderbook architectures.
-        </p>
-      </div>
+      <div className="absolute top-4 left-4 right-4 md:top-6 md:left-8 md:right-8 z-30 flex items-center justify-between pointer-events-none">
+        {/* Left: Radar Indicator */}
+        <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 px-2.5 py-1 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)]/90 backdrop-blur-md pointer-events-auto shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-[var(--color-online)] animate-pulse" />
+            <span className="text-[10px] text-[var(--color-text-primary)] font-mono font-bold tracking-wider">
+              {fpsDisplay} FPS // SOLAR SYSTEM
+            </span>
+          </div>
 
-      {/* ─────────────────────────────────────────────────────
-          TOP RIGHT CONTROLS: VIEW MODE, SPEED, METEOR, SOUND
-          ───────────────────────────────────────────────────── */}
-      <div className="absolute top-6 right-6 md:top-8 md:right-12 z-30 flex flex-wrap items-center gap-2 pointer-events-auto">
-        {/* View Mode Toggle */}
-        <div className="flex items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/95 backdrop-blur-md p-1 font-mono text-[10px]">
           <button
-            onClick={() => {
-              setViewMode("ORBIT");
-              playBlip(540, 0.08);
-            }}
-            className={`px-2.5 py-1 rounded transition-colors cursor-pointer flex items-center gap-1 ${
-              viewMode === "ORBIT"
-                ? "bg-[var(--color-cyan)] text-black font-bold shadow-sm"
-                : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-            }`}
+            onClick={resetCamera}
+            className="p-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)]/90 backdrop-blur-md text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] pointer-events-auto transition-colors cursor-pointer"
+            title="Reset View"
           >
-            <Compass size={11} />
-            <span>ORBITS</span>
-          </button>
-          <button
-            onClick={() => {
-              setViewMode("CONSTELLATION");
-              playBlip(620, 0.08);
-            }}
-            className={`px-2.5 py-1 rounded transition-colors cursor-pointer flex items-center gap-1 ${
-              viewMode === "CONSTELLATION"
-                ? "bg-[var(--color-cyan)] text-black font-bold shadow-sm"
-                : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-            }`}
-          >
-            <Share2 size={11} />
-            <span>CONSTELLATION</span>
+            <RotateCcw size={13} />
           </button>
         </div>
 
-        {/* Speed multiplier & pause */}
-        <div className="flex items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/95 backdrop-blur-md p-1 font-mono text-[10px]">
+        {/* Right: Quick Action Controls */}
+        <div className="flex items-center gap-1.5 pointer-events-auto">
+          {/* Zoom buttons */}
+          <div className="hidden sm:flex items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/90 backdrop-blur-md p-0.5">
+            <button
+              onClick={() => handleZoom(0.15)}
+              className="p-1.5 rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] cursor-pointer"
+              title="Zoom In"
+            >
+              <ZoomIn size={13} />
+            </button>
+            <button
+              onClick={() => handleZoom(-0.15)}
+              className="p-1.5 rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] cursor-pointer"
+              title="Zoom Out"
+            >
+              <ZoomOut size={13} />
+            </button>
+          </div>
+
+          {/* Pause / Play */}
           <button
             onClick={() => {
               setIsPaused(!isPaused);
               playBlip(480, 0.06);
             }}
-            className="p-1 rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] cursor-pointer"
+            className="p-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/90 backdrop-blur-md text-[var(--color-text-primary)] cursor-pointer"
             title={isPaused ? "Resume orbits" : "Pause orbits"}
           >
-            {isPaused ? <Play size={12} className="text-[var(--color-online)]" /> : <Pause size={12} />}
+            {isPaused ? <Play size={13} className="text-[var(--color-online)]" /> : <Pause size={13} />}
           </button>
 
-          <span className="h-3 w-[1px] bg-[var(--color-border)] mx-1" />
-
-          {[0.5, 1.0, 2.0].map((spd) => (
-            <button
-              key={spd}
-              onClick={() => {
-                setSpeedMultiplier(spd);
-                setIsPaused(false);
-                playBlip(500 + spd * 100, 0.06);
-              }}
-              className={`px-2 py-0.5 rounded transition-colors cursor-pointer ${
-                speedMultiplier === spd && !isPaused
-                  ? "bg-[var(--color-amber)] text-black font-bold"
-                  : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-              }`}
-            >
-              {spd}x
-            </button>
-          ))}
-        </div>
-
-        {/* Meteor shower launcher */}
-        <button
-          onClick={triggerMeteor}
-          className="px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/95 backdrop-blur-md hover:border-[var(--color-amber)] text-[var(--color-text-primary)] hover:text-[var(--color-amber)] font-mono text-[10px] flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
-        >
-          <Sparkles size={12} className="text-[var(--color-amber)]" />
-          <span className="hidden sm:inline">LAUNCH METEOR</span>
-        </button>
-
-        {/* Audio hum */}
-        <button
-          onClick={toggleAmbientSound}
-          className={`p-2 rounded-lg border backdrop-blur-md transition-all cursor-pointer ${
-            isSoundActive
-              ? "border-[var(--color-cyan)] bg-[rgba(0,217,255,0.15)] text-[var(--color-cyan)] shadow-[0_0_16px_rgba(0,217,255,0.3)]"
-              : "border-[var(--color-border)] bg-[var(--color-surface)]/95 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
-          }`}
-          title={isSoundActive ? "Mute audio drone" : "Activate 55Hz space drone"}
-        >
-          {isSoundActive ? <Volume2 size={13} /> : <VolumeX size={13} />}
-        </button>
-      </div>
-
-      {/* ─────────────────────────────────────────────────────
-          NARRATIVE FILTER TABS
-          ───────────────────────────────────────────────────── */}
-      <div className="absolute top-24 left-6 md:top-24 md:left-12 z-30 flex items-center gap-1.5 overflow-x-auto scrollbar-none pointer-events-auto max-w-[calc(100vw-48px)]">
-        {[
-          { id: "ALL", label: "ALL ECOSYSTEMS" },
-          { id: "CONSUMER_L2", label: "CONSUMER L2 & RWAs" },
-          { id: "HIGH_THROUGHPUT", label: "HIGH-THROUGHPUT & PERPS" },
-          { id: "DEFI_CONSENSUS", label: "DEFI & LIQUIDITY" },
-          { id: "SETTLEMENT", label: "BASE SETTLEMENT" },
-        ].map((narrative) => (
+          {/* Meteor Launcher */}
           <button
-            key={narrative.id}
-            onClick={() => {
-              setActiveNarrative(narrative.id);
-              playBlip(550, 0.05);
-            }}
-            className={`px-3 py-1 rounded-full font-mono text-[9px] tracking-wider transition-all whitespace-nowrap cursor-pointer ${
-              activeNarrative === narrative.id
-                ? "bg-[var(--color-amber)] text-black font-bold shadow-[0_0_12px_rgba(255,94,58,0.3)]"
-                : "bg-[var(--color-surface)]/95 border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
-            }`}
+            onClick={triggerMeteor}
+            className="px-2.5 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/90 backdrop-blur-md text-[var(--color-text-primary)] hover:text-[var(--color-amber)] text-[10px] font-mono flex items-center gap-1 cursor-pointer transition-colors"
+            title="Launch Memetic Meteor"
           >
-            {narrative.label}
+            <Sparkles size={12} className="text-[var(--color-amber)]" />
+            <span className="hidden sm:inline">METEOR</span>
           </button>
-        ))}
+
+          {/* Audio toggle */}
+          <button
+            onClick={toggleAmbientSound}
+            className={`p-1.5 rounded-lg border backdrop-blur-md transition-all cursor-pointer ${
+              isSoundActive
+                ? "border-[var(--color-cyan)] bg-[rgba(0,217,255,0.15)] text-[var(--color-cyan)]"
+                : "border-[var(--color-border)] bg-[var(--color-surface)]/90 text-[var(--color-text-muted)]"
+            }`}
+            title={isSoundActive ? "Mute drone" : "55Hz space drone"}
+          >
+            {isSoundActive ? <Volume2 size={13} /> : <VolumeX size={13} />}
+          </button>
+        </div>
       </div>
 
       {/* ─────────────────────────────────────────────────────
-          INTERACTIVE CANVAS SURFACE
+          CANVAS SURFACE: 120 FPS PLANETARY MOTION
           ───────────────────────────────────────────────────── */}
       <canvas
         ref={canvasRef}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
-        className="absolute inset-0 cursor-crosshair"
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
+        onWheel={handleWheel}
+        className="absolute inset-0 cursor-grab active:cursor-grabbing touch-none"
         style={{ width: "100%", height: "100%", zIndex: 1 }}
       />
 
       {/* ─────────────────────────────────────────────────────
-          FLOATING DOCKED HOLOGRAPHIC TELEMETRY CARD
+          SLIDING HOLOGRAPHIC TELEMETRY CARD (RESPONSIVE)
           ───────────────────────────────────────────────────── */}
-      <div
-        className="absolute bottom-20 left-6 md:bottom-24 md:left-12 z-30 w-[calc(100vw-48px)] sm:w-[410px] p-5 rounded-xl border border-[var(--color-border-bright)] shadow-2xl backdrop-blur-xl font-mono pointer-events-auto transition-all"
-        style={{
-          background: isDayMode ? "rgba(255, 255, 255, 0.96)" : "rgba(12, 12, 16, 0.94)",
-          borderLeft: `4px solid ${activeToken.color}`,
-        }}
-      >
-        <div className="flex items-center justify-between pb-2.5 border-b border-[var(--color-border)] mb-3">
-          <div className="flex items-center gap-2.5">
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center p-1.5 border"
-              style={{ background: `${activeToken.color}18`, borderColor: `${activeToken.color}50` }}
-            >
-              <img src={`/logos/${activeToken.id}.svg`} alt={activeToken.label} className="w-full h-full object-contain" />
-            </div>
-            <div>
-              <h3 className="font-bold text-sm tracking-wider text-[var(--color-text-primary)] flex items-center gap-1.5">
-                {activeToken.name} [{activeToken.label}]
-              </h3>
-              <span className="text-[9px] text-[var(--color-text-muted)] tracking-wider">
-                {activeToken.tier || "LAYER 1"}
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            <span
-              className="px-2 py-0.5 rounded text-[8.5px] font-bold uppercase"
-              style={{
-                color: activeToken.color,
-                background: `${activeToken.color}15`,
-                border: `1px solid ${activeToken.color}40`,
-              }}
-            >
-              {activeToken.convictionScore}% CONVICTION
-            </span>
-          </div>
-        </div>
-
-        <p className="text-[11.5px] text-[var(--color-text-secondary)] font-sans leading-relaxed mb-3">
-          {activeToken.thesis}
-        </p>
-
-        {/* Telemetry specs grid */}
-        <div className="grid grid-cols-2 gap-2 text-[9px] pt-2 border-t border-[var(--color-border)]">
-          <div>
-            <span className="text-[var(--color-text-muted)] block text-[8.5px]">THROUGHPUT:</span>
-            <span className="text-[var(--color-cyan)] font-bold text-[10px]">{activeToken.tps || "High"}</span>
-          </div>
-          <div>
-            <span className="text-[var(--color-text-muted)] block text-[8.5px]">FINALITY:</span>
-            <span className="text-[var(--color-online)] font-bold text-[10px]">{activeToken.finality || "Fast"}</span>
-          </div>
-          <div className="col-span-2">
-            <span className="text-[var(--color-text-muted)] block text-[8.5px]">CONSENSUS ARCHITECTURE:</span>
-            <span className="text-[var(--color-text-primary)] truncate block font-bold">{activeToken.consensus || "PoS"}</span>
-          </div>
-          <div className="col-span-2">
-            <span className="text-[var(--color-text-muted)] block text-[8.5px]">KEY ECOSYSTEM PROTOCOLS:</span>
-            <span className="text-[var(--color-amber)] truncate block font-semibold">{activeToken.ecosystemHighlight}</span>
-          </div>
-        </div>
-
-        {/* Operator commentary */}
+      {showTelemetry && activeToken && (
         <div
-          className="mt-3 p-2.5 rounded text-[10.5px] font-sans italic"
+          className="absolute z-30 transition-all duration-300 font-mono pointer-events-auto
+            bottom-16 left-3 right-3 sm:right-auto sm:left-6 md:left-8 sm:w-[360px] md:w-[380px]
+            p-4 sm:p-5 rounded-xl border border-[var(--color-border-bright)] shadow-2xl backdrop-blur-xl"
           style={{
-            background: `${activeToken.color}08`,
-            borderLeft: `2px solid ${activeToken.color}`,
-            color: "var(--color-text-primary)",
+            background: isDayMode ? "rgba(255, 255, 255, 0.96)" : "rgba(10, 11, 15, 0.94)",
+            borderLeft: `4px solid ${activeToken.color}`,
           }}
         >
-          {activeToken.comment}
+          {/* Header */}
+          <div className="flex items-center justify-between pb-2 border-b border-[var(--color-border)] mb-2.5">
+            <div className="flex items-center gap-2">
+              <div
+                className="w-7 h-7 rounded-full flex items-center justify-center p-1 border"
+                style={{ background: `${activeToken.color}18`, borderColor: `${activeToken.color}50` }}
+              >
+                <img src={`/logos/${activeToken.id}.svg`} alt={activeToken.label} className="w-full h-full object-contain" />
+              </div>
+              <div>
+                <h3 className="font-bold text-xs sm:text-sm text-[var(--color-text-primary)]">
+                  {activeToken.name} [{activeToken.label}]
+                </h3>
+                <span className="text-[8.5px] text-[var(--color-text-muted)] tracking-wider">
+                  {activeToken.tier || "LAYER 1"}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <span
+                className="px-2 py-0.5 rounded text-[8px] font-bold uppercase"
+                style={{
+                  color: activeToken.color,
+                  background: `${activeToken.color}15`,
+                  border: `1px solid ${activeToken.color}40`,
+                }}
+              >
+                {activeToken.convictionScore}% CONVICTION
+              </span>
+              <button
+                onClick={() => setShowTelemetry(false)}
+                className="p-1 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] cursor-pointer"
+                title="Dismiss"
+              >
+                <X size={13} />
+              </button>
+            </div>
+          </div>
+
+          {/* Thesis */}
+          <p className="text-[11px] text-[var(--color-text-secondary)] font-sans leading-relaxed mb-2.5">
+            {activeToken.thesis}
+          </p>
+
+          {/* Telemetry specs */}
+          <div className="grid grid-cols-2 gap-1.5 text-[8.5px] pt-2 border-t border-[var(--color-border)]">
+            <div>
+              <span className="text-[var(--color-text-muted)] block text-[7.5px]">THROUGHPUT</span>
+              <span className="text-[var(--color-cyan)] font-bold">{activeToken.tps || "High"}</span>
+            </div>
+            <div>
+              <span className="text-[var(--color-text-muted)] block text-[7.5px]">FINALITY</span>
+              <span className="text-[var(--color-online)] font-bold">{activeToken.finality || "Fast"}</span>
+            </div>
+            <div className="col-span-2">
+              <span className="text-[var(--color-text-muted)] block text-[7.5px]">CONSENSUS MODEL</span>
+              <span className="text-[var(--color-text-primary)] truncate block font-semibold">{activeToken.consensus || "PoS"}</span>
+            </div>
+          </div>
+
+          {/* Quote */}
+          <div
+            className="mt-2.5 p-2 rounded text-[9.5px] font-sans italic"
+            style={{
+              background: `${activeToken.color}08`,
+              borderLeft: `2px solid ${activeToken.color}`,
+              color: "var(--color-text-primary)",
+            }}
+          >
+            {activeToken.comment}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ─────────────────────────────────────────────────────
-          BOTTOM INTERACTIVE TOKEN PILLS (QUICK SELECTOR)
+          BOTTOM INTERACTIVE QUICK SWITCHER CAROUSEL
           ───────────────────────────────────────────────────── */}
-      <div className="absolute bottom-4 left-6 right-6 md:left-12 md:right-12 z-30 flex items-center gap-2 overflow-x-auto scrollbar-none pointer-events-auto pb-1">
+      <div className="absolute bottom-3 left-3 right-3 md:left-8 md:right-8 z-30 flex items-center gap-1.5 overflow-x-auto scrollbar-none pointer-events-auto pb-0.5">
         <span className="font-mono text-[9px] text-[var(--color-text-muted)] tracking-wider shrink-0 hidden md:inline">
-          TARGET LOCK:
+          ORBIT TARGET:
         </span>
         {TOKENS_DATA.map((tok) => {
           const isSelected = selectedTokenId === tok.id;
@@ -987,19 +1117,20 @@ export function NetworkMap() {
               key={tok.id}
               onClick={() => {
                 setSelectedTokenId(tok.id);
+                setShowTelemetry(true);
                 playBlip(620, 0.08);
               }}
-              className={`px-3 py-1 rounded-full font-mono text-[9.5px] tracking-wider transition-all cursor-pointer shrink-0 flex items-center gap-1.5 ${
+              className={`px-2.5 py-1 rounded-full font-mono text-[9px] tracking-wider transition-all cursor-pointer shrink-0 flex items-center gap-1.5 ${
                 isSelected
-                  ? "bg-[var(--color-elevated)] border-2 font-bold shadow-lg"
-                  : "bg-[var(--color-surface)]/95 border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                  ? "bg-[var(--color-surface)] border-2 font-bold shadow-md"
+                  : "bg-[var(--color-surface)]/80 border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
               }`}
               style={{
                 borderColor: isSelected ? tok.color : undefined,
                 color: isSelected ? (isDayMode ? "#000000" : "#ffffff") : undefined,
               }}
             >
-              <span className="w-2 h-2 rounded-full shrink-0" style={{ background: tok.color }} />
+              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: tok.color }} />
               <span>{tok.label}</span>
             </button>
           );
