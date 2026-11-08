@@ -1,233 +1,294 @@
-export interface TokenData {
+export interface EcosystemData {
   id: string;
-  label: string;
   name: string;
+  ticker?: string;
+  displayName: string;
+  classification: "Network" | "Settlement Layer" | "Platform" | "Appchain" | "Infrastructure";
+  classificationDetail: string;
   color: string;
-  radius: number;
-  speed: number;
-  wobbleSpeed: number;
-  wobbleAmount: number;
-  ellipseFactor: number;
-  breatheSpeed: number;
-  breatheAmount: number;
-  role: string;
-  thesis: string;
-  strengths: string;
-  sector: string;
-  comment: string;
-  tps?: string;
-  finality?: string;
-  consensus?: string;
-  tier?: string;
-  narrative: "SETTLEMENT" | "CONSUMER_L2" | "HIGH_THROUGHPUT" | "DEFI_CONSENSUS";
-  convictionScore: number; // 0-100
-  ecosystemHighlight: string;
+  accentGlow: string;
+  radius: number; // orbital radius
+  speed: number;  // orbital speed multiplier
+  size: number;   // visual planet radius in px
+  status?: "Building" | "Researching" | "Experimenting" | "Exploring" | "Contributing";
+  personalInterest: string;
+  experimentsAndObservations: string;
+  relevantProjects: string[];
+  toolsAndTech: string[];
+  officialWebsite: string;
+  docsUrl?: string;
+  personalNotes?: string;
 }
 
-export const TOKENS_DATA: TokenData[] = [
-  { 
-    id: "base", label: "BASE", name: "BASE SUPERCHAIN", color: "#0052FF", radius: 95, speed: 0.00062, wobbleSpeed: 0.0004, wobbleAmount: 3, ellipseFactor: 1.0, breatheSpeed: 0.0007, breatheAmount: 3,
-    role: "Consumer Superchain Gateway",
-    thesis: "Coinbase-backed distribution gateway onboarding 100M+ retail users with sub-cent gas fees, Smart Wallet passkeys, and deep social layer integrations (Farcaster, Aerodrome).",
-    strengths: "Coinbase Direct Onramp · Native Smart Wallets · OP Stack Superchain Interop",
-    sector: "Consumer Crypto · SocialFi · Mass Onboarding",
-    comment: "“Distribution beats raw tech every time. Base is the retail liquidity gravitational center.”",
-    tps: "150-300 TPS",
-    finality: "Sub-second Soft / 7d L1 Finality",
-    consensus: "Optimistic Rollup (OP Stack Bedrock)",
-    tier: "Layer 2 Consumer Hub",
-    narrative: "CONSUMER_L2",
-    convictionScore: 98,
-    ecosystemHighlight: "Aerodrome Finance, Virtuals Protocol, Friend.tech, Base App"
+export const ECOSYSTEMS_DATA: EcosystemData[] = [
+  {
+    id: "btc",
+    name: "Bitcoin",
+    ticker: "BTC",
+    displayName: "Bitcoin — BTC",
+    classification: "Settlement Layer",
+    classificationDetail: "Decentralized Monetary Network · Proof-of-Work Reserve",
+    color: "#F7931A",
+    accentGlow: "rgba(247, 147, 26, 0.4)",
+    radius: 460,
+    speed: 0.00010,
+    size: 26,
+    status: "Researching",
+    personalInterest: "The foundational unforgeable monetary ledger of the internet, anchoring global cryptographic property rights through Nakamoto Proof-of-Work.",
+    experimentsAndObservations: "Observing programmatic scarcity, Bitcoin scripting innovations, institutional custody dynamics, and second-layer settlement rails.",
+    relevantProjects: ["Bitcoin Core", "Lightning Network", "Babylon Protocol", "BitVM"],
+    toolsAndTech: ["SHA-256", "Script", "Taproot", "Lightning Nodes"],
+    officialWebsite: "https://bitcoin.org",
+    docsUrl: "https://developer.bitcoin.org",
+    personalNotes: "The immutable digital bedrock of decentralized trust and self-sovereignty."
   },
-  { 
-    id: "robinhood", label: "HOOD", name: "ROBINHOOD CHAIN", color: "#00C805", radius: 125, speed: 0.00054, wobbleSpeed: 0.0003, wobbleAmount: 3, ellipseFactor: 0.98, breatheSpeed: 0.0006, breatheAmount: 3,
-    role: "RWA & Tokenized Stock Layer",
-    thesis: "Dedicated Layer 2 utilizing Arbitrum Orbit Nitro architecture, engineered specifically for 24/7 tokenized equities, real-world asset settlement, and institutional micro-trading.",
-    strengths: "Direct TradFi Brokerage Pipeline · 100ms Micro-Blocks · SEC/Finra Institutional Grade",
-    sector: "Real World Assets (RWA) · Tokenized Equities · TradFi Bridge",
-    comment: "“The bridge that brings Wall Street's trillion-dollar balance sheets into self-custodial onchain rails.”",
-    tps: "1,500+ TPS",
-    finality: "100ms Blocktimes",
-    consensus: "Arbitrum Nitro Orbit (AnyTrust Model)",
-    tier: "Enterprise RWA L2",
-    narrative: "CONSUMER_L2",
-    convictionScore: 94,
-    ecosystemHighlight: "Stock Tokens, Treasury Yield Vaults, 24/7 Brokerage Settlement"
+  {
+    id: "eth",
+    name: "Ethereum",
+    ticker: "ETH",
+    displayName: "Ethereum — ETH",
+    classification: "Settlement Layer",
+    classificationDetail: "Decentralized World Computer · Programmable Settlement Hub",
+    color: "#627EEA",
+    accentGlow: "rgba(98, 126, 234, 0.45)",
+    radius: 410,
+    speed: 0.00014,
+    size: 25,
+    status: "Building",
+    personalInterest: "The universal programmable settlement backbone powering decentralized finance, rollups, account abstraction, and developer culture.",
+    experimentsAndObservations: "Deploying and testing Solidity smart contracts, exploring EIP-4337 smart accounts, and studying modular L2 settlement mechanics.",
+    relevantProjects: ["Uniswap", "Aave", "EigenLayer", "Flashbots"],
+    toolsAndTech: ["Solidity", "EVM", "Foundry", "Hardhat", "viem/wagmi"],
+    officialWebsite: "https://ethereum.org",
+    docsUrl: "https://ethereum.org/en/developers/docs/",
+    personalNotes: "The primary programmable settlement hub anchoring modern rollup ecosystems."
   },
-  { 
-    id: "sol", label: "SOL", name: "SOLANA", color: "#9945FF", radius: 155, speed: 0.00048, wobbleSpeed: 0.002, wobbleAmount: 14, ellipseFactor: 0.95, breatheSpeed: 0.001, breatheAmount: 6,
-    role: "High-Throughput State Machine",
-    thesis: "Single synchronous global state machine operating at physical hardware limits. Multi-threaded Sealevel runtime with 400ms blocktimes, atomic composability, and memetic liquidity dominance.",
-    strengths: "400ms Sub-Second Blocks · Parallel Sealevel Runtime · Firedancer 1M TPS Client",
-    sector: "High-Frequency DeFi · DePIN · Consumer Memetics",
-    comment: "“Unmatched execution velocity and global retail mindshare. The fastest atomic liquidity loop.”",
-    tps: "2,500 - 4,500+ Real TPS",
-    finality: "400ms (Tower BFT)",
-    consensus: "Proof of History + Tower BFT",
-    tier: "High-Frequency Layer 1",
-    narrative: "HIGH_THROUGHPUT",
-    convictionScore: 97,
-    ecosystemHighlight: "Jupiter Exchange, Raydium, Drift Protocol, Helium, Hivemapper"
+  {
+    id: "sol",
+    name: "Solana",
+    ticker: "SOL",
+    displayName: "Solana — SOL",
+    classification: "Network",
+    classificationDetail: "High-Throughput State Machine · Parallel Sealevel Runtime",
+    color: "#9945FF",
+    accentGlow: "rgba(153, 69, 255, 0.45)",
+    radius: 200,
+    speed: 0.00038,
+    size: 23,
+    status: "Experimenting",
+    personalInterest: "Single synchronous global state machine operating at physical hardware limits with sub-second blocktimes and high atomic liquidity velocity.",
+    experimentsAndObservations: "Testing Rust program lifecycles, evaluating parallel execution under congestion, and tracking client diversity developments.",
+    relevantProjects: ["Jupiter Exchange", "Drift Protocol", "Firedancer", "Helium"],
+    toolsAndTech: ["Rust", "Anchor Framework", "Sealevel", "Solana Web3.js"],
+    officialWebsite: "https://solana.com",
+    docsUrl: "https://docs.solana.com",
+    personalNotes: "High-velocity consumer and DeFi execution with exceptional developer mindshare."
   },
-  { 
-    id: "hyperliquid", label: "HYPE", name: "HYPERLIQUID", color: "#00F5D4", radius: 185, speed: 0.00042, wobbleSpeed: 0.0025, wobbleAmount: 12, ellipseFactor: 0.92, breatheSpeed: 0.0012, breatheAmount: 5,
-    role: "Hyper-Performance Orderbook L1",
-    thesis: "Purpose-built financial Layer 1 using native HyperBFT consensus capable of 200,000 orders/sec directly onchain with zero gas fees for book cancellations and native HyperEVM composability.",
-    strengths: "200k Orders/s Throughput · Native HyperEVM · Zero-Gas Limit Orders",
-    sector: "Decentralized Perpetuals · High-Frequency Trading · Native Appchain",
-    comment: "“CEX-tier sub-millisecond execution without custodial risk. The undisputed king of onchain perps.”",
-    tps: "200,000 Orders/sec",
-    finality: "200ms Instant Finality",
-    consensus: "HyperBFT Native Consensus Engine",
-    tier: "Specialized Trading L1",
-    narrative: "HIGH_THROUGHPUT",
-    convictionScore: 96,
-    ecosystemHighlight: "HyperEVM, PURR, HyperBFT Orderbook Engine, HIP-1 Spot Pairs"
+  {
+    id: "base",
+    name: "Base",
+    displayName: "Base",
+    classification: "Network",
+    classificationDetail: "Consumer Superchain · Ethereum Layer 2 Network",
+    color: "#0052FF",
+    accentGlow: "rgba(0, 82, 255, 0.5)",
+    radius: 125,
+    speed: 0.00062,
+    size: 24,
+    status: "Building",
+    personalInterest: "Coinbase-incubated OP Stack rollup optimized to onboard mainstream internet users into seamless onchain applications with sub-cent gas fees.",
+    experimentsAndObservations: "Building on Base testnets, integrating passkey-based Smart Wallets, and tracking the growth of onchain social protocols.",
+    relevantProjects: ["Aerodrome", "Virtuals Protocol", "Farcaster", "Base Name Service"],
+    toolsAndTech: ["OP Stack", "Smart Wallets", "ERC-4337", "Base RPC"],
+    officialWebsite: "https://base.org",
+    docsUrl: "https://docs.base.org",
+    personalNotes: "Where consumer crypto apps and retail distribution naturally converge."
   },
-  { 
-    id: "abstract", label: "ABS", name: "ABSTRACT CHAIN", color: "#00E599", radius: 215, speed: 0.00038, wobbleSpeed: 0.0005, wobbleAmount: 4, ellipseFactor: 0.98, breatheSpeed: 0.0006, breatheAmount: 4,
-    role: "Culture & Consumer ZK Rollup",
-    thesis: "Consumer-centric ZK Stack rollup backed by Igloo (Pudgy Penguins) turning culture, intellectual property, and casual gaming into frictionless onchain transactions with invisible smart accounts.",
-    strengths: "Pudgy Penguins IP Gravity · ZK Stack Security · Native Account Abstraction",
-    sector: "Consumer Crypto · IP Commercialization · Casual Gaming",
-    comment: "“Crypto made invisible for mainstream consumer entertainment and global brand IP.”",
-    tps: "2,000+ ZK TPS",
-    finality: "Instant Soft / Validated ZK Proof",
-    consensus: "ZK Stack (Zero-Knowledge Rollup)",
-    tier: "Consumer ZK Layer 2",
-    narrative: "CONSUMER_L2",
-    convictionScore: 91,
-    ecosystemHighlight: "Pudgy World, Abstract Global Wallet, Overpass IP Portal"
+  {
+    id: "robinhood",
+    name: "Robinhood",
+    displayName: "Robinhood",
+    classification: "Platform",
+    classificationDetail: "Web3 & Crypto Gateway · Retail & Brokerage On-Ramp",
+    color: "#00C805",
+    accentGlow: "rgba(0, 200, 5, 0.45)",
+    radius: 155,
+    speed: 0.00052,
+    size: 22,
+    status: "Exploring",
+    personalInterest: "Major consumer brokerage gateway connecting tens of millions of retail users to crypto trading, self-custody wallets, and institutional RWA pipelines.",
+    experimentsAndObservations: "Monitoring non-custodial wallet infrastructure, Layer-2 scaling integrations, and tokenized real-world asset trading initiatives.",
+    relevantProjects: ["Robinhood Wallet", "Robinhood Crypto Connect", "RWA Settlement"],
+    toolsAndTech: ["Multi-Chain Relayers", "Self-Custody Protocols", "Arbitrum Orbit Stack"],
+    officialWebsite: "https://robinhood.com/us/en/about/crypto/",
+    docsUrl: "https://robinhood.com",
+    personalNotes: "Bridging mainstream brokerage accounts into self-custodial onchain rails."
   },
-  { 
-    id: "berachain", label: "BERA", name: "BERACHAIN", color: "#FF5B00", radius: 245, speed: 0.00034, wobbleSpeed: 0.0008, wobbleAmount: 6, ellipseFactor: 0.96, breatheSpeed: 0.0007, breatheAmount: 4,
-    role: "Proof-of-Liquidity DeFi Core",
-    thesis: "Novel Layer 1 aligning network security with liquidity provision through Proof-of-Liquidity (PoL). Validators direct BGT emissions to liquidity pools, solving mercenary farming forever.",
-    strengths: "Proof-of-Liquidity · Tri-Token Economic Flywheel · EVM-Identical Polaris Engine",
-    sector: "Deep DeFi Architecture · Liquidity Consensus · Yield Infrastructure",
-    comment: "“Transforming passive staked capital into active, productive network liquidity.”",
-    tps: "1,000+ TPS",
-    finality: "2-3 seconds",
-    consensus: "Proof-of-Liquidity (PoL) + CometBFT",
-    tier: "DeFi Consensus Layer 1",
-    narrative: "DEFI_CONSENSUS",
-    convictionScore: 93,
-    ecosystemHighlight: "BEX DEX, Bend Lending, Berps Perps, Honey Stablecoin"
+  {
+    id: "tron",
+    name: "TRON",
+    ticker: "TRX",
+    displayName: "TRON — TRX",
+    classification: "Network",
+    classificationDetail: "High-Velocity Settlement Network · Global Stablecoin Rail",
+    color: "#EF0027",
+    accentGlow: "rgba(239, 0, 39, 0.45)",
+    radius: 340,
+    speed: 0.00021,
+    size: 21,
+    status: "Exploring",
+    personalInterest: "One of the most heavily utilized peer-to-peer settlement networks globally, processing massive daily USDT volumes for emerging market commerce.",
+    experimentsAndObservations: "Analyzing high-frequency stablecoin transaction velocity, energy/bandwidth fee models, and cross-border payment utility.",
+    relevantProjects: ["Tether (USDT on TRON)", "JustLend", "SunSwap"],
+    toolsAndTech: ["DPoS Consensus", "TronWeb", "TVM"],
+    officialWebsite: "https://tron.network",
+    docsUrl: "https://developers.tron.network",
+    personalNotes: "Essential global payments infrastructure with unparalleled micro-transaction volume."
   },
-  { 
-    id: "monad", label: "MONAD", name: "MONAD", color: "#836EF9", radius: 275, speed: 0.00030, wobbleSpeed: 0.0022, wobbleAmount: 10, ellipseFactor: 0.96, breatheSpeed: 0.0009, breatheAmount: 5,
-    role: "Parallel EVM Execution Engine",
-    thesis: "Asynchronous pipelined execution delivering 10,000 TPS while maintaining 100% full byte-code equivalence for existing Ethereum dApps and custom asynchronous state storage via MonadDb.",
-    strengths: "10k TPS Benchmark · Asynchronous MonadBFT · MonadDb Custom SSD Engine",
-    sector: "Parallel EVM · Next-Gen Smart Contracts · High-Capacity DeFi",
-    comment: "“Preserves complete EVM developer muscle memory while removing the single-threaded bottleneck.”",
-    tps: "10,000 Real TPS",
-    finality: "1 Second Single-Slot",
-    consensus: "MonadBFT + MonadDb",
-    tier: "Parallel EVM Layer 1",
-    narrative: "HIGH_THROUGHPUT",
-    convictionScore: 95,
-    ecosystemHighlight: "Kuru DEX, Ambient Finance, Monad Native Tooling"
+  {
+    id: "sui",
+    name: "Sui",
+    ticker: "SUI",
+    displayName: "Sui — SUI",
+    classification: "Network",
+    classificationDetail: "Object-Centric Move VM · High Concurrency Layer 1",
+    color: "#4CA2FE",
+    accentGlow: "rgba(76, 162, 254, 0.45)",
+    radius: 280,
+    speed: 0.00027,
+    size: 22,
+    status: "Researching",
+    personalInterest: "Next-generation Layer 1 designed around first-class programmable objects, parallel execution for non-conflicting transactions, and sub-second Mysticeti consensus.",
+    experimentsAndObservations: "Exploring Sui Move package development, object composability patterns, and dynamic asset ownership.",
+    relevantProjects: ["Cetus Protocol", "Scallop Lending", "SuiPlay0X1", "DeepBook"],
+    toolsAndTech: ["Sui Move", "Mysticeti Consensus", "Object Data Model", "Sui TS SDK"],
+    officialWebsite: "https://sui.io",
+    docsUrl: "https://docs.sui.io",
+    personalNotes: "Clean object-based programming model delivering genuine parallel execution."
   },
-  { 
-    id: "megaeth", label: "MEGA", name: "MEGAETH", color: "#FF3366", radius: 305, speed: 0.00027, wobbleSpeed: 0.002, wobbleAmount: 8, ellipseFactor: 0.95, breatheSpeed: 0.0008, breatheAmount: 4,
-    role: "Real-Time 100k TPS Rollup",
-    thesis: "The world's first real-time Ethereum Layer 2 capable of 100,000 transactions per second with sub-millisecond latency through in-memory computing and specialized node hardware specialization.",
-    strengths: "100k TPS · Sub-Millisecond Blocktimes · In-Memory Execution Architecture",
-    sector: "Ultra-High Frequency · Real-Time Web3 · High-Compute dApps",
-    comment: "“Bringing Web2 datacenter latency directly onto Ethereum's cryptographic security umbrella.”",
-    tps: "100,000 TPS",
-    finality: "<1 millisecond soft finality",
-    consensus: "Hardware-Specialized Sequencer Rollup",
-    tier: "Real-Time Layer 2",
-    narrative: "HIGH_THROUGHPUT",
-    convictionScore: 92,
-    ecosystemHighlight: "Real-Time Gaming, High-Speed CLOBs, Streaming Micropayments"
+  {
+    id: "hyperliquid",
+    name: "Hyperliquid",
+    ticker: "HYPE",
+    displayName: "Hyperliquid — HYPE",
+    classification: "Appchain",
+    classificationDetail: "Custom Financial L1 · Onchain Orderbook & HyperEVM",
+    color: "#00F5D4",
+    accentGlow: "rgba(0, 245, 212, 0.45)",
+    radius: 240,
+    speed: 0.00032,
+    size: 23,
+    status: "Experimenting",
+    personalInterest: "Purpose-built financial Layer 1 running a native Central Limit Order Book directly in consensus at 200k orders/sec with zero gas fees and HyperEVM composability.",
+    experimentsAndObservations: "Studying custom HyperBFT consensus, testing native spot/perp execution APIs, and exploring HyperEVM smart contract deployments.",
+    relevantProjects: ["HyperEVM", "PURR", "HyperBFT Orderbook Engine", "HIP-1 Spot"],
+    toolsAndTech: ["HyperBFT", "HyperEVM", "Python API", "Rust SDK"],
+    officialWebsite: "https://hyperliquid.xyz",
+    docsUrl: "https://hyperliquid.gitbook.io",
+    personalNotes: "Unmatched performance proving that custom financial execution beats generic rollups."
   },
-  { 
-    id: "arbitrum", label: "ARB", name: "ARBITRUM ONE", color: "#28A0F0", radius: 335, speed: 0.00024, wobbleSpeed: 0.0002, wobbleAmount: 2, ellipseFactor: 1.0, breatheSpeed: 0.0005, breatheAmount: 2,
-    role: "DeFi Capital Liquidity L2",
-    thesis: "The highest TVL Ethereum rollup with Stylus multi-language execution (Rust, C, C++ alongside EVM) and battle-tested optimistic interactive fraud proofs.",
-    strengths: "Deepest Rollup TVL · Stylus Multi-Language WASM · Orbit Chain Framework",
-    sector: "Deep DeFi · Institutional Rollups · Multi-VM Architecture",
-    comment: "“The battle-tested benchmark for high-liquidity Ethereum scaling and institutional Orbit chains.”",
-    tps: "60-200 TPS (Spike capable to 400)",
-    finality: "250ms Soft / 7d Settlement",
-    consensus: "Multi-Round Interactive Fraud Proofs",
-    tier: "Layer 2 DeFi Engine",
-    narrative: "CONSUMER_L2",
-    convictionScore: 94,
-    ecosystemHighlight: "GMX, Camelot DEX, Pendle Finance, TreasureDAO"
+  {
+    id: "arc",
+    name: "Arc",
+    displayName: "Arc",
+    classification: "Infrastructure",
+    classificationDetail: "Web3 Infrastructure & Payment Layer · Programmable Commerce",
+    color: "#00E5FF",
+    accentGlow: "rgba(0, 229, 255, 0.4)",
+    radius: 175,
+    speed: 0.00045,
+    size: 20,
+    status: "Researching",
+    personalInterest: "Emerging programmable financial infrastructure focused on developer APIs, cross-chain liquidity abstraction, and friction-free payment settlement.",
+    experimentsAndObservations: "Analyzing merchant checkout flows, programmatic settlement primitives, and stablecoin payment rail integrations.",
+    relevantProjects: ["Arc Protocol", "Developer Commerce SDKs", "Liquidity Relayers"],
+    toolsAndTech: ["REST / GraphQL APIs", "Smart Accounts", "Cross-Chain Bridges"],
+    officialWebsite: "https://arc.market",
+    docsUrl: "https://arc.market/docs",
+    personalNotes: "Pioneering invisible onchain infrastructure for seamless digital transactions."
   },
-  { 
-    id: "sui", label: "SUI", name: "SUI NETWORK", color: "#4ca2fe", radius: 365, speed: 0.00021, wobbleSpeed: 0.0028, wobbleAmount: 11, ellipseFactor: 0.98, breatheSpeed: 0.0008, breatheAmount: 7,
-    role: "Object-Centric Move Engine",
-    thesis: "Move-based paradigm where assets exist as first-class programmable objects. Bypasses global consensus for non-conflicting peer-to-peer asset transfers with Mysticeti consensus.",
-    strengths: "Object Architecture · Mysticeti 390ms Engine · Dynamic Composability",
-    sector: "Gaming Protocols · Low-Latency Asset Ownership · MoveVM",
-    comment: "“The cleanest programmable asset execution primitive in modern crypto architecture.”",
-    tps: "10,000+ Scalable TPS",
-    finality: "390ms (Mysticeti Consensus)",
-    consensus: "Mysticeti / Narwhal-Bullshark",
-    tier: "Object Layer 1",
-    narrative: "HIGH_THROUGHPUT",
-    convictionScore: 90,
-    ecosystemHighlight: "Cetus Protocol, Scallop Lending, SuiPlay0X1 Gaming"
+  {
+    id: "polygon",
+    name: "Polygon",
+    ticker: "POL",
+    displayName: "Polygon — POL",
+    classification: "Network",
+    classificationDetail: "Aggregated EVM Network · AggLayer Multi-Chain Architecture",
+    color: "#8247E5",
+    accentGlow: "rgba(130, 71, 229, 0.45)",
+    radius: 310,
+    speed: 0.00024,
+    size: 22,
+    status: "Contributing",
+    personalInterest: "Pioneering Ethereum scaling ecosystem transitioning toward the unified AggLayer, bridging asynchronous zero-knowledge rollups into unified liquidity.",
+    experimentsAndObservations: "Deploying dApps across Polygon PoS and zkEVM, studying AggLayer unified state proofs, and experimenting with CDK rollups.",
+    relevantProjects: ["AggLayer", "Polygon zkEVM", "QuickSwap", "Polygon CDK"],
+    toolsAndTech: ["POL Token", "Polygon CDK", "zkSNARKs", "Foundry"],
+    officialWebsite: "https://polygon.technology",
+    docsUrl: "https://docs.polygon.technology",
+    personalNotes: "Battle-tested Ethereum scaling network evolving into an interconnected zero-knowledge mesh."
   },
-  { 
-    id: "eth", label: "ETH", name: "ETHEREUM", color: "#627eea", radius: 405, speed: 0.00017, wobbleSpeed: 0.0002, wobbleAmount: 2, ellipseFactor: 1.0, breatheSpeed: 0.0005, breatheAmount: 3,
-    role: "Decentralized World Computer",
-    thesis: "The primary programmable settlement hub of decentralized finance. Unrivaled economic security, developer mindshare, and monetary deflationary mechanics.",
-    strengths: "Decentralized Economic Security · EVM Standard Gravity · Rollup-Centric Settlement Hub",
-    sector: "Programmable Settlement · Core L1",
-    comment: "“The global trust computer anchoring all rollups and decentralized sovereign value.”",
-    tps: "15-30 L1 TPS (Millions via L2s)",
-    finality: "12 mins (Single slot in research)",
-    consensus: "Proof-of-Stake (Gasper Consensus)",
-    tier: "Layer 1 Core Settlement",
-    narrative: "SETTLEMENT",
-    convictionScore: 99,
-    ecosystemHighlight: "Uniswap, Aave, MakerDAO / Sky, EigenLayer, Lido"
-  },
-  { 
-    id: "btc", label: "BTC", name: "BITCOIN", color: "#f7931a", radius: 445, speed: 0.00013, wobbleSpeed: 0.0004, wobbleAmount: 4, ellipseFactor: 0.85, breatheSpeed: 0.0003, breatheAmount: 4,
-    role: "Sovereign Monetary Reserve",
-    thesis: "The unforgeable base layer of decentralized property rights. Unmatched hash rate security, absolute 21M scarcity, and deep institutional ETF custody integration.",
-    strengths: "Absolute 21M Cap · Proof-of-Work Gravity · Sovereign Settlement",
-    sector: "Store of Value · Monetary Base Layer",
-    comment: "“The immutable digital bedrock of the decentralized financial era.”",
-    tps: "7 TPS",
-    finality: "60 mins (Probabilistic)",
-    consensus: "Nakamoto Proof-of-Work (SHA-256)",
-    tier: "Layer 0 Base Reserve",
-    narrative: "SETTLEMENT",
-    convictionScore: 100,
-    ecosystemHighlight: "Lightning Network, Babylon Staking, Ordinals, BitVM"
+  {
+    id: "ton",
+    name: "TON",
+    displayName: "TON",
+    classification: "Network",
+    classificationDetail: "Social Distribution Highway · The Open Network",
+    color: "#0088CC",
+    accentGlow: "rgba(0, 136, 204, 0.45)",
+    radius: 375,
+    speed: 0.00017,
+    size: 23,
+    status: "Exploring",
+    personalInterest: "Cryptographic ecosystem tightly integrated with Telegram's 900M+ global user base, enabling frictionless crypto onboarding via mini-apps and wallet bots.",
+    experimentsAndObservations: "Examining TON actor-model concurrency, FunC / Tact smart contract languages, and Telegram Mini App webhooks.",
+    relevantProjects: ["Telegram Wallet (@wallet)", "STON.fi", "Tonkeeper", "Telegram Mini Apps"],
+    toolsAndTech: ["Tact Language", "FunC", "TON Virtual Machine (TVM)", "Telegram Web Apps"],
+    officialWebsite: "https://ton.org",
+    docsUrl: "https://docs.ton.org",
+    personalNotes: "The ultimate social distribution engine making crypto native to global messaging."
   }
 ];
 
-export const METEOR_TYPES = [
-  { id: "doge", file: "doge.svg", color: "#f3c623", label: "DOGE // CULTURAL ANCHOR", desc: "First memetic sovereign asset, battle-tested through multiple multi-billion dollar market cycles." },
-  { id: "pepe", file: "pepe.svg", color: "#44d62c", label: "PEPE // PURE LIQUIDITY MEMETIC", desc: "Zero-tax, organic viral distribution protocol proving community velocity outpaces venture capital." },
-  { id: "shiba", file: "shiba.svg", color: "#f03b22", label: "SHIB // DECENTRALIZED SWARM", desc: "Community ecosystem pioneering decentralized autonomous governance and L2 scaling." },
-  { id: "pengu", file: "pengu.png", color: "#00f0ff", label: "PUDGY // IP BRAND CONVERGENCE", desc: "Mainstream toy retail and cultural brand converting Web2 consumer attention into onchain activity." }
+export const CONVICTION_PILLARS = [
+  {
+    id: "permissionless",
+    title: "Permissionless Infrastructure",
+    subtitle: "Censorship-Resistant Base Layers",
+    description: "Financial and compute systems must remain open to all participants without centralized gatekeeping. Unforgeable code over trusted intermediaries.",
+    icon: "Shield"
+  },
+  {
+    id: "ownership",
+    title: "Real User Ownership",
+    subtitle: "Self-Custody & Verifiable Identity",
+    description: "True digital sovereignty means users hold the cryptographic keys to their assets, reputation, and data rather than renting them from platforms.",
+    icon: "Key"
+  },
+  {
+    id: "execution",
+    title: "High-Performance Execution",
+    subtitle: "Sub-Second State & Modern VMs",
+    description: "Scaling to global adoption requires modern parallel execution (Sealevel, Move, HyperBFT, Parallel EVMs) that matches Web2 responsiveness with cryptographic integrity.",
+    icon: "Cpu"
+  },
+  {
+    id: "creator-economy",
+    title: "On-Chain Creator Economy",
+    subtitle: "Direct Value Capture",
+    description: "Replacing extractive middleman algorithms with transparent tokenized primitives that return economic sovereignty directly to developers, creators, and communities.",
+    icon: "Sparkles"
+  },
+  {
+    id: "public-learning",
+    title: "Building in Public",
+    subtitle: "Open Documentation & Community",
+    description: "Sharing experiments, validator node guides, and open-source tooling openly. Collective intelligence accelerates decentralized engineering.",
+    icon: "Terminal"
+  }
 ];
 
-export const ECOSYSTEM_RELATIONSHIPS: Record<string, string[]> = {
-  "eth": ["arbitrum", "base", "robinhood", "abstract", "megaeth"],
-  "arbitrum": ["robinhood", "eth"],
-  "base": ["eth", "abstract"],
-  "robinhood": ["arbitrum"],
-  "abstract": ["base", "eth"],
-  "sol": ["hyperliquid", "sui"],
-  "hyperliquid": ["sol", "arbitrum"],
-  "monad": ["eth", "sol"],
-  "megaeth": ["eth", "monad"],
-  "berachain": ["eth", "arbitrum"],
-  "sui": ["sol"]
-};
-
+// Active Operator Nodes maintained by Usmaan Gani
 export const OPERATOR_NODES = [
   {
     name: "DROSERA NETWORK CONSENSUS NODE",
