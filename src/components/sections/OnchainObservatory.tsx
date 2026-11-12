@@ -62,32 +62,33 @@ export function OnchainObservatory() {
   };
 
   return (
-    <div className="relative flex flex-col w-full px-4 sm:px-6 md:px-8 lg:px-10 py-6 sm:py-8 max-w-[1720px] mx-auto min-h-screen">
+    <div className="relative flex flex-col w-full px-3.5 sm:px-6 md:px-8 lg:px-10 py-5 sm:py-8 max-w-[1720px] mx-auto min-h-screen overflow-x-clip">
       {/* ─────────────────────────────────────────────────────────
           MOBILE / TABLET HEADER (Displayed on < lg screens)
+          Fluid responsive typography guarantees 0 text truncation
           ───────────────────────────────────────────────────────── */}
-      <header className="lg:hidden mb-6">
-        <div className="flex items-center gap-2 mb-2.5 text-[var(--color-cyan)] text-xs font-mono tracking-widest uppercase font-bold">
+      <header className="lg:hidden mb-5 sm:mb-6 w-full max-w-full overflow-visible">
+        <div className="flex items-center gap-1.5 sm:gap-2 mb-2 text-[var(--color-cyan)] text-[10.5px] sm:text-xs font-mono tracking-wider sm:tracking-widest uppercase font-bold">
           <span>&gt;</span>
           <span>05 / ON-CHAIN CONVICTION</span>
         </div>
-        <h1 className="text-4xl sm:text-5xl font-black tracking-tight font-display text-[var(--color-text-primary)] leading-[1.05]">
-          <span>ON-CHAIN</span>
+        <h1 className="text-[clamp(1.85rem,7.5vw,2.75rem)] font-black tracking-normal sm:tracking-tight font-display text-[var(--color-text-primary)] leading-[1.08] break-words">
+          <span className="inline-block">ON-CHAIN</span>
           <br />
-          <span className="text-[var(--color-amber)] drop-shadow-[0_0_24px_rgba(255,123,0,0.4)]">
+          <span className="inline-block text-[var(--color-amber)] drop-shadow-[0_0_20px_rgba(255,123,0,0.35)]">
             CONVICTION
           </span>
         </h1>
-        <p className="text-sm text-[var(--color-text-secondary)] font-sans max-w-xl mt-3 leading-relaxed">
+        <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] font-sans max-w-xl mt-2.5 sm:mt-3 leading-relaxed">
           The ecosystems, chains and networks I explore, build on and believe in.
           <span className="animate-pulse text-[var(--color-cyan)] font-mono font-bold">_</span>
         </p>
-        <div className="flex items-center gap-2 mt-4 flex-wrap">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold border border-[var(--color-amber)]/40 bg-[var(--color-amber)]/10 text-[var(--color-amber)]">
+        <div className="flex items-center gap-1.5 sm:gap-2 mt-3.5 sm:mt-4 flex-wrap">
+          <span className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-mono font-bold border border-[var(--color-amber)]/40 bg-[var(--color-amber)]/10 text-[var(--color-amber)]">
             <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-amber)] animate-pulse" />
             SMART CONTRACTS &amp; PROTOCOLS
           </span>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold border border-[var(--color-cyan)]/40 bg-[var(--color-cyan)]/10 text-[var(--color-cyan)]">
+          <span className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-mono font-bold border border-[var(--color-cyan)]/40 bg-[var(--color-cyan)]/10 text-[var(--color-cyan)]">
             <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-cyan)]" />
             CONSENSUS &amp; NODE OPERATOR
           </span>
@@ -102,6 +103,13 @@ export function OnchainObservatory() {
         aria-label="Web3 Solar System Canvas" 
         className="relative w-full rounded-2xl overflow-hidden border border-white/10 bg-[#030508] shadow-[0_0_60px_rgba(0,0,0,0.5)]"
       >
+        {/* MOBILE IN-CANVAS CONTEXT BADGE (Guarantees ON-CHAIN CONVICTION is visible even when scrolled) */}
+        <div className="lg:hidden absolute top-3 left-3 z-30 pointer-events-none flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-white/15 bg-black/75 backdrop-blur-md shadow-md text-[9px] font-mono font-bold">
+          <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-amber)] animate-pulse" />
+          <span className="text-white">ON-CHAIN</span>
+          <span className="text-[var(--color-amber)]">CONVICTION</span>
+        </div>
+
         {/* DESKTOP TOP-LEFT HEADER OVERLAY (Enlarged & Prominently Positioned) */}
         <header className="hidden lg:block absolute top-7 left-8 xl:top-9 xl:left-9 z-30 pointer-events-none max-w-md">
           <div className="flex items-center gap-2 mb-2.5 text-[var(--color-cyan)] text-xs font-mono tracking-widest uppercase font-bold">
