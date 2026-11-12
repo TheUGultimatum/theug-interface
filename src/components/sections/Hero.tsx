@@ -414,63 +414,115 @@ interface HardwareStat {
 
 function VisitorTelemetryPanel() {
   const [stats, setStats] = useState<HardwareStat[]>([
+    { label: "GPU_RENDERER", value: "DETECTING", detail: "WEBGL", color: "var(--color-text-muted)" },
     { label: "CPU_THREADS", value: "DETECTING", detail: "LOGICAL CORES", color: "var(--color-text-muted)" },
     { label: "DEVICE_MEMORY", value: "DETECTING", detail: "RAM TIER", color: "var(--color-text-muted)" },
-    { label: "NETWORK_RTT", value: "PINGING", detail: "LATENCY", color: "var(--color-text-muted)" },
+    { label: "NETWORK_LINK", value: "PINGING", detail: "LATENCY", color: "var(--color-text-muted)" },
     { label: "DISPLAY_MATRIX", value: "READING", detail: "VIEWPORT", color: "var(--color-text-muted)" },
-    { label: "DISPLAY_DPR", value: "READING", detail: "DENSITY", color: "var(--color-text-muted)" },
+    { label: "CLIENT_TIMEZONE", value: "SYNCING", detail: "TIMEZONE", color: "var(--color-text-muted)" },
   ]);
-  const [clientPlatform, setClientPlatform] = useState("PROBING...");
+  const [clientPlatform, setClientPlatform] = useState("SCANNING...");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     const detectHardware = () => {
+      // 1. GPU Renderer via WebGL
+      let gpuName = "HARDWARE_ACCEL";
+      try {
+        const canvas = document.createElement("canvas");
+        const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+        if (gl) {
+          const debugInfo = (gl as WebGLRenderingContext).getExtension("WEBGL_debug_renderer_info");
+          if (debugInfo) {
+            const raw = (gl as WebGLRenderingContext).getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+            if (raw) {
+              gpuName = String(raw)
+                .replace(/ANGLE \(/i, "")
+                .replace(/\sDirect3D.*$/i, "")
+                .replace(/\sOpenGL.*$/i, "")
+                .replace(/,\sor similar/i, "")
+                .replace(/\)$/, "")
+                .trim();
+              if (gpuName.length > 20) {
+                gpuName = gpuName.slice(0, 19) + "…";
+              }
+              gpuName = gpuName.toUpperCase();
+            }
+          }
+        }
+      } catch {
+        gpuName = "GPU ACCELERATED";
+      }
+
+      // 2. CPU Threads
       const cores = navigator.hardwareConcurrency ? `${navigator.hardwareConcurrency} THREADS` : "MULTI-CORE";
 
+      // 3. Memory RAM Tier
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const navAny = navigator as any;
-      const memGB = navAny.deviceMemory ? `≥${navAny.deviceMemory} GB RAM` : "PROTECTED";
+      const memGB = navAny.deviceMemory ? `≥${navAny.deviceMemory} GB RAM` : "HARDWARE_TIER";
 
+      // 4. Network Link & Ping
       const conn = navAny.connection || navAny.mozConnection || navAny.webkitConnection;
       const connType = conn?.effectiveType ? String(conn.effectiveType).toUpperCase() : "ONLINE";
-      const rtt = conn?.rtt ? `${conn.rtt}ms RTT` : "LOW_LATENCY";
+      const rtt = conn?.rtt ? `${conn.rtt}ms RTT` : "LOW_PING";
+      const downlink = conn?.downlink ? `${conn.downlink}M` : "";
+      const netLabel = downlink ? `${rtt} · ${downlink}` : rtt;
 
+      // 5. Display & Color Gamut
       const screenRes = `${window.screen.width}x${window.screen.height}`;
-      const dpr = `${window.devicePixelRatio || 1}x DPR`;
+      const isP3 = window.matchMedia && window.matchMedia("(color-gamut: p3)").matches;
+      const dpr = window.devicePixelRatio ? `${window.devicePixelRatio}x` : "1x";
+      const displayDetail = `${dpr} · ${isP3 ? "P3-HDR" : "sRGB"}`;
 
-      const platformStr = navAny.userAgentData?.platform || (navigator.platform ? navigator.platform : "HOST_DEVICE");
-      setClientPlatform(String(platformStr).toUpperCase().slice(0, 16));
+      // 6. Timezone
+      let tz = "LOCAL";
+      try {
+        const resolved = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        tz = resolved.split("/").pop()?.replace(/_/g, " ").toUpperCase() || "LOCAL";
+      } catch {
+        tz = "UTC";
+      }
+
+      const platformStr = navAny.userAgentData?.platform || (navigator.platform ? navigator.platform : "HOST");
+      setClientPlatform(String(platformStr).toUpperCase().slice(0, 14));
 
       setStats([
         {
-          label: "CPU_THREADS",
-          value: cores,
-          detail: "CORES",
+          label: "GPU_ENGINE",
+          value: gpuName,
+          detail: "HW_ACCEL",
           color: "var(--color-online)",
         },
         {
-          label: "DEVICE_MEMORY",
+          label: "CPU_THREADS",
+          value: cores,
+          detail: "LOGICAL CORES",
+          color: "var(--color-online)",
+        },
+        {
+          label: "SYSTEM_MEMORY",
           value: memGB,
-          detail: "RAM",
+          detail: "RAM_TIER",
           color: "var(--color-amber)",
         },
         {
-          label: "NETWORK_PING",
-          value: rtt,
+          label: "NETWORK_LINK",
+          value: netLabel,
           detail: connType,
           color: "var(--color-cyan)",
         },
         {
-          label: "DISPLAY_RES",
+          label: "DISPLAY_MATRIX",
           value: screenRes,
-          detail: "PIXELS",
+          detail: displayDetail,
           color: "var(--color-online)",
         },
         {
-          label: "PIXEL_RATIO",
-          value: dpr,
-          detail: "SCALE",
+          label: "CLIENT_ZONE",
+          value: tz,
+          detail: "ZONE",
           color: "var(--color-amber)",
         },
       ]);
@@ -489,22 +541,29 @@ function VisitorTelemetryPanel() {
   return (
     <div className="panel hover-glow-edge" style={{ contain: "layout paint style" }}>
       <div className="panel-header flex items-center justify-between">
-        <span className="panel-title font-mono text-[10px]">client_telemetry.sys</span>
-        <span style={{ fontSize: "7px", color: "var(--color-online)", fontFamily: "var(--font-mono)" }}>
+        <span className="panel-title font-mono text-[10px] tracking-wider flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-online)] shadow-sm animate-pulse" />
+          <span>client_telemetry.sys</span>
+        </span>
+        <span style={{ fontSize: "7px", color: "var(--color-online)", fontFamily: "var(--font-mono)", letterSpacing: "0.08em" }}>
           ● {clientPlatform}
         </span>
       </div>
       <div className="panel-body font-mono text-[9px]" style={{ padding: "12px 14px" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "5.5px" }}>
           {stats.map((s) => (
             <div key={s.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ color: "var(--color-text-secondary)", fontSize: "8.5px" }}>{s.label}</span>
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <span style={{ color: "var(--color-text-muted)", fontSize: "8px" }}>{s.detail}</span>
+                <span style={{ color: "var(--color-text-muted)", fontSize: "7.5px" }}>{s.detail}</span>
                 <span style={{ color: s.color, fontWeight: "bold" }}>[{s.value}]</span>
               </div>
             </div>
           ))}
+        </div>
+        <div style={{ marginTop: "8px", paddingTop: "6px", borderTop: "1px solid var(--color-border)", display: "flex", justifyContent: "space-between", fontSize: "7.5px", color: "var(--color-text-muted)" }}>
+          <span>PROBE // LIVE_CLIENT</span>
+          <span style={{ color: "var(--color-cyan)" }}>SYNCED</span>
         </div>
       </div>
     </div>
