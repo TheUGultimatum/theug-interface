@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useRef, memo } from "react";
-import Link from "next/link";
 import { NodeGraph } from "@/components/terminal/NodeGraph";
 
 /* ─── Typewriter hook ────────────────────────────────────── */
@@ -477,154 +476,146 @@ const Stat = memo(function StatComponent({ label, value, highlight = false }: { 
 });
 
 /* ─── Hero Identity Animation ──────────────────────────────── */
-const ROLES = [
-  "Web3 Systems & Smart Contracts",
-  "Autonomous AI Agent Architect",
-  "High-Throughput Node Infrastructure",
-  "Full-Stack Decentralized Protocols",
-  "Kinetic Canvas & 120 FPS Interfaces",
+const ROLES = ["ai systems", "automation", "infrastructure", "web3"];
+const HERO_TITLES = [
+  { line1: "USMAAN", line2: "GANI" },
+  { line1: "INDEPENDENT", line2: "BUILDER" }
 ];
 
-function ScrambleText({ text, trigger }: { text: string; trigger: boolean }) {
-  const [display, setDisplay] = useState(text);
+function ScrambleText({ text, trigger }: { text: string, trigger: boolean }) {
+  const [display, setDisplay] = useState("");
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*<>";
-
+  
   useEffect(() => {
     if (!trigger) {
-      setDisplay(text);
+      // eslint-disable-next-line
+      setDisplay("");
       return;
     }
     let iteration = 0;
     const interval = setInterval(() => {
-      setDisplay(
-        text
-          .split("")
-          .map((char, index) => {
-            if (char === " " || char === "\n" || char === "·") return char;
-            if (index < iteration) return char;
-            return chars[Math.floor(Math.random() * chars.length)];
-          })
-          .join("")
-      );
-
+      setDisplay(text.split("").map((char, index) => {
+        if (char === " " || char === "\\n" || char === "·") return char;
+        if (index < iteration) return char;
+        return chars[Math.floor(Math.random() * chars.length)];
+      }).join(""));
+      
       if (iteration >= text.length) clearInterval(interval);
-      iteration += 1 / 2;
-    }, 25);
+      iteration += 1/2;
+    }, 30);
     return () => clearInterval(interval);
   }, [text, trigger]);
-
+  
   return <>{display}</>;
 }
 
 function HeroIdentity() {
+  const [phase, setPhase] = useState<"init" | "reveal" | "stable">("init");
+  const [initText, setInitText] = useState("");
   const [roleIdx, setRoleIdx] = useState(0);
+  const [titleIdx, setTitleIdx] = useState(0);
 
   useEffect(() => {
-    const roleInterval = setInterval(() => {
-      setRoleIdx((prev) => (prev + 1) % ROLES.length);
-    }, 2800);
-    return () => clearInterval(roleInterval);
+    // Phase 1: Init sequence
+    const text = "SYS.INIT // IDENTITY_MODULE...";
+    let i = 0;
+    const typeInterval = setInterval(() => {
+      setInitText(text.slice(0, i));
+      i++;
+      if (i > text.length) {
+        clearInterval(typeInterval);
+        setTimeout(() => setPhase("reveal"), 400);
+      }
+    }, 40);
+
+    return () => clearInterval(typeInterval);
   }, []);
 
-  return (
-    <div style={{ lineHeight: 0.88, position: "relative" }}>
-      <div className="animate-fade-in" style={{ animationDuration: "0.8s" }}>
-        <h1
-          className="text-hero"
-          style={{
-            margin: 0,
-            display: "flex",
-            flexDirection: "column",
-            lineHeight: 0.88,
-            wordBreak: "break-word",
-          }}
-        >
-          <span>
-            <ScrambleText text="USMAAN" trigger={true} />
-          </span>
-          <span style={{ color: "var(--color-text-muted)" }}>
-            <ScrambleText text="GANI" trigger={true} />
-          </span>
-        </h1>
+  useEffect(() => {
+    if (phase === "reveal") {
+      setTimeout(() => setPhase("stable"), 1200); // Give scramble time to finish
+    }
+  }, [phase]);
 
-        <div
-          className="animate-fade-in-up"
-          style={{
-            marginTop: "18px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-start",
-            gap: "14px",
-            flexWrap: "wrap",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
-            <span
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: "10px",
-                color: "var(--color-text-muted)",
-                letterSpacing: "0.1em",
-              }}
-            >
-              ALIAS
-            </span>
-            <span
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: "12px",
-                color: "var(--color-amber)",
-                border: "1px solid var(--color-amber-dim)",
-                background: "rgba(255,94,58,0.06)",
-                padding: "3px 10px",
-                borderRadius: "4px",
-                letterSpacing: "0.08em",
-                fontWeight: 600,
-              }}
-            >
-              theUG_
-            </span>
-          </div>
-          <span style={{ color: "var(--color-border)" }} className="hidden sm:inline">
-            |
-          </span>
-          <div
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: "12px",
-              color: "var(--color-cyan)",
-              letterSpacing: "0.06em",
-              overflow: "hidden",
-              position: "relative",
-              height: "20px",
-              display: "block",
-              flexShrink: 0,
-              minWidth: "260px",
+  useEffect(() => {
+    if (phase !== "stable") return;
+    const roleInterval = setInterval(() => {
+      setRoleIdx(prev => (prev + 1) % ROLES.length);
+    }, 2500);
+    const titleInterval = setInterval(() => {
+      setTitleIdx(prev => (prev + 1) % HERO_TITLES.length);
+    }, 4500); // 4.5 seconds per title loop
+    return () => {
+      clearInterval(roleInterval);
+      clearInterval(titleInterval);
+    };
+  }, [phase]);
+
+  return (
+    <div style={{ lineHeight: 0.88, position: "relative", minHeight: "120px" }}>
+      {phase === "init" && (
+        <div className="font-mono text-[11px] text-[var(--color-text-secondary)] mt-4 animate-pulse">
+          $ {initText}<span className="cursor-blink" />
+        </div>
+      )}
+
+      {(phase === "reveal" || phase === "stable") && (
+        <div className="animate-fade-in" style={{ animationDuration: "1s" }}>
+          <h1 
+            className="text-hero" 
+            style={{ 
+              margin: 0, 
+              display: "flex", 
+              flexDirection: "column",
+              fontSize: titleIdx === 0 ? undefined : "clamp(42px, 8vw, 76px)",
+              lineHeight: titleIdx === 0 ? 0.88 : 0.95,
+              wordBreak: "break-word"
             }}
           >
-            <div
-              style={{
-                transition: "transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                transform: `translateY(-${roleIdx * 20}px)`,
-              }}
-            >
-              {ROLES.map((role, i) => (
-                <div
-                  key={i}
-                  style={{
-                    height: "20px",
-                    display: "flex",
-                    alignItems: "center",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  &gt; {role}
-                </div>
-              ))}
+            <span><ScrambleText key={`l1-${titleIdx}`} text={HERO_TITLES[titleIdx].line1} trigger={phase === "reveal" || phase === "stable"} /></span>
+            <span style={{ color: "var(--color-text-muted)" }}>
+              <ScrambleText key={`l2-${titleIdx}`} text={HERO_TITLES[titleIdx].line2} trigger={phase === "reveal" || phase === "stable"} />
+            </span>
+          </h1>
+          
+          <div 
+            className="animate-fade-in-up" 
+            style={{ 
+              marginTop: "16px", display: "flex", alignItems: "center", justifyContent: "flex-start",
+              gap: "16px", flexWrap: "wrap",
+              opacity: phase === "stable" ? 1 : 0, transition: "opacity 0.6s ease 0.6s"
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--color-text-muted)", letterSpacing: "0.1em" }}>AKA</span>
+              <span style={{
+                fontFamily: "var(--font-mono)", fontSize: "12px", color: "var(--color-amber)",
+                border: "1px solid var(--color-amber-dim)", padding: "2px 8px", borderRadius: "1px",
+                letterSpacing: "0.08em",
+              }}>theUG</span>
+            </div>
+            <span style={{ color: "var(--color-border)" }} className="hidden sm:inline">|</span>
+            <div style={{
+              fontFamily: "var(--font-mono)", fontSize: "11px", color: "var(--color-cyan)", 
+              letterSpacing: "0.08em", overflow: "hidden", position: "relative",
+              height: "16px", display: "block", flexShrink: 0, minWidth: "160px"
+            }}>
+              <div 
+                style={{ 
+                  transition: "transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                  transform: `translateY(-${roleIdx * 16}px)` 
+                }}
+              >
+                {ROLES.map((role, i) => (
+                  <div key={i} style={{ height: "16px", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>
+                    &gt; {role}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -633,173 +624,90 @@ function HeroIdentity() {
 export function Hero() {
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setTimeout(() => setMounted(true), 60);
-  }, []);
+  useEffect(() => { setTimeout(() => setMounted(true), 60); }, []);
 
   return (
-    <section
-      id="home"
-      style={{
-        minHeight: "100dvh",
-        paddingTop: "clamp(80px, 11vh, 130px)",
-        paddingBottom: "clamp(48px, 7vh, 90px)",
-        paddingLeft: "clamp(28px, 4vw, 60px)",
-        paddingRight: "clamp(28px, 4vw, 60px)",
-        display: "flex",
-        alignItems: "center",
-      }}
-    >
+    <section id="home" style={{
+      minHeight: "100dvh",
+      paddingTop: "clamp(80px, 11vh, 130px)",
+      paddingBottom: "clamp(48px, 7vh, 90px)",
+      paddingLeft: "clamp(28px, 4vw, 60px)",
+      paddingRight: "clamp(28px, 4vw, 60px)",
+      display: "flex", alignItems: "center",
+    }}>
       <div style={{ width: "100%", maxWidth: "1420px", margin: "0 auto" }}>
+
         {/* System breadcrumb */}
         <div
           className={mounted ? "animate-fade-in" : "anim-hidden"}
           style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
             marginBottom: "clamp(28px, 4vh, 48px)",
             paddingBottom: "14px",
             borderBottom: "1px solid var(--color-border)",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <span
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: "10px",
-                color: "var(--color-text-muted)",
-                letterSpacing: "0.1em",
-              }}
-            >
-              INDEX.01
-            </span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--color-text-muted)", letterSpacing: "0.1em" }}>INDEX.01</span>
             <span style={{ color: "var(--color-border)", fontSize: "10px" }}>—</span>
-            {["AI SYSTEMS", "AUTONOMOUS AGENTS", "BLOCKCHAIN INFRA", "WEB3"].map(
-              (tag, i, arr) => (
-                <span key={tag} style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                  <span
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: "9px",
-                      letterSpacing: "0.12em",
-                      color: "var(--color-text-muted)",
-                    }}
-                  >
-                    {tag}
-                  </span>
-                  {i < arr.length - 1 && <span style={{ color: "var(--color-border)" }}>·</span>}
-                </span>
-              )
-            )}
+            {["AI SYSTEMS", "AUTOMATION", "INFRASTRUCTURE", "WEB3"].map((tag, i, arr) => (
+              <span key={tag} style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: "9px", letterSpacing: "0.12em", color: "var(--color-text-muted)" }}>{tag}</span>
+                {i < arr.length - 1 && <span style={{ color: "var(--color-border)" }}>·</span>}
+              </span>
+            ))}
           </div>
-          <span
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: "9px",
-              color: "var(--color-text-muted)",
-              letterSpacing: "0.1em",
-            }}
-          >
-            BUILD_0525 // MAINNET
-          </span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: "var(--color-text-muted)", letterSpacing: "0.1em" }}>BUILD_0525</span>
         </div>
 
         {/* Main grid — asymmetric 5:7 */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "5fr 7fr",
-            gap: "clamp(32px, 5vw, 64px)",
-            alignItems: "start",
-          }}
-          className="hero-grid"
-        >
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "5fr 7fr",
+          gap: "clamp(32px, 5vw, 64px)",
+          alignItems: "start",
+        }} className="hero-grid">
+
           {/* ── LEFT ── */}
           <div
             className={mounted ? "animate-fade-in-up" : "anim-hidden"}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "clamp(22px, 3vh, 34px)",
-              minWidth: 0,
-            }}
+            style={{ display: "flex", flexDirection: "column", gap: "clamp(20px, 3vh, 32px)", minWidth: 0 }}
           >
             <HeroIdentity />
 
-            <p
-              style={{
-                color: "var(--color-text-secondary)",
-                fontSize: "14px",
-                lineHeight: 1.85,
-                maxWidth: "420px",
-                fontFamily: "var(--font-space-grotesk)",
-              }}
-            >
-              Building experimental AI agent tooling, autonomous workflows,
-              high-throughput blockchain infrastructure, and immersive system interfaces.
+            <p style={{
+              color: "var(--color-text-secondary)", fontSize: "13px",
+              lineHeight: 1.85, maxWidth: "380px",
+              fontFamily: "var(--font-space-grotesk)",
+            }}>
+              Building experimental AI tooling, autonomous workflows,
+              blockchain infrastructure, and immersive system interfaces.
             </p>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-              <Link href="/projects" className="btn-primary" id="cta-workspace">
-                &gt;_ EXPLORE PROJECTS
-              </Link>
-              <Link href="/blogs" className="btn-secondary" id="cta-blogs">
-                DISPATCHES & ESSAYS <span className="btn-arrow">→</span>
-              </Link>
-              <Link href="/onchain" className="btn-secondary hidden lg:inline-flex" id="cta-solar">
-                SOLAR SYSTEM <span className="btn-arrow">→</span>
-              </Link>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+              <a href="#projects" className="btn-primary" id="cta-workspace">
+                &gt;_ ENTER WORKSPACE
+              </a>
+              <a href="#projects" className="btn-secondary" id="cta-projects">
+                PROJECTS <span className="btn-arrow">→</span>
+              </a>
             </div>
 
             {/* Stats */}
-            <div
-              style={{
-                display: "flex",
-                gap: "1px",
-                border: "1px solid var(--color-border)",
-                background: "var(--color-elevated)",
-                borderRadius: "6px",
-                overflow: "hidden",
-              }}
-            >
-              <Stat label="BASE" value="India // UTC+5:30" />
-              <Stat label="STATUS" value="Building Active Systems" highlight />
-              <Stat label="FOCUS" value="Web3 & Autonomous Agents" />
+            <div style={{ display: "flex", gap: "1px", border: "1px solid var(--color-border)" }}>
+              <Stat label="BASE"   value="India" />
+              <Stat label="STATUS" value="Building" highlight />
+              <Stat label="EXP"    value="4Y+" />
             </div>
 
-            {/* Vertical rule + live beacon */}
-            <div
-              style={{
-                paddingTop: "16px",
-                borderTop: "1px solid var(--color-border)",
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-              }}
-            >
-              <span
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "9px",
-                  color: "var(--color-text-muted)",
-                  letterSpacing: "0.1em",
-                }}
-              >
-                AVAILABLE FOR PROTOCOL & SYSTEM COLLABORATION
-              </span>
+            {/* Vertical rule + decorative text */}
+            <div style={{
+              paddingTop: "16px", borderTop: "1px solid var(--color-border)",
+              display: "flex", alignItems: "center", gap: "12px",
+            }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: "var(--color-text-muted)", letterSpacing: "0.1em" }}>AVAILABLE FOR COLLABORATION</span>
               <div style={{ flex: 1, height: "1px", background: "var(--color-border)" }} />
-              <span
-                style={{
-                  width: "6px",
-                  height: "6px",
-                  borderRadius: "50%",
-                  background: "var(--color-online)",
-                  boxShadow: "0 0 8px var(--color-online)",
-                  flexShrink: 0,
-                }}
-                className="animate-pulse"
-              />
+              <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "var(--color-online)", flexShrink: 0 }} />
             </div>
           </div>
 
@@ -811,33 +719,30 @@ export function Hero() {
             <Terminal />
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-              {/* Telemetry Hardware / Engine Monitor */}
+              {/* Metrics */}
+              {/* Active Systems Operations Monitor */}
               <div className="panel hover-glow-edge" style={{ contain: "layout paint style" }}>
                 <div className="panel-header flex items-center justify-between">
-                  <span className="panel-title">telemetry.sys</span>
-                  <span
-                    style={{
-                      fontSize: "8px",
-                      color: "var(--color-online)",
-                      fontFamily: "var(--font-mono)",
-                      letterSpacing: "0.08em",
-                    }}
-                  >
-                    ● 120 FPS
+                  <span className="panel-title">active_systems.log</span>
+                  <span style={{ fontSize: "7px", color: "var(--color-online)", fontFamily: "var(--font-mono)" }}>
+                    ● SYS_OK
                   </span>
                 </div>
-                <div
-                  className="panel-body"
-                  style={{
-                    padding: "14px 16px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "8px",
-                  }}
-                >
-                  {METRICS.map((m) => (
-                    <LiveMetric key={m.label} metric={m} />
-                  ))}
+                <div className="panel-body font-mono text-[9px]" style={{ padding: "12px 14px" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    {[
+                      { label: "LOCAL_LLM_CLUSTER",    value: "ONLINE", color: "var(--color-online)" },
+                      { label: "AUTOMATION_PIPELINES", value: "ACTIVE", color: "var(--color-amber)" },
+                      { label: "NODE_INFRASTRUCTURE",  value: "SYNCED", color: "var(--color-online)" },
+                      { label: "GPU_INFERENCE_CORE",   value: "READY",  color: "var(--color-cyan)" },
+                      { label: "CONTACT_UPLINK",       value: "STABLE", color: "var(--color-cyan)" }
+                    ].map((sys) => (
+                      <div key={sys.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ color: "var(--color-text-secondary)", fontSize: "8.5px" }}>{sys.label}</span>
+                        <span style={{ color: sys.color, fontWeight: "bold" }}>[{sys.value}]</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
 
