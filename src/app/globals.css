@@ -325,6 +325,11 @@ body {
   to { background-position: 0 4px; }
 }
 
+@keyframes laser-sweep {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 /* Film grain noise */
 .bg-noise {
   position: absolute;

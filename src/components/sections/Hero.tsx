@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, useRef, memo } from "react";
+import Link from "next/link";
+import { ArrowUpRight, Radio } from "lucide-react";
 import { NodeGraph } from "@/components/terminal/NodeGraph";
 
 /* ─── Typewriter hook ────────────────────────────────────── */
@@ -814,30 +816,63 @@ export function Hero() {
               <Stat label="EXP"    value="4Y+" />
             </div>
 
-            {/* Highlighted Interactive Collaboration Beacon */}
-            <a
+            {/* Redesigned Animated Kinetic Collaboration Uplink */}
+            <Link
               href="/contact"
-              className="group flex items-center justify-between p-3.5 rounded-xl border border-[var(--color-online)]/40 bg-[rgba(0,255,102,0.05)] hover:bg-[rgba(0,255,102,0.1)] hover:border-[var(--color-online)] transition-all cursor-pointer shadow-sm"
-              title="Open direct comms with Usmaan Gani"
+              className="group relative overflow-hidden rounded-2xl border border-[var(--color-online)]/30 bg-[var(--color-surface)] hover:border-[var(--color-online)] transition-all duration-300 p-4 md:p-5 shadow-sm hover:shadow-[0_8px_30px_rgba(0,255,102,0.15)] hover:-translate-y-0.5 cursor-pointer block"
+              title="Open direct communication channel with Usmaan Gani"
             >
-              <div className="flex items-center gap-3">
-                <span className="relative flex h-2.5 w-2.5 shrink-0">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--color-online)] opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[var(--color-online)] shadow-[0_0_8px_var(--color-online)]" />
-                </span>
-                <div className="flex flex-col">
-                  <span className="font-mono text-[11px] font-bold text-[var(--color-text-primary)] tracking-wider uppercase group-hover:text-[var(--color-online)] transition-colors">
-                    AVAILABLE FOR COLLABORATION
-                  </span>
-                  <span className="font-mono text-[10px] text-[var(--color-text-secondary)]">
-                    Active on Web3 protocols & AI systems
+              {/* Animated Top Flowing Laser Line */}
+              <div 
+                className="absolute top-0 left-0 right-0 h-[2px] opacity-75 group-hover:opacity-100 transition-opacity pointer-events-none"
+                style={{
+                  background: "linear-gradient(90deg, transparent 0%, var(--color-online) 30%, var(--color-cyan) 70%, transparent 100%)",
+                  backgroundSize: "200% 100%",
+                  animation: "laser-sweep 3.5s ease-in-out infinite",
+                }}
+              />
+
+              {/* Ambient radial glow behind beacon */}
+              <div 
+                className="absolute -top-10 -left-10 w-28 h-28 rounded-full pointer-events-none opacity-20 group-hover:opacity-40 transition-opacity blur-2xl"
+                style={{ background: "var(--color-online)" }}
+              />
+
+              <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-3.5">
+                  {/* Concentric Dual-Pulse Radar Dot */}
+                  <div className="relative mt-1 flex h-3.5 w-3.5 shrink-0 items-center justify-center">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--color-online)] opacity-60 duration-1000" />
+                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[var(--color-online)] shadow-[0_0_12px_var(--color-online)]" />
+                  </div>
+
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-mono text-[9px] uppercase tracking-widest text-[var(--color-online)] font-bold flex items-center gap-1">
+                        <Radio size={10} className="animate-pulse" />
+                        <span>BROADCAST // OPEN FOR COLLAB</span>
+                      </span>
+                    </div>
+
+                    <h4 className="font-bold text-sm text-[var(--color-text-primary)] group-hover:text-[var(--color-online)] transition-colors tracking-tight">
+                      Available for Collaboration
+                    </h4>
+
+                    <p className="font-mono text-[11px] text-[var(--color-text-secondary)] mt-0.5 leading-relaxed">
+                      EVM protocols, autonomous AI workflows & full-stack Web3 architecture.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Animated Action Pill */}
+                <div className="sm:self-center shrink-0">
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-mono text-xs font-bold text-[var(--color-online)] bg-[rgba(0,255,102,0.08)] border border-[var(--color-online)]/40 group-hover:bg-[var(--color-online)] group-hover:text-black group-hover:border-[var(--color-online)] transition-all shadow-sm">
+                    <span>Initiate Comms</span>
+                    <ArrowUpRight size={14} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-300" />
                   </span>
                 </div>
               </div>
-              <span className="font-mono text-[10px] text-[var(--color-online)] font-bold px-2.5 py-1 rounded-md bg-[rgba(0,255,102,0.12)] border border-[var(--color-online)]/30 group-hover:bg-[var(--color-online)] group-hover:text-black transition-all whitespace-nowrap">
-                Contact Me →
-              </span>
-            </a>
+            </Link>
           </div>
 
           {/* ── RIGHT ── */}
