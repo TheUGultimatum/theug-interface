@@ -12,7 +12,7 @@ import {
   Code2,
   X,
   Link2,
-  Flame,
+  BookOpen,
   Sun,
   Moon,
   Network,
@@ -25,7 +25,7 @@ const NAV_ITEMS = [
   { href: "/about", label: "ABOUT", icon: User },
   { href: "/projects", label: "PROJECTS", icon: FolderOpen },
   { href: "/onchain", label: "ONCHAIN", icon: Network },
-  { href: "/labs", label: "LABS", icon: Flame },
+  { href: "/blogs", label: "BLOGS", icon: BookOpen },
   { href: "/timeline", label: "TIMELINE", icon: Clock },
   { href: "/contact", label: "CONTACT", icon: Mail },
 ];

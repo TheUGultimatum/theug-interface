@@ -173,19 +173,7 @@ export default function RootLayout({
             {children}
           </main>
         </div>
-      {/* impeccable-live-start */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-            var s = document.createElement('script');
-            s.src = 'http://localhost:8400/live.js?token=631f2c13-c744-4425-9a1d-8d1882603778';
-            s.async = true;
-            document.head.appendChild(s);
-          }`,
-        }}
-      />
-      {/* impeccable-live-end */}
-</body>
+      </body>
     </html>
   );
 }

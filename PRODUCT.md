@@ -22,7 +22,7 @@ An authentic, technical Web3 developer workspace and celestial observatory. Unli
 - Scope Boundary: This repository is strictly Usmaan Gani's personal developer portfolio (`theug.in`), separate from the CT community hub (`hub.theug.in`).
 
 ## Capabilities and Constraints
-- Sections: Home, About, Projects, Labs, On-Chain Conviction, Timeline, Contact.
+- Sections: Home, About, Projects, Blogs, On-Chain Conviction, Timeline, Contact.
 - Zero fabrication rule: Never invent token balances, wallet holdings, fake transaction counts, fictitious partnerships, or artificial claims.
 - Minimal On-Chain Conviction: A compact title, a single introductory sentence, the central Sun with Usmaan's meme-inspired pookie face portrait, 11 orbiting worlds, and a small contextual details area upon selection. No bloated dashboards or metrics walls.
 - Classification integrity: Distinguish networks (e.g. Base is a network, not a token), ecosystems, platforms (Robinhood is not automatically a chain), and native tokens. Arc retains ecosystem identity with no invented ticker.

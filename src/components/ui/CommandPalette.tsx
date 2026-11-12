@@ -30,7 +30,7 @@ export function CommandPalette() {
     { id: "about", label: "cat about.md", category: "Navigation", action: () => navigateTo("/about", "about") },
     { id: "projects", label: "ls ./projects", category: "Navigation", action: () => navigateTo("/projects", "projects") },
     { id: "onchain", label: "netstat -onchain", category: "Navigation", action: () => navigateTo("/onchain") },
-    { id: "labs", label: "cat labs.experiment", category: "Navigation", action: () => navigateTo("/labs") },
+    { id: "blogs", label: "cat blogs.dispatches", category: "Navigation", action: () => navigateTo("/blogs") },
     { id: "timeline", label: "history | grep timeline", category: "Navigation", action: () => navigateTo("/timeline", "timeline") },
     { id: "contact", label: "ping contact", category: "Navigation", action: () => navigateTo("/contact", "contact") },
     

@@ -1,26 +1,5 @@
 [
   {
-    "id": "testing",
-    "name": "testing",
-    "tagline": "dfafdafadfafadsf",
-    "description": "sdas",
-    "stack": [
-      "Next.js",
-      "TypeScript"
-    ],
-    "status": "live",
-    "deployTarget": "VERCEL",
-    "liveUrl": "https://jpegz.art/",
-    "githubUrl": "fasfasfasdfsdaf",
-    "featured": false,
-    "isPrivate": false,
-    "bannerUrl": "/uploads/projects/theug_glyph-nft-usmaangani252_1794137033705.png",
-    "accentColor": "var(--color-cyan)",
-    "accentRgb": "0,212,255",
-    "category": "FULL STACK",
-    "year": "2026"
-  },
-  {
     "id": "theug-hub",
     "name": "THEUG HUB",
     "tagline": "Personal community platform & ecosystem hub",
