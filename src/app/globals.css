@@ -829,6 +829,62 @@ body {
 }
 
 /* ============================================
+   COLLABORATION UPLINK CARD (HERO)
+============================================ */
+.collab-card {
+  border: 1px solid rgba(0, 217, 255, 0.25);
+  background-color: var(--color-surface);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+.collab-card:hover {
+  border-color: var(--color-online);
+  box-shadow: 0 8px 30px rgba(0, 217, 255, 0.18);
+}
+.collab-pill {
+  background-color: rgba(0, 217, 255, 0.08);
+  border: 1px solid rgba(0, 217, 255, 0.35);
+  color: var(--color-online);
+}
+.collab-card:hover .collab-pill {
+  background-color: var(--color-online);
+  color: #000000;
+  border-color: var(--color-online);
+}
+
+/* Day Mode Collaboration Card overrides */
+.day-mode .collab-card {
+  border: 1px solid #E2E2E6;
+  background-color: #FFFFFF;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+.day-mode .collab-card:hover {
+  border-color: #0284C7;
+  box-shadow: 0 8px 24px rgba(2, 132, 199, 0.12);
+}
+.day-mode .collab-card h4 {
+  color: #1A1A1E;
+}
+.day-mode .collab-card:hover h4 {
+  color: #0284C7;
+}
+.day-mode .collab-card p {
+  color: #4B5563;
+}
+.day-mode .collab-pill {
+  background-color: #F0F9FF;
+  border: 1px solid #BAE6FD;
+  color: #0284C7;
+}
+.day-mode .collab-card:hover .collab-pill {
+  background-color: #0284C7;
+  color: #FFFFFF;
+  border-color: #0284C7;
+}
+.day-mode .collab-glow {
+  opacity: 0.08 !important;
+}
+
+/* ============================================
    RESPONSIVE HELPERS
 ============================================ */
 @media (max-width: 1024px) {

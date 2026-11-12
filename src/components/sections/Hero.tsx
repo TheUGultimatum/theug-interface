@@ -412,18 +412,25 @@ interface HardwareStat {
   value: string;
   detail: string;
   color: string;
+  pct: number;
 }
 
 function VisitorTelemetryPanel() {
+  const [isAnimated, setIsAnimated] = useState(false);
   const [stats, setStats] = useState<HardwareStat[]>([
-    { label: "GPU_RENDERER", value: "DETECTING", detail: "WEBGL", color: "var(--color-text-muted)" },
-    { label: "CPU_THREADS", value: "DETECTING", detail: "LOGICAL CORES", color: "var(--color-text-muted)" },
-    { label: "DEVICE_MEMORY", value: "DETECTING", detail: "RAM TIER", color: "var(--color-text-muted)" },
-    { label: "NETWORK_LINK", value: "PINGING", detail: "LATENCY", color: "var(--color-text-muted)" },
-    { label: "DISPLAY_MATRIX", value: "READING", detail: "VIEWPORT", color: "var(--color-text-muted)" },
-    { label: "CLIENT_TIMEZONE", value: "SYNCING", detail: "TIMEZONE", color: "var(--color-text-muted)" },
+    { label: "GPU_RENDERER", value: "DETECTING", detail: "WEBGL", color: "var(--color-text-muted)", pct: 15 },
+    { label: "CPU_THREADS", value: "DETECTING", detail: "LOGICAL CORES", color: "var(--color-text-muted)", pct: 15 },
+    { label: "DEVICE_MEMORY", value: "DETECTING", detail: "RAM TIER", color: "var(--color-text-muted)", pct: 15 },
+    { label: "NETWORK_LINK", value: "PINGING", detail: "LATENCY", color: "var(--color-text-muted)", pct: 15 },
+    { label: "DISPLAY_MATRIX", value: "READING", detail: "VIEWPORT", color: "var(--color-text-muted)", pct: 15 },
+    { label: "CLIENT_TIMEZONE", value: "SYNCING", detail: "TIMEZONE", color: "var(--color-text-muted)", pct: 15 },
   ]);
   const [clientPlatform, setClientPlatform] = useState("SCANNING...");
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsAnimated(true), 150);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -431,6 +438,7 @@ function VisitorTelemetryPanel() {
     const detectHardware = () => {
       // 1. GPU Renderer via WebGL
       let gpuName = "HARDWARE_ACCEL";
+      let gpuPct = 85;
       try {
         const canvas = document.createElement("canvas");
         const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
@@ -450,20 +458,26 @@ function VisitorTelemetryPanel() {
                 gpuName = gpuName.slice(0, 19) + "…";
               }
               gpuName = gpuName.toUpperCase();
+              gpuPct = 95;
             }
           }
         }
       } catch {
         gpuName = "GPU ACCELERATED";
+        gpuPct = 80;
       }
 
       // 2. CPU Threads
-      const cores = navigator.hardwareConcurrency ? `${navigator.hardwareConcurrency} THREADS` : "MULTI-CORE";
+      const rawCores = navigator.hardwareConcurrency || 4;
+      const cores = `${rawCores} THREADS`;
+      const cpuPct = Math.min(100, Math.max(25, Math.round((rawCores / 24) * 100)));
 
-      // 3. Memory RAM Tier
+      // 3. Memory RAM Tier (with space: [≥ 16 GB RAM])
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const navAny = navigator as any;
-      const memGB = navAny.deviceMemory ? `≥${navAny.deviceMemory} GB RAM` : "HARDWARE_TIER";
+      const memVal = Number(navAny.deviceMemory) || 8;
+      const memGB = navAny.deviceMemory ? `≥ ${navAny.deviceMemory} GB RAM` : "HARDWARE_TIER";
+      const ramPct = Math.min(100, Math.max(25, Math.round((memVal / 32) * 100)));
 
       // 4. Network Link & Ping
       const conn = navAny.connection || navAny.mozConnection || navAny.webkitConnection;
@@ -471,14 +485,19 @@ function VisitorTelemetryPanel() {
       const rtt = conn?.rtt ? `${conn.rtt}ms RTT` : "LOW_PING";
       const downlink = conn?.downlink ? `${conn.downlink}M` : "";
       const netLabel = downlink ? `${rtt} · ${downlink}` : rtt;
+      let netPct = 85;
+      if (conn?.rtt) {
+        netPct = Math.max(20, Math.min(100, Math.round(100 - (conn.rtt / 150) * 70)));
+      }
 
       // 5. Display & Color Gamut
       const screenRes = `${window.screen.width}x${window.screen.height}`;
       const isP3 = window.matchMedia && window.matchMedia("(color-gamut: p3)").matches;
       const dpr = window.devicePixelRatio ? `${window.devicePixelRatio}x` : "1x";
       const displayDetail = `${dpr} · ${isP3 ? "P3-HDR" : "sRGB"}`;
+      const displayPct = Math.min(100, Math.max(35, Math.round((window.screen.width / 2560) * 100)));
 
-      // 6. Timezone
+      // 6. Timezone diurnal cycle
       let tz = "LOCAL";
       try {
         const resolved = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -486,6 +505,8 @@ function VisitorTelemetryPanel() {
       } catch {
         tz = "UTC";
       }
+      const now = new Date();
+      const tzPct = Math.min(100, Math.max(10, Math.round(((now.getHours() * 60 + now.getMinutes()) / 1440) * 100)));
 
       const platformStr = navAny.userAgentData?.platform || (navigator.platform ? navigator.platform : "HOST");
       setClientPlatform(String(platformStr).toUpperCase().slice(0, 14));
@@ -496,36 +517,42 @@ function VisitorTelemetryPanel() {
           value: gpuName,
           detail: "HW_ACCEL",
           color: "var(--color-online)",
+          pct: gpuPct,
         },
         {
           label: "CPU_THREADS",
           value: cores,
           detail: "LOGICAL CORES",
           color: "var(--color-online)",
+          pct: cpuPct,
         },
         {
           label: "SYSTEM_MEMORY",
           value: memGB,
           detail: "RAM_TIER",
           color: "var(--color-amber)",
+          pct: ramPct,
         },
         {
           label: "NETWORK_LINK",
           value: netLabel,
           detail: connType,
           color: "var(--color-cyan)",
+          pct: netPct,
         },
         {
           label: "DISPLAY_MATRIX",
           value: screenRes,
           detail: displayDetail,
           color: "var(--color-online)",
+          pct: displayPct,
         },
         {
           label: "CLIENT_ZONE",
           value: tz,
           detail: "ZONE",
           color: "var(--color-amber)",
+          pct: tzPct,
         },
       ]);
     };
@@ -552,20 +579,57 @@ function VisitorTelemetryPanel() {
         </span>
       </div>
       <div className="panel-body font-mono text-[9px]" style={{ padding: "12px 14px" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "5.5px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
           {stats.map((s) => (
-            <div key={s.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ color: "var(--color-text-secondary)", fontSize: "8.5px" }}>{s.label}</span>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <span style={{ color: "var(--color-text-muted)", fontSize: "7.5px" }}>{s.detail}</span>
-                <span style={{ color: s.color, fontWeight: "bold" }}>[{s.value}]</span>
+            <div 
+              key={s.label} 
+              className="flex items-center justify-between gap-1.5"
+            >
+              <span style={{ color: "var(--color-text-secondary)", fontSize: "8.5px" }} className="shrink-0">
+                {s.label}
+              </span>
+
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span style={{ color: "var(--color-text-muted)", fontSize: "7.5px" }} className="hidden sm:inline truncate">
+                  {s.detail}
+                </span>
+
+                {/* Animated Hardware Meter Bar */}
+                <div 
+                  className="w-10 sm:w-14 h-1.5 rounded-full overflow-hidden shrink-0 flex items-center p-[0.5px]"
+                  style={{
+                    backgroundColor: "var(--color-elevated)",
+                    border: "1px solid var(--color-border)",
+                  }}
+                  title={`${s.pct}% capacity readout`}
+                >
+                  <div 
+                    className="h-full rounded-full transition-all duration-1000 ease-out"
+                    style={{
+                      width: isAnimated ? `${s.pct}%` : "0%",
+                      backgroundColor: s.color,
+                      boxShadow: `0 0 6px ${s.color}`,
+                    }}
+                  />
+                </div>
+
+                <span style={{ color: s.color, fontWeight: "bold", fontSize: "8px" }} className="shrink-0 font-mono">
+                  [{s.value}]
+                </span>
               </div>
             </div>
           ))}
         </div>
-        <div style={{ marginTop: "8px", paddingTop: "6px", borderTop: "1px solid var(--color-border)", display: "flex", justifyContent: "space-between", fontSize: "7.5px", color: "var(--color-text-muted)" }}>
-          <span>PROBE // LIVE_CLIENT</span>
-          <span style={{ color: "var(--color-cyan)" }}>SYNCED</span>
+        <div style={{ marginTop: "8px", paddingTop: "6px", borderTop: "1px solid var(--color-border)", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "7.5px", color: "var(--color-text-muted)" }}>
+          <div className="flex items-center gap-1.5 font-mono">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--color-cyan)] animate-pulse" />
+            <span>PROBE // LIVE_CLIENT</span>
+          </div>
+          <div className="flex items-center gap-1 font-mono">
+            <span style={{ color: "var(--color-cyan)" }}>SYNCED</span>
+            <span style={{ color: "var(--color-border-bright)" }}>·</span>
+            <span style={{ color: "var(--color-online)" }}>ACTIVE</span>
+          </div>
         </div>
       </div>
     </div>
@@ -819,7 +883,7 @@ export function Hero() {
             {/* Redesigned Animated Kinetic Collaboration Uplink */}
             <Link
               href="/contact"
-              className="group relative overflow-hidden rounded-2xl border border-[var(--color-online)]/30 bg-[var(--color-surface)] hover:border-[var(--color-online)] transition-all duration-300 p-4 md:p-5 shadow-sm hover:shadow-[0_8px_30px_rgba(0,255,102,0.15)] hover:-translate-y-0.5 cursor-pointer block"
+              className="collab-card group relative overflow-hidden rounded-2xl transition-all duration-300 p-4 md:p-5 hover:-translate-y-0.5 cursor-pointer block"
               title="Open direct communication channel with Usmaan Gani"
             >
               {/* Animated Top Flowing Laser Line */}
@@ -834,7 +898,7 @@ export function Hero() {
 
               {/* Ambient radial glow behind beacon */}
               <div 
-                className="absolute -top-10 -left-10 w-28 h-28 rounded-full pointer-events-none opacity-20 group-hover:opacity-40 transition-opacity blur-2xl"
+                className="collab-glow absolute -top-10 -left-10 w-28 h-28 rounded-full pointer-events-none opacity-20 group-hover:opacity-40 transition-opacity blur-2xl"
                 style={{ background: "var(--color-online)" }}
               />
 
@@ -866,7 +930,7 @@ export function Hero() {
 
                 {/* Animated Action Pill */}
                 <div className="sm:self-center shrink-0">
-                  <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-mono text-xs font-bold text-[var(--color-online)] bg-[rgba(0,255,102,0.08)] border border-[var(--color-online)]/40 group-hover:bg-[var(--color-online)] group-hover:text-black group-hover:border-[var(--color-online)] transition-all shadow-sm">
+                  <span className="collab-pill inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-mono text-xs font-bold transition-all shadow-sm">
                     <span>Initiate Comms</span>
                     <ArrowUpRight size={14} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-300" />
                   </span>
