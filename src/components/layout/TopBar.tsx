@@ -55,7 +55,7 @@ export function TopBar() {
         background: "var(--color-surface)",
         opacity: 0.98,
         borderBottom: "1px solid var(--color-border)",
-        padding: "env(safe-area-inset-top, 0px) clamp(20px, 3vw, 40px) 0",
+        padding: "0 clamp(20px, 3vw, 40px)",
         gap: "0",
       }}
     >

@@ -62,12 +62,12 @@ export function OnchainObservatory() {
   };
 
   return (
-    <div className="relative flex flex-col w-full px-4 sm:px-6 md:px-8 lg:px-10 pt-8 sm:pt-10 md:pt-6 pb-6 sm:pb-8 max-w-[1720px] mx-auto min-h-screen overflow-x-clip">
+    <div className="relative flex flex-col w-full px-4 sm:px-6 md:px-8 lg:px-10 pt-10 sm:pt-12 md:pt-6 pb-6 sm:pb-8 max-w-[1720px] mx-auto min-h-screen overflow-x-clip">
       {/* ─────────────────────────────────────────────────────────
           MOBILE / TABLET HEADER (Displayed on < lg screens)
-          Spacious clearance prevents overlapping with fixed TopBar
+          Dedicated top clearance ensures 0 overlap with mobile TopBar
           ───────────────────────────────────────────────────────── */}
-      <header className="lg:hidden mb-6 sm:mb-8 pt-2 sm:pt-4 w-full max-w-full overflow-visible">
+      <header className="lg:hidden mt-6 sm:mt-8 mb-6 sm:mb-8 pt-4 sm:pt-6 w-full max-w-full overflow-visible">
         <div className="flex items-center gap-1.5 sm:gap-2 mb-2.5 text-[var(--color-cyan)] text-[10.5px] sm:text-xs font-mono tracking-wider sm:tracking-widest uppercase font-bold">
           <span>&gt;</span>
           <span>05 / ON-CHAIN CONVICTION</span>
