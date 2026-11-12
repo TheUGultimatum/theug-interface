@@ -106,6 +106,90 @@ const EMPTY_BLOG: XPost = {
   isPinned: false,
 };
 
+function ArticleSplitPreview({
+  blog,
+  highlights,
+}: {
+  blog: XPost;
+  highlights: string[];
+}) {
+  const paragraphs = blog.body ? blog.body.split("\n\n").filter(Boolean) : [];
+  return (
+    <div className="p-6 md:p-8 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] max-h-[580px] overflow-y-auto space-y-5 shadow-inner">
+      <div className="flex items-center justify-between text-xs font-mono text-[var(--color-text-muted)] pb-3 border-b border-[var(--color-border)]">
+        <span className="px-2.5 py-1 rounded-md text-[10px] uppercase font-bold text-[var(--color-amber)] bg-[rgba(255,94,58,0.08)] border border-[var(--color-border)]">
+          {blog.category || "Web3"}
+        </span>
+        <span className="flex items-center gap-2">
+          <span>{blog.publishedAt || "Live Draft"}</span>
+          <span>•</span>
+          <span>{blog.readTime || "4 min read"}</span>
+        </span>
+      </div>
+
+      <h3 className="text-xl md:text-2xl font-bold text-[var(--color-text-primary)] leading-snug">
+        {blog.title || "Article Title Will Appear Here"}
+      </h3>
+
+      {blog.summary && (
+        <div className="p-4 rounded-xl border-l-2 border-[var(--color-amber)] bg-[var(--color-elevated)] border border-[var(--color-border)] text-xs md:text-sm text-[var(--color-text-secondary)] italic leading-relaxed">
+          &ldquo;{blog.summary}&rdquo;
+        </div>
+      )}
+
+      {highlights.length > 0 && (
+        <div className="p-4 rounded-xl bg-[var(--color-elevated)] border border-[var(--color-border)] text-xs">
+          <span className="font-bold text-[var(--color-amber)] flex items-center gap-1.5 mb-2 font-mono text-[11px] uppercase tracking-wider">
+            <Sparkles size={12} />
+            <span>Key Takeaways</span>
+          </span>
+          <ul className="space-y-1.5">
+            {highlights.map((h, i) => (
+              <li key={i} className="text-[var(--color-text-secondary)] flex items-start gap-2 leading-relaxed">
+                <span className="text-[var(--color-cyan)] font-mono">›</span>
+                <span>{h}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="space-y-4 text-xs md:text-sm text-[var(--color-text-secondary)] leading-relaxed font-sans">
+        {paragraphs.length === 0 ? (
+          <p className="text-[var(--color-text-muted)] italic font-mono text-xs">
+            Start typing in the markdown editor to see synchronized live formatting...
+          </p>
+        ) : (
+          paragraphs.map((p, idx) => {
+            if (p.startsWith("## ")) {
+              return (
+                <h4 key={idx} className="text-base md:text-lg font-bold text-[var(--color-text-primary)] mt-5 pt-2 border-t border-[var(--color-border)]">
+                  {p.replace("## ", "")}
+                </h4>
+              );
+            }
+            if (p.startsWith("### ")) {
+              return (
+                <h5 key={idx} className="text-sm md:text-base font-bold text-[var(--color-text-primary)] mt-4">
+                  {p.replace("### ", "")}
+                </h5>
+              );
+            }
+            if (p.startsWith("> ")) {
+              return (
+                <blockquote key={idx} className="border-l-2 border-[var(--color-cyan)] pl-4 py-1 italic text-[var(--color-text-muted)] my-2">
+                  {p.replace("> ", "")}
+                </blockquote>
+              );
+            }
+            return <p key={idx}>{p}</p>;
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [sessionToken, setSessionToken] = useState<string>("");
@@ -676,78 +760,78 @@ export default function AdminPage() {
      AUTHENTICATED ADMIN CONSOLE
      ───────────────────────────────────────────────────────── */
   return (
-    <div className="min-h-screen px-4 md:px-8 py-8 max-w-[1280px] mx-auto pb-24">
+    <div className="min-h-screen px-6 md:px-12 py-10 max-w-[1440px] mx-auto pb-32">
       {/* Toast Notification */}
       {statusMessage && (
         <div
-          className={`fixed bottom-8 right-8 z-50 px-4 py-3 rounded-lg border shadow-xl flex items-center gap-2.5 text-xs font-mono transition-all ${
+          className={`fixed bottom-8 right-8 z-50 px-5 py-3.5 rounded-xl border shadow-2xl flex items-center gap-3 text-xs md:text-sm font-mono transition-all ${
             statusMessage.type === "success"
               ? "bg-[var(--color-surface)] border-[var(--color-online)] text-[var(--color-text-primary)]"
               : "bg-[var(--color-surface)] border-[var(--color-error)] text-[var(--color-error)]"
           }`}
         >
           {statusMessage.type === "success" ? (
-            <CheckCircle2 size={16} className="text-[var(--color-online)]" />
+            <CheckCircle2 size={18} className="text-[var(--color-online)]" />
           ) : (
-            <AlertCircle size={16} />
+            <AlertCircle size={18} />
           )}
           <span>{statusMessage.text}</span>
         </div>
       )}
 
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-[var(--color-border)]">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 mb-8 border-b border-[var(--color-border)]">
         <div>
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[var(--color-online)]" />
+            <span className="w-2.5 h-2.5 rounded-full bg-[var(--color-online)] shadow-sm animate-pulse" />
             <span className="text-xs font-mono text-[var(--color-text-muted)] uppercase tracking-wider font-semibold">
               TheUG Console · Verified Admin
             </span>
           </div>
-          <h1 className="text-2xl font-bold text-[var(--color-text-primary)] mt-1">
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-[var(--color-text-primary)] mt-2">
             Site Control Hub
           </h1>
-          <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
-            Manage your live Web3 projects, articles, and X thread dispatches with instant sync.
+          <p className="text-sm text-[var(--color-text-secondary)] mt-1 max-w-xl leading-relaxed">
+            Manage your live Web3 projects, essays, and X thread dispatches with instant sync.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 font-mono text-xs">
+        <div className="flex items-center gap-3 font-mono text-xs md:text-sm">
           <Link
             href={activeTab === "projects" ? "/projects" : "/blogs"}
             target="_blank"
-            className="px-3.5 py-2 rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-bright)] flex items-center gap-1.5 transition-colors"
+            className="px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-bright)] flex items-center gap-2 transition-all shadow-sm"
           >
-            <Eye size={13} />
+            <Eye size={15} />
             <span>Live {activeTab.toUpperCase()}</span>
           </Link>
 
           <button
             onClick={handleLogout}
-            className="px-3 py-2 rounded border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-error)] hover:border-[var(--color-error)] transition-colors cursor-pointer flex items-center gap-1.5"
+            className="px-4 py-2.5 rounded-xl border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-error)] hover:border-[var(--color-error)] transition-colors cursor-pointer flex items-center gap-2 shadow-sm"
           >
-            <LogOut size={13} />
+            <LogOut size={15} />
             <span>Logout</span>
           </button>
         </div>
       </div>
 
-      {/* Clean Tab Bar */}
-      <div className="flex items-center justify-between gap-4 mt-6 border-b border-[var(--color-border)] pb-3">
-        <div className="flex items-center gap-2">
+      {/* Clean Spacious Tab Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-5 border-b border-[var(--color-border)]">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => {
               setActiveTab("projects");
               setActiveFilter("ALL");
               setSearchQuery("");
             }}
-            className={`px-4 py-2 rounded-lg text-xs font-bold tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-5 py-2.5 rounded-xl text-xs md:text-sm font-bold tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
               activeTab === "projects"
-                ? "bg-[var(--color-amber)] text-black font-semibold shadow-sm"
+                ? "bg-[var(--color-amber)] text-black font-semibold shadow-md"
                 : "bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)]"
             }`}
           >
-            <FolderOpen size={14} />
+            <FolderOpen size={16} />
             <span>PROJECTS ({projects.length})</span>
           </button>
 
@@ -757,13 +841,13 @@ export default function AdminPage() {
               setActiveFilter("ALL");
               setSearchQuery("");
             }}
-            className={`px-4 py-2 rounded-lg text-xs font-bold tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-5 py-2.5 rounded-xl text-xs md:text-sm font-bold tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
               activeTab === "blogs"
-                ? "bg-[var(--color-amber)] text-black font-semibold shadow-sm"
+                ? "bg-[var(--color-amber)] text-black font-semibold shadow-md"
                 : "bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)]"
             }`}
           >
-            <BookOpen size={14} />
+            <BookOpen size={16} />
             <span>ARTICLES & DISPATCHES ({blogs.length})</span>
           </button>
         </div>
@@ -776,17 +860,17 @@ export default function AdminPage() {
                 setCurrentProject(EMPTY_PROJECT);
                 setIsEditingProject(true);
               }}
-              className="px-4 py-2 rounded-lg bg-[var(--color-text-primary)] text-[var(--color-void)] font-bold text-xs flex items-center gap-1.5 hover:opacity-90 transition-opacity cursor-pointer font-mono"
+              className="px-5 py-2.5 rounded-xl bg-[var(--color-text-primary)] text-[var(--color-void)] font-bold text-xs md:text-sm flex items-center gap-2 hover:opacity-90 transition-opacity cursor-pointer font-mono shadow-sm"
             >
-              <Plus size={15} />
+              <Plus size={16} />
               <span>New Project</span>
             </button>
           ) : (
             <button
               onClick={() => handleOpenBlogEditor()}
-              className="px-4 py-2 rounded-lg bg-[var(--color-text-primary)] text-[var(--color-void)] font-bold text-xs flex items-center gap-1.5 hover:opacity-90 transition-opacity cursor-pointer font-mono"
+              className="px-5 py-2.5 rounded-xl bg-[var(--color-text-primary)] text-[var(--color-void)] font-bold text-xs md:text-sm flex items-center gap-2 hover:opacity-90 transition-opacity cursor-pointer font-mono shadow-sm"
             >
-              <Plus size={15} />
+              <Plus size={16} />
               <span>Write Article / Dispatch</span>
             </button>
           )}
@@ -797,17 +881,17 @@ export default function AdminPage() {
           TAB 1: PROJECTS INVENTORY
           ───────────────────────────────────────────────────── */}
       {activeTab === "projects" && (
-        <div className="mt-6">
+        <div>
           {/* Search & Filter Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-[var(--color-border)] font-mono text-xs">
-            <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-5 border-b border-[var(--color-border)] font-mono text-xs md:text-sm">
+            <div className="flex flex-wrap gap-2">
               {["ALL", "LIVE", "FEATURED", "PRIVATE"].map((filter) => (
                 <button
                   key={filter}
                   onClick={() => setActiveFilter(filter)}
-                  className={`px-3 py-1.5 rounded text-xs transition-colors cursor-pointer ${
+                  className={`px-4 py-2 rounded-xl text-xs md:text-sm transition-colors cursor-pointer ${
                     activeFilter === filter
-                      ? "bg-[var(--color-text-primary)] text-[var(--color-void)] font-bold"
+                      ? "bg-[var(--color-text-primary)] text-[var(--color-void)] font-bold shadow-sm"
                       : "bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)]"
                   }`}
                 >
@@ -816,30 +900,30 @@ export default function AdminPage() {
               ))}
             </div>
 
-            <div className="relative min-w-[240px]">
+            <div className="relative min-w-[280px]">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search projects..."
-                className="w-full px-3.5 py-1.5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
+                className="w-full px-4 py-2.5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl text-xs md:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)] shadow-inner"
               />
             </div>
           </div>
 
           {/* Projects List */}
-          <div className="space-y-3">
+          <div className="space-y-4">
             {filteredProjects.length === 0 ? (
-              <div className="py-16 text-center border border-dashed border-[var(--color-border)] rounded-lg bg-[var(--color-surface)]">
-                <p className="text-sm text-[var(--color-text-secondary)]">No projects found.</p>
+              <div className="py-20 text-center border border-dashed border-[var(--color-border)] rounded-2xl bg-[var(--color-surface)]">
+                <p className="text-base text-[var(--color-text-secondary)] font-medium">No projects found.</p>
                 <button
                   onClick={() => {
                     setCurrentProject(EMPTY_PROJECT);
                     setIsEditingProject(true);
                   }}
-                  className="mt-3 px-4 py-2 rounded bg-[var(--color-amber)] text-black font-bold text-xs inline-flex items-center gap-1.5"
+                  className="mt-4 px-5 py-2.5 rounded-xl bg-[var(--color-amber)] text-black font-bold text-xs md:text-sm inline-flex items-center gap-2 shadow-sm"
                 >
-                  <Plus size={14} />
+                  <Plus size={16} />
                   <span>Create First Project</span>
                 </button>
               </div>
@@ -847,10 +931,10 @@ export default function AdminPage() {
               filteredProjects.map((project, idx) => (
                 <div
                   key={project.id || idx}
-                  className="p-4 md:p-5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:border-[var(--color-border-bright)] shadow-sm"
+                  className="p-6 md:p-7 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col md:flex-row md:items-center justify-between gap-6 transition-all hover:border-[var(--color-border-bright)] shadow-sm hover:shadow-md"
                 >
                   {project.bannerUrl && (
-                    <div className="relative w-20 h-14 rounded overflow-hidden border border-[var(--color-border)] shrink-0 bg-black hidden sm:block">
+                    <div className="relative w-24 h-16 rounded-xl overflow-hidden border border-[var(--color-border)] shrink-0 bg-black hidden sm:block shadow-sm">
                       <Image
                         src={project.bannerUrl}
                         alt={project.name}
@@ -861,7 +945,7 @@ export default function AdminPage() {
                   )}
 
                   <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-1 text-[11px] font-mono">
+                    <div className="flex flex-wrap items-center gap-2.5 mb-2 text-xs font-mono">
                       <span className="text-[var(--color-text-muted)] font-semibold">
                         {project.category}
                       </span>
@@ -870,34 +954,34 @@ export default function AdminPage() {
                         {project.status}
                       </span>
                       {project.featured && (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-[rgba(255,94,58,0.1)] text-[var(--color-amber)] font-bold">
+                        <span className="px-2 py-0.5 rounded text-[11px] bg-[rgba(255,94,58,0.1)] text-[var(--color-amber)] font-bold">
                           ★ Featured
                         </span>
                       )}
                       {project.isPrivate && (
                         <span className="text-[var(--color-text-muted)] flex items-center gap-1">
-                          <Lock size={10} />
+                          <Lock size={11} />
                           Private
                         </span>
                       )}
                     </div>
 
-                    <div className="flex items-baseline gap-2">
-                      <h3 className="font-bold text-base text-[var(--color-text-primary)]">
+                    <div className="flex items-baseline gap-2.5">
+                      <h3 className="font-bold text-lg md:text-xl text-[var(--color-text-primary)]">
                         {project.name}
                       </h3>
                       <span className="text-xs text-[var(--color-text-muted)] font-mono">{project.year}</span>
                     </div>
 
-                    <p className="text-xs text-[var(--color-text-secondary)] mt-0.5 line-clamp-1">
+                    <p className="text-sm text-[var(--color-text-secondary)] mt-1.5 line-clamp-1 leading-relaxed">
                       {project.tagline || project.description}
                     </p>
 
-                    <div className="flex flex-wrap gap-1.5 mt-2 font-mono text-[10px]">
+                    <div className="flex flex-wrap gap-2 mt-3 font-mono text-xs">
                       {project.stack.map((tech) => (
                         <span
                           key={tech}
-                          className="px-2 py-0.5 rounded bg-[var(--color-elevated)] text-[var(--color-text-secondary)]"
+                          className="px-2.5 py-1 rounded-md bg-[var(--color-elevated)] border border-[var(--color-border)] text-[var(--color-text-secondary)]"
                         >
                           {tech}
                         </span>
@@ -905,23 +989,23 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-[var(--color-border)] font-mono text-xs">
-                    <div className="flex flex-col gap-0.5 mr-1">
+                  <div className="flex items-center gap-2.5 shrink-0 pt-4 md:pt-0 border-t md:border-t-0 border-[var(--color-border)] font-mono text-xs">
+                    <div className="flex flex-col gap-1 mr-1">
                       <button
                         onClick={() => handleReorderProject(idx, "up")}
                         disabled={idx === 0}
-                        className="p-1 rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] disabled:opacity-20 cursor-pointer"
+                        className="p-1.5 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-elevated)] disabled:opacity-20 cursor-pointer"
                         title="Move up"
                       >
-                        <ArrowUp size={12} />
+                        <ArrowUp size={14} />
                       </button>
                       <button
                         onClick={() => handleReorderProject(idx, "down")}
                         disabled={idx === projects.length - 1}
-                        className="p-1 rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] disabled:opacity-20 cursor-pointer"
+                        className="p-1.5 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-elevated)] disabled:opacity-20 cursor-pointer"
                         title="Move down"
                       >
-                        <ArrowDown size={12} />
+                        <ArrowDown size={14} />
                       </button>
                     </div>
 
@@ -930,10 +1014,10 @@ export default function AdminPage() {
                         href={project.liveUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-2 rounded border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+                        className="p-2.5 rounded-xl border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-elevated)] transition-colors"
                         title="Open live app"
                       >
-                        <ExternalLink size={13} />
+                        <ExternalLink size={15} />
                       </a>
                     )}
 
@@ -942,18 +1026,18 @@ export default function AdminPage() {
                         setCurrentProject(project);
                         setIsEditingProject(true);
                       }}
-                      className="px-3 py-1.5 rounded border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-amber)] hover:text-[var(--color-amber)] flex items-center gap-1 transition-colors cursor-pointer"
+                      className="px-3.5 py-2 rounded-xl border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-amber)] hover:text-[var(--color-amber)] flex items-center gap-1.5 transition-colors cursor-pointer"
                     >
-                      <Edit3 size={13} />
+                      <Edit3 size={14} />
                       <span>Edit</span>
                     </button>
 
                     <button
                       onClick={() => handleDeleteProject(project.id, project.name)}
-                      className="p-2 rounded border border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-error)] hover:text-[var(--color-error)] transition-colors cursor-pointer"
+                      className="p-2.5 rounded-xl border border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-error)] hover:text-[var(--color-error)] transition-colors cursor-pointer"
                       title="Delete project"
                     >
-                      <Trash2 size={13} />
+                      <Trash2 size={15} />
                     </button>
                   </div>
                 </div>
@@ -967,17 +1051,17 @@ export default function AdminPage() {
           TAB 2: ARTICLES & DISPATCHES
           ───────────────────────────────────────────────────── */}
       {activeTab === "blogs" && (
-        <div className="mt-6">
+        <div>
           {/* Search & Filter Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-[var(--color-border)] font-mono text-xs">
-            <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-5 border-b border-[var(--color-border)] font-mono text-xs md:text-sm">
+            <div className="flex flex-wrap gap-2">
               {["ALL", "ARTICLES", "X_POSTS", ...BLOG_CATEGORIES].map((category) => (
                 <button
                   key={category}
                   onClick={() => setActiveFilter(category)}
-                  className={`px-3 py-1.5 rounded text-xs transition-colors cursor-pointer ${
+                  className={`px-4 py-2 rounded-xl text-xs md:text-sm transition-colors cursor-pointer ${
                     activeFilter === category
-                      ? "bg-[var(--color-text-primary)] text-[var(--color-void)] font-bold"
+                      ? "bg-[var(--color-text-primary)] text-[var(--color-void)] font-bold shadow-sm"
                       : "bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)]"
                   }`}
                 >
@@ -986,31 +1070,31 @@ export default function AdminPage() {
               ))}
             </div>
 
-            <div className="relative min-w-[240px]">
+            <div className="relative min-w-[280px]">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search articles or tags..."
-                className="w-full px-3.5 py-1.5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
+                className="w-full px-4 py-2.5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl text-xs md:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)] shadow-inner"
               />
             </div>
           </div>
 
           {/* Blogs List */}
-          <div className="space-y-3">
+          <div className="space-y-4">
             {filteredBlogs.length === 0 ? (
-              <div className="py-16 text-center border border-dashed border-[var(--color-border)] rounded-lg bg-[var(--color-surface)]">
-                <BookOpen size={28} className="mx-auto text-[var(--color-text-muted)] mb-3 opacity-40" />
-                <p className="text-sm font-bold text-[var(--color-text-primary)]">No articles or dispatches published yet</p>
-                <p className="text-xs text-[var(--color-text-secondary)] mt-1 max-w-sm mx-auto">
-                  Post a normal long-form article on the website or embed a live thread from X.
+              <div className="py-20 text-center border border-dashed border-[var(--color-border)] rounded-2xl bg-[var(--color-surface)]">
+                <BookOpen size={36} className="mx-auto text-[var(--color-text-muted)] mb-4 opacity-40" />
+                <p className="text-base font-bold text-[var(--color-text-primary)]">No articles or dispatches published yet</p>
+                <p className="text-sm text-[var(--color-text-secondary)] mt-1.5 max-w-md mx-auto leading-relaxed">
+                  Post a normal long-form article directly on the website or embed a live thread from X.
                 </p>
                 <button
                   onClick={() => handleOpenBlogEditor()}
-                  className="mt-4 px-4 py-2 rounded bg-[var(--color-amber)] text-black font-bold text-xs inline-flex items-center gap-1.5 cursor-pointer font-mono"
+                  className="mt-5 px-5 py-2.5 rounded-xl bg-[var(--color-amber)] text-black font-bold text-xs md:text-sm inline-flex items-center gap-2 cursor-pointer font-mono shadow-sm"
                 >
-                  <Plus size={14} />
+                  <Plus size={16} />
                   <span>Write First Dispatch</span>
                 </button>
               </div>
@@ -1020,46 +1104,46 @@ export default function AdminPage() {
                 return (
                   <div
                     key={blog.id || idx}
-                    className="p-4 md:p-5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:border-[var(--color-border-bright)] shadow-sm"
+                    className="p-6 md:p-7 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col md:flex-row md:items-center justify-between gap-6 transition-all hover:border-[var(--color-border-bright)] shadow-sm hover:shadow-md"
                   >
                     <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 mb-1.5 text-xs font-mono">
-                        <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold border border-[var(--color-border)] bg-[var(--color-elevated)] text-[var(--color-text-secondary)]">
+                      <div className="flex flex-wrap items-center gap-2.5 mb-2 text-xs font-mono">
+                        <span className="px-2.5 py-1 rounded-md text-[11px] uppercase font-bold border border-[var(--color-border)] bg-[var(--color-elevated)] text-[var(--color-text-secondary)]">
                           {blog.category}
                         </span>
                         {isArticle ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] text-[var(--color-cyan)] font-semibold">
-                            <FileText size={11} />
+                          <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-cyan)] font-semibold">
+                            <FileText size={13} />
                             Article
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-[10px] text-[var(--color-text-muted)]">
-                            <XIcon size={11} />
+                          <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
+                            <XIcon size={12} />
                             X Post
                           </span>
                         )}
                         {blog.isPinned && (
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[rgba(255,94,58,0.1)] text-[var(--color-amber)]">
+                          <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-[rgba(255,94,58,0.1)] text-[var(--color-amber)]">
                             ★ Pinned
                           </span>
                         )}
-                        <span className="text-[11px] text-[var(--color-text-muted)]">
+                        <span className="text-xs text-[var(--color-text-muted)]">
                           {blog.publishedAt} · {blog.readTime}
                         </span>
                       </div>
 
-                      <h3 className="text-base font-bold text-[var(--color-text-primary)] leading-snug">
+                      <h3 className="text-lg md:text-xl font-bold text-[var(--color-text-primary)] leading-snug">
                         {blog.title}
                       </h3>
 
-                      <p className="text-xs text-[var(--color-text-secondary)] mt-1 line-clamp-2">
+                      <p className="text-sm text-[var(--color-text-secondary)] mt-1.5 line-clamp-2 leading-relaxed">
                         {blog.summary}
                       </p>
 
                       {blog.tags && blog.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mt-2.5 font-mono text-[10px]">
+                        <div className="flex flex-wrap gap-2 mt-3 font-mono text-xs">
                           {blog.tags.map((tag) => (
-                            <span key={tag} className="text-[var(--color-text-muted)]">
+                            <span key={tag} className="px-2 py-0.5 rounded bg-[var(--color-elevated)] border border-[var(--color-border)] text-[var(--color-text-muted)]">
                               {tag}
                             </span>
                           ))}
@@ -1067,32 +1151,32 @@ export default function AdminPage() {
                       )}
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-[var(--color-border)] font-mono text-xs">
-                      <div className="flex flex-col gap-0.5 mr-1">
+                    <div className="flex items-center gap-2.5 shrink-0 pt-4 md:pt-0 border-t md:border-t-0 border-[var(--color-border)] font-mono text-xs">
+                      <div className="flex flex-col gap-1 mr-1">
                         <button
                           onClick={() => handleReorderBlog(idx, "up")}
                           disabled={idx === 0}
-                          className="p-1 rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] disabled:opacity-20 cursor-pointer"
+                          className="p-1.5 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-elevated)] disabled:opacity-20 cursor-pointer"
                           title="Move up"
                         >
-                          <ArrowUp size={12} />
+                          <ArrowUp size={14} />
                         </button>
                         <button
                           onClick={() => handleReorderBlog(idx, "down")}
                           disabled={idx === blogs.length - 1}
-                          className="p-1 rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] disabled:opacity-20 cursor-pointer"
+                          className="p-1.5 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-elevated)] disabled:opacity-20 cursor-pointer"
                           title="Move down"
                         >
-                          <ArrowDown size={12} />
+                          <ArrowDown size={14} />
                         </button>
                       </div>
 
                       <button
                         onClick={() => setPreviewingBlog(blog)}
-                        className="px-2.5 py-1.5 rounded border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-cyan)] hover:text-[var(--color-cyan)] flex items-center gap-1 transition-colors cursor-pointer"
+                        className="px-3.5 py-2 rounded-xl border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-cyan)] hover:text-[var(--color-cyan)] flex items-center gap-1.5 transition-colors cursor-pointer"
                         title="Instant preview"
                       >
-                        <Eye size={13} />
+                        <Eye size={14} />
                         <span>Preview</span>
                       </button>
 
@@ -1100,27 +1184,27 @@ export default function AdminPage() {
                         <Link
                           href={`/blogs/${blog.slug || blog.id}`}
                           target="_blank"
-                          className="p-2 rounded border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+                          className="p-2.5 rounded-xl border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-elevated)] transition-colors"
                           title="Open reader page"
                         >
-                          <ExternalLink size={13} />
+                          <ExternalLink size={15} />
                         </Link>
                       )}
 
                       <button
                         onClick={() => handleOpenBlogEditor(blog)}
-                        className="px-3 py-1.5 rounded border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-amber)] hover:text-[var(--color-amber)] flex items-center gap-1 transition-colors cursor-pointer"
+                        className="px-3.5 py-2 rounded-xl border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-amber)] hover:text-[var(--color-amber)] flex items-center gap-1.5 transition-colors cursor-pointer"
                       >
-                        <Edit3 size={13} />
+                        <Edit3 size={14} />
                         <span>Edit</span>
                       </button>
 
                       <button
                         onClick={() => handleDeleteBlog(blog.id, blog.title)}
-                        className="p-2 rounded border border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-error)] hover:text-[var(--color-error)] transition-colors cursor-pointer"
+                        className="p-2.5 rounded-xl border border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-error)] hover:text-[var(--color-error)] transition-colors cursor-pointer"
                         title="Delete dispatch"
                       >
-                        <Trash2 size={13} />
+                        <Trash2 size={15} />
                       </button>
                     </div>
                   </div>
@@ -1135,20 +1219,20 @@ export default function AdminPage() {
           PROJECT CREATOR / EDITOR MODAL
           ───────────────────────────────────────────────────── */}
       {isEditingProject && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="max-w-3xl w-full my-6 p-6 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl max-h-[92vh] overflow-y-auto font-mono text-xs">
-            <div className="flex items-center justify-between pb-4 border-b border-[var(--color-border)]">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 md:p-6 overflow-y-auto">
+          <div className="max-w-4xl w-full my-8 p-8 md:p-10 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl max-h-[94vh] overflow-y-auto font-mono text-xs">
+            <div className="flex items-center justify-between pb-6 border-b border-[var(--color-border)]">
               <div>
-                <h2 className="text-base font-bold text-[var(--color-text-primary)]">
+                <h2 className="text-xl font-bold text-[var(--color-text-primary)]">
                   {currentProject.id ? `Edit Project: ${currentProject.name}` : "Create New Project"}
                 </h2>
-                <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
-                  Configure project showcase card and repositories
+                <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                  Configure project showcase card, technical stack, and repository telemetry.
                 </p>
               </div>
               <button
                 onClick={() => setIsEditingProject(false)}
-                className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] px-2 py-1 cursor-pointer"
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-bright)] cursor-pointer transition-colors"
               >
                 ✕ Cancel
               </button>
@@ -1403,20 +1487,20 @@ export default function AdminPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-5 mt-6 border-t border-[var(--color-border)]">
+            <div className="flex items-center justify-end gap-3 pt-6 mt-8 border-t border-[var(--color-border)]">
               <button
                 type="button"
                 onClick={() => setIsEditingProject(false)}
-                className="px-4 py-2 rounded border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)]"
+                className="px-5 py-2.5 rounded-xl border border-[var(--color-border)] text-xs md:text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleSaveProject}
-                className="px-6 py-2 rounded bg-[var(--color-amber)] text-black font-bold text-xs tracking-wider flex items-center gap-1.5 hover:opacity-90 transition-opacity"
+                className="px-7 py-2.5 rounded-xl bg-[var(--color-amber)] text-black font-bold text-xs md:text-sm tracking-wider flex items-center gap-2 hover:opacity-90 transition-opacity shadow-md hover:scale-[1.01]"
               >
-                <Save size={13} />
+                <Save size={15} />
                 <span>Save Project</span>
               </button>
             </div>
@@ -1425,195 +1509,177 @@ export default function AdminPage() {
       )}
 
       {/* ─────────────────────────────────────────────────────
-          BLOG / ARTICLE CREATOR MODAL
+          BLOG / ARTICLE CREATOR MODAL WITH SPLIT-VIEW OVERDRIVE
           ───────────────────────────────────────────────────── */}
       {isEditingBlog && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="max-w-4xl w-full my-6 p-6 md:p-8 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl max-h-[92vh] overflow-y-auto font-mono text-xs">
-            <div className="flex items-center justify-between pb-4 border-b border-[var(--color-border)]">
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 md:p-6 overflow-y-auto">
+          <div className="max-w-6xl w-full my-6 p-8 md:p-10 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl max-h-[94vh] overflow-y-auto font-mono text-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[var(--color-border)]">
               <div>
-                <h2 className="text-base font-bold text-[var(--color-text-primary)]">
-                  {currentBlog.id ? `Edit: ${currentBlog.title}` : "Write New Dispatch or Article"}
+                <h2 className="text-xl md:text-2xl font-bold text-[var(--color-text-primary)] tracking-tight">
+                  {currentBlog.id ? `Edit: ${currentBlog.title}` : "Write New Dispatch or Long-Form Article"}
                 </h2>
-                <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
-                  Publish a full article directly on the website, or embed an X thread preview.
+                <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                  Publish a native long-form markdown essay directly on the site, or embed a live thread from X.
                 </p>
               </div>
-              <button
-                onClick={() => setIsEditingBlog(false)}
-                className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] px-2 py-1 cursor-pointer"
-              >
-                ✕ Cancel
-              </button>
+
+              <div className="flex items-center gap-3">
+                {/* Type Switcher: Article vs X Post */}
+                <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[var(--color-elevated)] border border-[var(--color-border)]">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentBlog({ ...currentBlog, type: "article" })}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                      currentBlog.type === "article" || (!currentBlog.type && currentBlog.body)
+                        ? "bg-[var(--color-surface)] text-[var(--color-text-primary)] shadow-sm font-bold border border-[var(--color-border)]"
+                        : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+                    }`}
+                  >
+                    <FileText size={13} />
+                    <span>Full Article</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setCurrentBlog({ ...currentBlog, type: "x-post" })}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                      currentBlog.type === "x-post" && !currentBlog.body
+                        ? "bg-[var(--color-surface)] text-[var(--color-text-primary)] shadow-sm font-bold border border-[var(--color-border)]"
+                        : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+                    }`}
+                  >
+                    <XIcon size={12} />
+                    <span>X Post / Thread</span>
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => setIsEditingBlog(false)}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] cursor-pointer"
+                >
+                  ✕ Close
+                </button>
+              </div>
             </div>
 
-            {/* Type Switcher: Article vs X Post */}
-            <div className="flex items-center gap-2 mt-4 p-1.5 rounded-lg bg-[var(--color-elevated)] border border-[var(--color-border)] w-fit">
-              <button
-                type="button"
-                onClick={() => setCurrentBlog({ ...currentBlog, type: "article" })}
-                className={`px-3 py-1.5 rounded text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                  currentBlog.type === "article" || (!currentBlog.type && currentBlog.body)
-                    ? "bg-[var(--color-surface)] text-[var(--color-text-primary)] shadow-sm font-bold"
-                    : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
-                }`}
-              >
-                <FileText size={13} />
-                <span>Full Website Article</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setCurrentBlog({ ...currentBlog, type: "x-post" })}
-                className={`px-3 py-1.5 rounded text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                  currentBlog.type === "x-post" && !currentBlog.body
-                    ? "bg-[var(--color-surface)] text-[var(--color-text-primary)] shadow-sm font-bold"
-                    : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
-                }`}
-              >
-                <XIcon size={13} />
-                <span>X Post / Thread Embed</span>
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-5">
-              {/* Left Column: Form Fields */}
-              <div className="flex flex-col gap-3.5">
-                <div>
-                  <label className="block text-[11px] text-[var(--color-text-secondary)] font-semibold mb-1">
-                    Title *
-                  </label>
-                  <input
-                    type="text"
-                    value={currentBlog.title}
-                    onChange={(e) => setCurrentBlog({ ...currentBlog, title: e.target.value })}
-                    placeholder="e.g. Architectural Breakdown of On-Chain Convictions"
-                    className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
-                  />
-                </div>
-
-                {/* X URL with Auto Preview Button */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-[11px] text-[var(--color-text-secondary)] font-semibold">
-                      Link to X Thread / Post {currentBlog.type === "x-post" ? "*" : "(Optional)"}
-                    </label>
-                    <span className="text-[10px] text-[var(--color-amber)]">
-                      Auto-fill from X URL
-                    </span>
-                  </div>
-                  <div className="flex gap-2">
-                    <input
-                      type="url"
-                      value={currentBlog.url || ""}
-                      onChange={(e) => setCurrentBlog({ ...currentBlog, url: e.target.value })}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          handleAutoFetchLink();
-                        }
-                      }}
-                      placeholder="https://x.com/Usmaangani252/status/..."
-                      className="flex-1 px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleAutoFetchLink()}
-                      disabled={isFetchingPreview}
-                      className="px-3 py-2 rounded bg-[rgba(255,94,58,0.12)] border border-[var(--color-amber)] text-[var(--color-amber)] hover:bg-[var(--color-amber)] hover:text-black font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap disabled:opacity-50"
-                      title="Fetch title, summary, hashtags, and content from the link"
-                    >
-                      {isFetchingPreview ? (
-                        <>
-                          <RefreshCw size={13} className="animate-spin" />
-                          <span>Fetching...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles size={13} />
-                          <span>⚡ Auto-Fill</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[11px] text-[var(--color-text-secondary)] font-semibold mb-1">
-                      Category
-                    </label>
-                    <select
-                      value={currentBlog.category}
-                      onChange={(e) =>
-                        setCurrentBlog({
-                          ...currentBlog,
-                          category: e.target.value as XPost["category"],
-                        })
-                      }
-                      className="w-full px-2.5 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
-                    >
-                      {BLOG_CATEGORIES.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] text-[var(--color-text-secondary)] font-semibold mb-1">
-                      Read Time / Format
-                    </label>
-                    <input
-                      type="text"
-                      value={currentBlog.readTime}
-                      onChange={(e) => setCurrentBlog({ ...currentBlog, readTime: e.target.value })}
-                      placeholder="e.g. 4 min read"
-                      className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] text-[var(--color-text-secondary)] font-semibold mb-1">
-                    Executive Summary / Excerpt (Lead sentence)
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={currentBlog.summary}
-                    onChange={(e) => setCurrentBlog({ ...currentBlog, summary: e.target.value })}
-                    placeholder="Brief hook or thesis statement summarizing the article..."
-                    className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
-                  />
-                </div>
-
-                {/* Full Article Body for Normal Articles */}
-                {(currentBlog.type === "article" || currentBlog.body !== undefined) && (
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="text-[11px] text-[var(--color-text-secondary)] font-semibold">
-                        Full Article Body (Markdown supported)
-                      </label>
-                      <span className="text-[10px] text-[var(--color-text-muted)]">
-                        Use ## for headings, separate with empty lines
-                      </span>
-                    </div>
-                    <textarea
-                      rows={6}
-                      value={currentBlog.body || ""}
-                      onChange={(e) => setCurrentBlog({ ...currentBlog, body: e.target.value })}
-                      placeholder="Write your full article here directly...&#10;&#10;## Key Concept&#10;Explain in detail with code or examples...&#10;&#10;Conclusion..."
-                      className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)] font-mono leading-relaxed"
-                    />
-                  </div>
-                )}
+            {/* Common Metadata Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-6">
+              <div className="md:col-span-2">
+                <label className="block text-xs text-[var(--color-text-secondary)] font-semibold mb-1.5">
+                  Title *
+                </label>
+                <input
+                  type="text"
+                  value={currentBlog.title}
+                  onChange={(e) => setCurrentBlog({ ...currentBlog, title: e.target.value })}
+                  placeholder="e.g. Architectural Breakdown of On-Chain Convictions"
+                  className="w-full px-4 py-2.5 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded-xl text-xs md:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
+                />
               </div>
 
-              {/* Right Column: Tags, Highlights & Live Preview */}
-              <div className="flex flex-col gap-3.5">
+              <div>
+                <label className="block text-xs text-[var(--color-text-secondary)] font-semibold mb-1.5">
+                  Category
+                </label>
+                <select
+                  value={currentBlog.category}
+                  onChange={(e) =>
+                    setCurrentBlog({
+                      ...currentBlog,
+                      category: e.target.value as XPost["category"],
+                    })
+                  }
+                  className="w-full px-3.5 py-2.5 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded-xl text-xs md:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
+                >
+                  {BLOG_CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* URL Row with Auto-Fill */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-4">
+              <div className="md:col-span-2">
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs text-[var(--color-text-secondary)] font-semibold">
+                    Link to X Thread / Post {currentBlog.type === "x-post" ? "*" : "(Optional)"}
+                  </label>
+                  <span className="text-[11px] text-[var(--color-amber)]">
+                    Auto-fill from X status URL
+                  </span>
+                </div>
+                <div className="flex gap-2.5">
+                  <input
+                    type="url"
+                    value={currentBlog.url || ""}
+                    onChange={(e) => setCurrentBlog({ ...currentBlog, url: e.target.value })}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAutoFetchLink();
+                      }
+                    }}
+                    placeholder="https://x.com/Usmaangani252/status/..."
+                    className="flex-1 px-4 py-2.5 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded-xl text-xs md:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleAutoFetchLink()}
+                    disabled={isFetchingPreview}
+                    className="px-4 py-2.5 rounded-xl bg-[rgba(255,94,58,0.12)] border border-[var(--color-amber)] text-[var(--color-amber)] hover:bg-[var(--color-amber)] hover:text-black font-bold text-xs flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap disabled:opacity-50 shadow-sm"
+                    title="Fetch title, summary, hashtags, and content from the link"
+                  >
+                    {isFetchingPreview ? (
+                      <>
+                        <RefreshCw size={14} className="animate-spin" />
+                        <span>Fetching...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles size={14} />
+                        <span>⚡ Auto-Fill</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs text-[var(--color-text-secondary)] font-semibold mb-1.5">
+                  Read Time / Format
+                </label>
+                <input
+                  type="text"
+                  value={currentBlog.readTime}
+                  onChange={(e) => setCurrentBlog({ ...currentBlog, readTime: e.target.value })}
+                  placeholder="e.g. 5 min read"
+                  className="w-full px-4 py-2.5 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded-xl text-xs md:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
+                />
+              </div>
+            </div>
+
+            {/* Summary, Highlights & Tags */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-4">
+              <div>
+                <label className="block text-xs text-[var(--color-text-secondary)] font-semibold mb-1.5">
+                  Executive Summary / Excerpt (Lead sentence)
+                </label>
+                <textarea
+                  rows={3}
+                  value={currentBlog.summary}
+                  onChange={(e) => setCurrentBlog({ ...currentBlog, summary: e.target.value })}
+                  placeholder="Brief hook or thesis statement summarizing the article..."
+                  className="w-full px-4 py-2.5 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded-xl text-xs md:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)] leading-relaxed"
+                />
+              </div>
+
+              <div className="flex flex-col gap-3">
                 <div>
-                  <label className="block text-[11px] text-[var(--color-text-secondary)] font-semibold mb-1">
+                  <label className="block text-xs text-[var(--color-text-secondary)] font-semibold mb-1.5">
                     Core Highlights / Takeaways (One per line)
                   </label>
                   <textarea
@@ -1621,99 +1687,143 @@ export default function AdminPage() {
                     value={highlightsInput}
                     onChange={(e) => setHighlightsInput(e.target.value)}
                     placeholder="Takeaway 1&#10;Takeaway 2&#10;Takeaway 3"
-                    className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
+                    className="w-full px-4 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded-xl text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)] leading-relaxed"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-[11px] text-[var(--color-text-secondary)] font-semibold mb-1">
-                    Tags (Comma separated)
-                  </label>
-                  <input
-                    type="text"
-                    value={tagsInput}
-                    onChange={(e) => setTagsInput(e.target.value)}
-                    placeholder="#Web3, #Base, #Solidity"
-                    className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
-                  />
-                </div>
-
-                <div className="flex items-center gap-4 p-3 rounded-lg bg-[var(--color-elevated)] border border-[var(--color-border)]">
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      value={tagsInput}
+                      onChange={(e) => setTagsInput(e.target.value)}
+                      placeholder="Tags: #Web3, #Base, #Solidity"
+                      className="w-full px-3.5 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded-xl text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
+                    />
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer select-none text-xs font-semibold shrink-0">
                     <input
                       type="checkbox"
                       checked={Boolean(currentBlog.isPinned)}
                       onChange={(e) => setCurrentBlog({ ...currentBlog, isPinned: e.target.checked })}
                       className="accent-[var(--color-amber)]"
                     />
-                    <span className="text-xs font-semibold">★ Pin to Top of Dispatches</span>
+                    <span>★ Pin to Top</span>
                   </label>
-                </div>
-
-                {/* Real-Time Live Preview Card */}
-                <div className="mt-1 p-3.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-elevated)]">
-                  <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-[var(--color-border)]">
-                    <span className="text-[10px] uppercase font-bold text-[var(--color-amber)] flex items-center gap-1.5">
-                      <Eye size={12} />
-                      <span>Live Card Preview</span>
-                    </span>
-                    <span className="text-[10px] text-[var(--color-text-muted)]">
-                      {currentBlog.type === "article" || currentBlog.body ? "Article Mode" : "X Post Mode"}
-                    </span>
-                  </div>
-
-                  <article className="p-3.5 rounded border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm">
-                    <div className="flex items-center justify-between text-xs mb-1.5 font-mono">
-                      <div className="flex items-center gap-1.5">
-                        <span className="px-1.5 py-0.5 rounded text-[9px] uppercase font-bold border border-[var(--color-border)] text-[var(--color-text-secondary)]">
-                          {currentBlog.category || "Web3"}
-                        </span>
-                        {currentBlog.isPinned && (
-                          <span className="text-[9px] text-[var(--color-amber)] font-bold">
-                            ★ Featured
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-[10px] text-[var(--color-text-muted)]">
-                        {currentBlog.publishedAt || "Nov 2026"} · {currentBlog.readTime || "3 min read"}
-                      </span>
-                    </div>
-
-                    <h4 className="font-bold text-sm text-[var(--color-text-primary)] mb-1 leading-snug">
-                      {currentBlog.title || "Dispatch Title Will Appear Here"}
-                    </h4>
-
-                    <p className="text-xs text-[var(--color-text-secondary)] mb-2 line-clamp-2 leading-relaxed">
-                      {currentBlog.summary || "Summary preview will appear here..."}
-                    </p>
-
-                    <div className="pt-2 border-t border-[var(--color-border)] flex items-center justify-between mt-2 font-mono text-[11px]">
-                      <span className="text-[var(--color-text-muted)]">@Usmaangani252</span>
-                      <span className="text-[var(--color-amber)] font-semibold flex items-center gap-1">
-                        <span>{currentBlog.type === "article" || currentBlog.body ? "Read Article" : "View on X"}</span>
-                        <ArrowUpRight size={11} />
-                      </span>
-                    </div>
-                  </article>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-5 mt-6 border-t border-[var(--color-border)]">
+            {/* SPLIT-VIEW OVERDRIVE: For Articles, Markdown Editor on Left, Live Preview on Right */}
+            {currentBlog.type === "article" || currentBlog.body !== undefined ? (
+              <div className="mt-6 pt-6 border-t border-[var(--color-border)]">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Left Column: Markdown Source Editor */}
+                  <div className="flex flex-col">
+                    <div className="flex items-center justify-between mb-2 font-mono text-xs text-[var(--color-text-muted)]">
+                      <span className="font-bold text-[var(--color-cyan)] flex items-center gap-1.5">
+                        <FileText size={14} />
+                        <span>Markdown Article Editor</span>
+                      </span>
+                      <span>
+                        {(currentBlog.body || "").length.toLocaleString()} characters ·{" "}
+                        {Math.max(1, Math.round(((currentBlog.body || "").split(/\s+/).filter(Boolean).length) / 200))} min read
+                      </span>
+                    </div>
+
+                    <textarea
+                      rows={18}
+                      value={currentBlog.body || ""}
+                      onChange={(e) => setCurrentBlog({ ...currentBlog, body: e.target.value })}
+                      placeholder="Write your complete essay or technical breakdown here directly...&#10;&#10;## High-Level Architecture&#10;Describe the core thesis and mechanics here...&#10;&#10;### Key Discoveries&#10;Explain in detail with code or design decisions...&#10;&#10;> Quote or key rule of thumb&#10;&#10;Conclusion and final verdict..."
+                      className="w-full flex-1 min-h-[420px] p-5 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded-2xl text-xs md:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)] font-mono leading-relaxed shadow-inner"
+                    />
+                    <div className="mt-2 text-[11px] text-[var(--color-text-muted)] flex items-center justify-between font-mono">
+                      <span>Supports ## Heading, ### Subheading, &gt; Quote, bullet points, and blank-line separation</span>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Live Synchronized Preview */}
+                  <div className="flex flex-col">
+                    <div className="flex items-center justify-between mb-2 font-mono text-xs text-[var(--color-text-muted)]">
+                      <span className="font-bold text-[var(--color-amber)] flex items-center gap-1.5">
+                        <Eye size={14} />
+                        <span>Synchronized Live Reader Preview</span>
+                      </span>
+                      <span className="text-[11px] text-[var(--color-online)] font-semibold">
+                        ● Real-time
+                      </span>
+                    </div>
+
+                    <ArticleSplitPreview
+                      blog={currentBlog}
+                      highlights={highlightsInput.split("\n").map((h) => h.trim()).filter(Boolean)}
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* For X Posts: Live Card Preview */
+              <div className="mt-6 pt-6 border-t border-[var(--color-border)]">
+                <div className="flex items-center justify-between mb-3 text-xs font-mono text-[var(--color-text-muted)]">
+                  <span className="font-bold text-[var(--color-amber)] flex items-center gap-1.5">
+                    <Eye size={14} />
+                    <span>Live Dispatch Card Preview</span>
+                  </span>
+                  <span>Shown on /blogs and homepage</span>
+                </div>
+
+                <div className="max-w-xl mx-auto p-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-elevated)] shadow-sm">
+                  <div className="flex items-center justify-between text-xs mb-3 font-mono">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-1 rounded-md text-[10px] uppercase font-bold border border-[var(--color-border)] text-[var(--color-text-secondary)]">
+                        {currentBlog.category || "Web3"}
+                      </span>
+                      {currentBlog.isPinned && (
+                        <span className="text-[10px] text-[var(--color-amber)] font-bold">
+                          ★ Featured
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-xs text-[var(--color-text-muted)]">
+                      {currentBlog.publishedAt || "Nov 2026"} · {currentBlog.readTime || "3 min read"}
+                    </span>
+                  </div>
+
+                  <h4 className="font-bold text-base md:text-lg text-[var(--color-text-primary)] mb-2 leading-snug">
+                    {currentBlog.title || "Dispatch Title Will Appear Here"}
+                  </h4>
+
+                  <p className="text-xs md:text-sm text-[var(--color-text-secondary)] mb-4 leading-relaxed">
+                    {currentBlog.summary || "Summary preview will appear here..."}
+                  </p>
+
+                  <div className="pt-3 border-t border-[var(--color-border)] flex items-center justify-between font-mono text-xs">
+                    <span className="text-[var(--color-text-muted)]">@Usmaangani252</span>
+                    <span className="text-[var(--color-amber)] font-semibold flex items-center gap-1">
+                      <span>View on X</span>
+                      <ArrowUpRight size={13} />
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-4 pt-6 mt-8 border-t border-[var(--color-border)]">
               <button
                 type="button"
                 onClick={() => setIsEditingBlog(false)}
-                className="px-4 py-2 rounded border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)]"
+                className="px-5 py-2.5 rounded-xl border border-[var(--color-border)] text-xs md:text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleSaveBlog}
-                className="px-6 py-2 rounded bg-[var(--color-amber)] text-black font-bold text-xs tracking-wider flex items-center gap-1.5 hover:opacity-90 transition-opacity"
+                className="px-8 py-3 rounded-xl bg-[var(--color-amber)] text-black font-bold text-xs md:text-sm tracking-wider flex items-center gap-2 hover:opacity-90 transition-opacity shadow-lg hover:scale-[1.01]"
               >
-                <Save size={13} />
-                <span>Publish Dispatch</span>
+                <Save size={15} />
+                <span>{currentBlog.id ? "Update Dispatch" : "Publish to Site"}</span>
               </button>
             </div>
           </div>
@@ -1724,56 +1834,57 @@ export default function AdminPage() {
           QUICK PREVIEW MODAL
           ───────────────────────────────────────────────────── */}
       {previewingBlog && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="max-w-md w-full p-6 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl font-mono text-xs">
-            <div className="flex items-center justify-between pb-3 border-b border-[var(--color-border)] mb-4">
-              <span className="font-bold text-xs uppercase tracking-wider text-[var(--color-text-primary)]">
-                Live Card Preview
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="max-w-xl w-full p-8 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl font-mono text-xs">
+            <div className="flex items-center justify-between pb-4 border-b border-[var(--color-border)] mb-6">
+              <span className="font-bold text-xs uppercase tracking-wider text-[var(--color-text-primary)] flex items-center gap-2">
+                <Eye size={15} className="text-[var(--color-amber)]" />
+                <span>Live Card Preview</span>
               </span>
               <button
                 onClick={() => setPreviewingBlog(null)}
-                className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] cursor-pointer"
+                className="text-xs px-2.5 py-1 rounded-lg border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] cursor-pointer"
               >
                 ✕ Close
               </button>
             </div>
 
-            <article className="p-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-elevated)]">
-              <div className="flex items-center justify-between text-xs mb-2">
-                <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold border border-[var(--color-border)] text-[var(--color-text-secondary)]">
+            <article className="p-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-elevated)] shadow-sm">
+              <div className="flex items-center justify-between text-xs mb-3">
+                <span className="px-2.5 py-1 rounded-md text-[10px] uppercase font-bold border border-[var(--color-border)] text-[var(--color-text-secondary)]">
                   {previewingBlog.category}
                 </span>
-                <span className="text-[11px] text-[var(--color-text-muted)]">
+                <span className="text-xs text-[var(--color-text-muted)]">
                   {previewingBlog.publishedAt} · {previewingBlog.readTime}
                 </span>
               </div>
 
-              <h3 className="font-bold text-base text-[var(--color-text-primary)] mb-1 leading-snug">
+              <h3 className="font-bold text-lg md:text-xl text-[var(--color-text-primary)] mb-2 leading-snug">
                 {previewingBlog.title}
               </h3>
 
-              <p className="text-xs text-[var(--color-text-secondary)] mb-3 leading-relaxed">
+              <p className="text-xs md:text-sm text-[var(--color-text-secondary)] mb-4 leading-relaxed">
                 {previewingBlog.summary}
               </p>
 
               {previewingBlog.highlights && previewingBlog.highlights.length > 0 && (
-                <ul className="mb-3 space-y-1 border-l-2 border-[var(--color-border)] pl-2.5">
+                <ul className="mb-4 space-y-1.5 border-l-2 border-[var(--color-border-bright)] pl-3">
                   {previewingBlog.highlights.map((h, i) => (
-                    <li key={i} className="text-xs text-[var(--color-text-muted)]">
+                    <li key={i} className="text-xs text-[var(--color-text-muted)] leading-relaxed">
                       {h}
                     </li>
                   ))}
                 </ul>
               )}
 
-              <div className="pt-3 border-t border-[var(--color-border)] flex items-center justify-between">
+              <div className="pt-4 border-t border-[var(--color-border)] flex items-center justify-between">
                 <button
                   onClick={() => {
                     const toEdit = previewingBlog;
                     setPreviewingBlog(null);
                     handleOpenBlogEditor(toEdit);
                   }}
-                  className="px-3 py-1.5 rounded border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                  className="px-4 py-2 rounded-xl border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-amber)]"
                 >
                   Edit
                 </button>
@@ -1782,20 +1893,20 @@ export default function AdminPage() {
                   <Link
                     href={`/blogs/${previewingBlog.slug || previewingBlog.id}`}
                     target="_blank"
-                    className="px-3.5 py-1.5 rounded bg-[var(--color-amber)] text-black font-bold text-xs flex items-center gap-1"
+                    className="px-4 py-2 rounded-xl bg-[var(--color-amber)] text-black font-bold text-xs flex items-center gap-1.5 shadow-sm"
                   >
                     <span>Read Article</span>
-                    <ArrowUpRight size={12} />
+                    <ArrowUpRight size={13} />
                   </Link>
                 ) : (
                   <a
                     href={previewingBlog.url || "https://x.com/Usmaangani252"}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-3.5 py-1.5 rounded bg-[var(--color-amber)] text-black font-bold text-xs flex items-center gap-1"
+                    className="px-4 py-2 rounded-xl bg-[var(--color-amber)] text-black font-bold text-xs flex items-center gap-1.5 shadow-sm"
                   >
                     <span>View on X</span>
-                    <ArrowUpRight size={12} />
+                    <ArrowUpRight size={13} />
                   </a>
                 )}
               </div>
