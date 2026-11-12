@@ -169,7 +169,7 @@ export default function RootLayout({
           <Background />
           <Sidebar />
           <TopBar />
-          <main className="workspace-content relative z-10 pt-[calc(94px+env(safe-area-inset-top,0px))] md:pt-[52px]">
+          <main className="workspace-content relative z-10">
             {children}
           </main>
         </div>

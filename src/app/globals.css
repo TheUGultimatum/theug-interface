@@ -270,6 +270,14 @@ body {
   flex: 1;
   margin-left: var(--sidebar-width);
   min-width: 0;
+  padding-top: 52px;
+}
+
+@media (max-width: 768px) {
+  .workspace-content {
+    padding-top: 94px;
+    padding-top: calc(94px + env(safe-area-inset-top, 0px));
+  }
 }
 
 @media (max-width: 1024px) {
