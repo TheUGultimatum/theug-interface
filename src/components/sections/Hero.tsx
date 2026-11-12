@@ -77,8 +77,8 @@ const BOOT_SEQUENCE = [
   "  [OK] all systems nominal",
   "$ whoami",
   "  usmaan.gani // theUG",
-  "  role: independent builder",
-  "  focus: ai·automation·web3",
+  "  role: independent builder & web3 hunter",
+  "  focus: ai·automation·web3·alpha·nfts",
 ];
 
 function Terminal() {
@@ -147,7 +147,18 @@ function Terminal() {
     
     switch(lowerCmd) {
       case "help":
-        output = "Available commands:\n  help     - List all available terminal commands\n  whoami   - Display active engineer identification\n  skills   - Output diagnostic skill visual metrics\n  projects - Show portfolio products & details\n  admin    - Access project management admin console\n  socials  - Link outbound transmission vectors\n  contact  - Open immediate communications link\n  clear    - Clear console screen buffer\n  date     - Show current standard system date\n  uptime   - Fetch host active runtime timer\n  stack    - Output active engineering stack details\n  matrix   - Sync binary translation streams\n  neocore  - Test active core thermal loads\n  glitch   - Trigger interface theme calibration";
+        output = "Available commands:\n  help     - List all available terminal commands\n  whoami   - Display active engineer identification\n  alpha    - Show active testnet & airdrop hunting telemetry\n  nfts     - View on-chain NFT curator & artifact profile\n  skills   - Output diagnostic skill visual metrics\n  projects - Show portfolio products & details\n  admin    - Access project management admin console\n  socials  - Link outbound transmission vectors\n  contact  - Open immediate communications link\n  clear    - Clear console screen buffer\n  date     - Show current standard system date\n  uptime   - Fetch host active runtime timer\n  stack    - Output active engineering stack details\n  matrix   - Sync binary translation streams\n  neocore  - Test active core thermal loads\n  glitch   - Trigger interface theme calibration";
+        break;
+      case "alpha":
+      case "testnet":
+      case "testnets":
+      case "airdrop":
+      case "airdrops":
+        output = "› [ALPHA & TESTNET EXPEDITIONS RADAR]\n  Role     : Early protocol explorer, testnet validator & airdrop hunter\n  Tracking : Monad, Berachain, Story Protocol, Eclipse, Babylon, MegaETH, Movement\n  Playbook : Sybil-resistant on-chain footprint, contract stress-testing, validator nodes\n  Status   : ACTIVE OPERATOR // TRACKING INCENTIVIZED ROLLUPS & L1/L2 TESTNETS";
+        break;
+      case "nft":
+      case "nfts":
+        output = "› [NFT ARTIFACTS & ON-CHAIN DIGITAL CULTURE]\n  Conviction : Digital provenance, generative algorithms, historical onchain artifacts\n  Ecosystems : Ethereum, Solana, Bitcoin Ordinals, Base\n  Interests  : Curated mints, creative coding, collector communities & rarity valuation\n  Status     : PASSIONATE ENTHUSIAST & LONG-TERM HOLDER";
         break;
       case "admin":
         output = "› [AUTH: UPLINKING TO SECURE COMMAND CONSOLE]\n› Redirecting to /admin ...";
@@ -183,7 +194,7 @@ function Terminal() {
         setHistory([]);
         return;
       case "whoami":
-        output = "usmaan.gani // theUG\n---------------------------------------\nrole  : independent builder & systems engineer\nfocus : artificial intelligence · automation · web3\nbase  : India · UTC+5:30\nstatus: active workspace / client operations";
+        output = "usmaan.gani // theUG\n---------------------------------------\nrole   : independent builder & systems engineer\nfocus  : artificial intelligence · automation · web3\nonchain: alpha & airdrop hunter · testnet operator · nft enthusiast\nbase   : India · UTC+5:30\nstatus : active workspace / client operations";
         break;
       case "socials":
         output = "Outbound Vectors:\n  GitHub   : https://github.com/TheUGultimatum\n  X        : https://x.com/Usmaangani252\n  LinkedIn : https://www.linkedin.com/in/usmaan-gani/";
@@ -653,7 +664,14 @@ const Stat = memo(function StatComponent({ label, value, highlight = false }: { 
 });
 
 /* ─── Hero Identity Animation ──────────────────────────────── */
-const ROLES = ["ai systems", "automation", "infrastructure", "web3"];
+const ROLES = [
+  "ai systems",
+  "automation",
+  "infrastructure",
+  "alpha & testnets",
+  "nft enthusiast",
+  "web3 protocols"
+];
 const HERO_TITLES = [
   { line1: "USMAAN", line2: "GANI" },
   { line1: "INDEPENDENT", line2: "BUILDER" }
@@ -830,7 +848,7 @@ export function Hero() {
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--color-text-muted)", letterSpacing: "0.1em" }}>INDEX.01</span>
             <span style={{ color: "var(--color-border)", fontSize: "10px" }}>—</span>
-            {["AI SYSTEMS", "AUTOMATION", "INFRASTRUCTURE", "WEB3"].map((tag, i, arr) => (
+            {["AI SYSTEMS", "AUTOMATION", "INFRASTRUCTURE", "WEB3", "ALPHA & NFTs"].map((tag, i, arr) => (
               <span key={tag} style={{ display: "flex", alignItems: "center", gap: "16px" }}>
                 <span style={{ fontFamily: "var(--font-mono)", fontSize: "9px", letterSpacing: "0.12em", color: "var(--color-text-muted)" }}>{tag}</span>
                 {i < arr.length - 1 && <span style={{ color: "var(--color-border)" }}>·</span>}
@@ -857,11 +875,10 @@ export function Hero() {
 
             <p style={{
               color: "var(--color-text-secondary)", fontSize: "13px",
-              lineHeight: 1.85, maxWidth: "380px",
+              lineHeight: 1.85, maxWidth: "420px",
               fontFamily: "var(--font-space-grotesk)",
             }}>
-              Building experimental AI tooling, autonomous workflows,
-              blockchain infrastructure, and immersive system interfaces.
+              Building experimental AI tooling, autonomous workflows, and EVM infrastructure — active testnet explorer, alpha / airdrop hunter &amp; NFT enthusiast.
             </p>
 
             <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
@@ -875,9 +892,10 @@ export function Hero() {
 
             {/* Stats */}
             <div style={{ display: "flex", gap: "1px", border: "1px solid var(--color-border)" }}>
-              <Stat label="BASE"   value="India" />
-              <Stat label="STATUS" value="Building" highlight />
-              <Stat label="EXP"    value="4Y+" />
+              <Stat label="BASE"     value="India" />
+              <Stat label="STATUS"   value="Building" highlight />
+              <Stat label="ON-CHAIN" value="Alpha / NFT" />
+              <Stat label="EXP"      value="4Y+" />
             </div>
 
             {/* Redesigned Animated Kinetic Collaboration Uplink */}
@@ -923,7 +941,7 @@ export function Hero() {
                     </h4>
 
                     <p className="font-mono text-[11px] text-[var(--color-text-secondary)] mt-0.5 leading-relaxed">
-                      EVM protocols, autonomous AI workflows & full-stack Web3 architecture.
+                      EVM protocols, autonomous AI workflows, testnet alpha &amp; full-stack Web3 architecture.
                     </p>
                   </div>
                 </div>

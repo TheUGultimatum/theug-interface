@@ -8,6 +8,8 @@ import { IdentityPortrait } from "@/components/ui/IdentityPortrait";
 const SKILLS = [
   { label: "AI SYSTEMS / LOCAL LLM OPS", status: "ACTIVE",   bar: "[██████████████░░░░]" },
   { label: "AUTOMATION / WORKFLOWS",    status: "STABLE",   bar: "[████████████░░░░░░]" },
+  { label: "ALPHA / TESTNET / AIRDROPS", status: "HUNTER",   bar: "[███████████████░░░]" },
+  { label: "NFT CULTURE & ARTIFACTS",    status: "CURATOR",  bar: "[████████████░░░░░░]" },
   { label: "WEB3 / NODE INFRASTRUCTURE", status: "SYNCED",   bar: "[██████████░░░░░░░░]" },
   { label: "LINUX / DEVOPS",            status: "OPTIMIZED",bar: "[████████████░░░░░░]" },
   { label: "BACKEND / API SYSTEMS",     status: "STABLE",   bar: "[██████████████░░░░]" },
@@ -17,17 +19,18 @@ const SKILLS = [
 const TECH_STACK = [
   "Next.js", "TypeScript", "Python", "Linux",
   "Docker", "Node.js", "SQL", "AWS",
-  "Oracle Cloud", "GCP", "SSH", "CLI",
-  "Solidity", "Web3 Tooling"
+  "Solidity", "EVM", "Testnet Nodes", "NFT Artifacts",
+  "Oracle Cloud", "GCP", "SSH", "CLI"
 ];
 
 const IDENTITY_LINES = [
   { prompt: "name",     value: "Usmaan Gani" },
-  { prompt: "role",     value: "Independent Engineer" },
-  { prompt: "focus",    value: "AI systems / automation / infra" },
-  { prompt: "stack",    value: "Next.js / Python / Docker / Linux" },
+  { prompt: "role",     value: "Independent Engineer & Web3 Hunter" },
+  { prompt: "focus",    value: "AI systems / automation / infra / onchain" },
+  { prompt: "onchain",  value: "Alpha & airdrop hunter · NFT enthusiast" },
+  { prompt: "stack",    value: "Next.js / Python / Docker / Linux / Solidity" },
   { prompt: "location", value: "India" },
-  { prompt: "status",   value: "actively building" },
+  { prompt: "status",   value: "actively building & hunting alpha" },
 ];
 
 function useInView() {
@@ -94,15 +97,10 @@ export function About() {
                   and developer tooling.
                 </p>
                 <p style={{ color: "var(--color-text-secondary)", fontSize: "14px", lineHeight: 2.0, letterSpacing: "0.02em", marginTop: "14px" }}>
-                  My work ranges from local LLM deployment and
-                  Linux-based inference environments to Web3 node
-                  operations, interactive interfaces, and experimental
-                  software systems.
+                  Deeply active in on-chain ecosystems as an alpha researcher, testnet stress-tester, airdrop hunter, and NFT artifact enthusiast. I track early-stage protocols across EVM, Solana, and Bitcoin Ordinals, validating testnets, deploying nodes, and curating digital provenance.
                 </p>
                 <p style={{ color: "var(--color-text-secondary)", fontSize: "14px", lineHeight: 2.0, letterSpacing: "0.02em", marginTop: "14px" }}>
-                  I enjoy building systems that feel alive —
-                  clean architecture, immersive UX, and infrastructure
-                  that actually works in production.
+                  My engineering work ranges from local LLM deployment and Linux-based inference environments to Web3 node operations, interactive interfaces, and experimental software systems that actually work in production.
                 </p>
               </div>
             </div>

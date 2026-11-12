@@ -77,10 +77,11 @@ export function Now() {
                 <div className="flex flex-col gap-3 pl-2">
                   {[
                     "building ai automation systems",
-                    "experimenting with local inference",
-                    "researching agentic workflows",
-                    "designing immersive system interfaces",
-                    "operating blockchain infrastructure"
+                    "tracking incentivized testnets & hunting alpha",
+                    "curating on-chain nft artifacts & digital culture",
+                    "experimenting with local inference & llm clusters",
+                    "researching agentic workflows & tooling",
+                    "operating blockchain node infrastructure"
                   ].map((task, idx) => (
                     <div key={idx} className="flex items-center gap-2">
                       <span 
@@ -123,11 +124,12 @@ export function Now() {
             <div className="panel-body" style={{ padding: "20px 24px" }}>
               <div className="flex flex-col gap-3 font-mono text-[11px]">
                 {[
-                  { label: "LOCAL_LLM_CLUSTER",    value: "ONLINE", color: "var(--color-online)" },
-                  { label: "AUTOMATION_PIPELINES", value: "ACTIVE", color: "var(--color-amber)" },
-                  { label: "NODE_INFRASTRUCTURE",  value: "SYNCED", color: "var(--color-online)" },
-                  { label: "GPU_INFERENCE_CORE",   value: "READY",  color: "var(--color-cyan)" },
-                  { label: "CONTACT_UPLINK",       value: "STABLE", color: "var(--color-cyan)" }
+                  { label: "LOCAL_LLM_CLUSTER",    value: "ONLINE",   color: "var(--color-online)" },
+                  { label: "ALPHA_TESTNET_RADAR",  value: "TRACKING", color: "var(--color-amber)" },
+                  { label: "NFT_ARTIFACT_VAULT",   value: "CURATED",  color: "var(--color-cyan)" },
+                  { label: "AUTOMATION_PIPELINES", value: "ACTIVE",   color: "var(--color-online)" },
+                  { label: "NODE_INFRASTRUCTURE",  value: "SYNCED",   color: "var(--color-online)" },
+                  { label: "CONTACT_UPLINK",       value: "STABLE",   color: "var(--color-cyan)" }
                 ].map((sys) => (
                   <div key={sys.label} style={{ 
                     display: "flex", 

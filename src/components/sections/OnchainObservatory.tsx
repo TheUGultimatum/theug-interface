@@ -33,6 +33,16 @@ export function OnchainObservatory() {
           The ecosystems, chains and networks I explore, build on and believe in.
           <span className="animate-pulse text-[var(--color-cyan)] font-mono font-bold">_</span>
         </p>
+        <div className="flex items-center gap-2 mt-3 flex-wrap">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9.5px] font-mono font-bold border border-[var(--color-amber)]/40 bg-[var(--color-amber)]/10 text-[var(--color-amber)]">
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-amber)] animate-pulse" />
+            ALPHA &amp; AIRDROP HUNTER
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9.5px] font-mono font-bold border border-[var(--color-cyan)]/40 bg-[var(--color-cyan)]/10 text-[var(--color-cyan)]">
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-cyan)]" />
+            NFT ENTHUSIAST
+          </span>
+        </div>
       </div>
 
       {/* ─────────────────────────────────────────────────────────
@@ -58,6 +68,16 @@ export function OnchainObservatory() {
             I explore, build on and believe in.
             <span className="animate-pulse text-[var(--color-cyan)] font-mono font-bold">_</span>
           </p>
+          <div className="flex items-center gap-2 mt-3.5 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9.5px] font-mono font-bold border border-[var(--color-amber)]/40 bg-[var(--color-amber)]/10 text-[var(--color-amber)]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-amber)] animate-pulse" />
+              ALPHA &amp; AIRDROP HUNTER
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9.5px] font-mono font-bold border border-[var(--color-cyan)]/40 bg-[var(--color-cyan)]/10 text-[var(--color-cyan)]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-cyan)]" />
+              NFT ENTHUSIAST
+            </span>
+          </div>
         </div>
 
         {/* DESKTOP RIGHT-SIDE HOLOGRAPHIC HUD CARD OVERLAY */}
@@ -152,14 +172,18 @@ export function OnchainObservatory() {
         />
 
         {/* BOTTOM TELEMETRY BAR (Matching Reference Image) */}
-        <div className="px-6 py-3.5 border-t border-[var(--color-border)] bg-[var(--color-surface)]/90 backdrop-blur-md flex items-center justify-between text-[11px] font-mono">
-          <div className="flex items-center gap-2 text-[var(--color-text-muted)] tracking-widest uppercase">
+        <div className="px-6 py-3.5 border-t border-[var(--color-border)] bg-[var(--color-surface)]/90 backdrop-blur-md flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] font-mono">
+          <div className="flex items-center gap-3 text-[var(--color-text-muted)] tracking-widest uppercase flex-wrap">
             <span className="text-[var(--color-cyan)]">//</span>
             <span>WEB3 UNIVERSE</span>
+            <span className="text-[var(--color-border)]">·</span>
+            <span className="text-[var(--color-amber)] text-[10px] font-bold">ALPHA_RADAR: ACTIVE</span>
+            <span className="text-[var(--color-border)] hidden md:inline">·</span>
+            <span className="text-[var(--color-cyan)] text-[10px] font-bold hidden md:inline">NFT_VAULT: CURATED</span>
           </div>
 
           <div className="text-[var(--color-cyan)] font-mono tracking-wider">
-            [ theUG_ / on-chain ]
+            [ theUG_ / on-chain hunter ]
           </div>
         </div>
       </div>
@@ -238,6 +262,79 @@ export function OnchainObservatory() {
               <ArrowUpRight size={13} />
             </a>
           )}
+        </div>
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────
+          ON-CHAIN INTELLIGENCE: ALPHA RADAR & NFT VAULT
+          ───────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+        {/* Alpha & Testnet Radar */}
+        <div className="panel hover-glow-edge p-5 md:p-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+          <div className="flex items-center justify-between pb-3 mb-3 border-b border-[var(--color-border)]">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[var(--color-amber)] animate-pulse" />
+              <span className="font-mono text-xs font-bold text-[var(--color-amber)] tracking-wider">
+                ALPHA_RADAR // TESTNET &amp; AIRDROP EXPEDITIONS
+              </span>
+            </div>
+            <span className="font-mono text-[9px] px-2 py-0.5 rounded border border-[var(--color-amber)]/40 bg-[var(--color-amber)]/10 text-[var(--color-amber)] font-bold">
+              ACTIVE HUNTER
+            </span>
+          </div>
+
+          <p className="text-xs text-[var(--color-text-secondary)] font-sans leading-relaxed mb-4">
+            Early protocol stress-tester, testnet validator, and systematic airdrop hunter. Focused on high-conviction L1/L2 testnet deployments, sybil-resistant contract interaction, and validator node operations.
+          </p>
+
+          <div className="flex flex-col gap-2 font-mono text-[10px]">
+            <div className="flex justify-between items-center py-1.5 border-b border-[var(--color-border)]/50">
+              <span className="text-[var(--color-text-muted)]">ACTIVE TARGETS</span>
+              <span className="text-[var(--color-text-primary)] font-bold">Monad · Berachain · Babylon · Story · MegaETH · Movement</span>
+            </div>
+            <div className="flex justify-between items-center py-1.5 border-b border-[var(--color-border)]/50">
+              <span className="text-[var(--color-text-muted)]">TACTICAL PLAYBOOK</span>
+              <span className="text-[var(--color-amber)]">Testnet Nodes · Liquidity Routing · Devnet Contracts</span>
+            </div>
+            <div className="flex justify-between items-center py-1.5">
+              <span className="text-[var(--color-text-muted)]">STRATEGY</span>
+              <span className="text-[var(--color-online)]">Authentic On-Chain Footprint · Zero-Capital Retro Incentives</span>
+            </div>
+          </div>
+        </div>
+
+        {/* NFT Artifacts & Digital Provenance */}
+        <div className="panel hover-glow-edge p-5 md:p-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]">
+          <div className="flex items-center justify-between pb-3 mb-3 border-b border-[var(--color-border)]">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[var(--color-cyan)] animate-pulse" />
+              <span className="font-mono text-xs font-bold text-[var(--color-cyan)] tracking-wider">
+                NFT_VAULT // DIGITAL CULTURE &amp; PROVENANCE
+              </span>
+            </div>
+            <span className="font-mono text-[9px] px-2 py-0.5 rounded border border-[var(--color-cyan)]/40 bg-[var(--color-cyan)]/10 text-[var(--color-cyan)] font-bold">
+              CURATOR &amp; COLLECTOR
+            </span>
+          </div>
+
+          <p className="text-xs text-[var(--color-text-secondary)] font-sans leading-relaxed mb-4">
+            Passionate collector and on-chain culture enthusiast. Fascinated by immutable digital provenance, generative creative coding, on-chain SVG algorithms, and historical artifacts across multiple ecosystems.
+          </p>
+
+          <div className="flex flex-col gap-2 font-mono text-[10px]">
+            <div className="flex justify-between items-center py-1.5 border-b border-[var(--color-border)]/50">
+              <span className="text-[var(--color-text-muted)]">SUPPORTED CHAINS</span>
+              <span className="text-[var(--color-text-primary)] font-bold">Ethereum (ERC-721/1155) · Solana · Bitcoin Ordinals · Base</span>
+            </div>
+            <div className="flex justify-between items-center py-1.5 border-b border-[var(--color-border)]/50">
+              <span className="text-[var(--color-text-muted)]">COLLECTION THEMES</span>
+              <span className="text-[var(--color-cyan)]">Generative Art · On-Chain Storage · High-Conviction Mints</span>
+            </div>
+            <div className="flex justify-between items-center py-1.5">
+              <span className="text-[var(--color-text-muted)]">CURATION PHILOSOPHY</span>
+              <span className="text-[var(--color-online)]">Art &gt; Speculation · Decentralized Media Sovereignty</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
