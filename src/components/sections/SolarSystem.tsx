@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, memo, useState, useCallback } from "react";
 import { ECOSYSTEMS_DATA, EcosystemData } from "@/config/networkData";
-import { RotateCcw, Zap, Radio } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 
 export type PlanetPhysics = EcosystemData & {
   baseRadius: number;
@@ -80,10 +80,6 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const [isDayMode, setIsDayMode] = useState<boolean>(false);
-  const [warpSpeed, setWarpSpeed] = useState<number>(1);
-  const warpSpeedRef = useRef<number>(1);
-  const [isScanning, setIsScanning] = useState<boolean>(false);
-  const scanWaveRef = useRef<{ radius: number; maxRadius: number; active: boolean } | null>(null);
   const dimensionsRef = useRef<{ w: number; h: number }>({ w: 1000, h: 750 });
   const prefersReducedMotionRef = useRef<boolean>(false);
 
@@ -286,7 +282,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       ctx?.scale(dpr, dpr);
 
       const isMobile = w < 768;
-      const scale = isMobile ? 0.46 : (w < 1200 ? 0.70 : 0.82);
+      const scale = isMobile ? 0.48 : (w < 1200 ? 0.72 : 0.88);
       planetsRef.current.forEach(p => {
         const original = ECOSYSTEMS_DATA.find(orig => orig.id === p.id);
         if (original) p.baseRadius = original.radius * scale;
@@ -313,14 +309,12 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
     }
   };
 
-  const handleResetCamera = () => {
+  const handleResetCamera = useCallback(() => {
     cameraRef.current.targetZoom = 1.0;
     cameraRef.current.targetRotation = 0;
     cameraRef.current.targetPanX = 0;
     cameraRef.current.targetPanY = 0;
-  };
-
-  // 6. MAIN 120 FPS PURE CANVAS SOLAR SYSTEM (VOID MINIMAL)
+  }, []);
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -384,38 +378,6 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
         ctx.stroke();
       });
 
-      // ─── AMBIENT & ACTIVE RADAR SCAN SWEEPS ───────────────────────
-      const ambientRadarR = ((time * 0.08) % (isMobile ? 380 : 640));
-      ctx.save();
-      ctx.strokeStyle = isDay ? "rgba(2, 132, 199, 0.16)" : "rgba(0, 217, 255, 0.18)";
-      ctx.lineWidth = 1.0;
-      ctx.setLineDash([3, 6]);
-      ctx.beginPath();
-      ctx.arc(0, 0, ambientRadarR, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.restore();
-
-      // Manual High-Energy Radar Sweep Ping
-      if (scanWaveRef.current && scanWaveRef.current.active) {
-        scanWaveRef.current.radius += dt * 0.42;
-        const progress = scanWaveRef.current.radius / scanWaveRef.current.maxRadius;
-        if (progress >= 1) {
-          scanWaveRef.current.active = false;
-        } else {
-          const waveAlpha = (1 - progress) * (isDay ? 0.65 : 0.85);
-          ctx.save();
-          ctx.strokeStyle = isDay ? `rgba(216, 67, 21, ${waveAlpha})` : `rgba(255, 123, 0, ${waveAlpha})`;
-          ctx.shadowColor = isDay ? "#D84315" : "#FF7B00";
-          ctx.shadowBlur = 14;
-          ctx.lineWidth = 2.2;
-          ctx.beginPath();
-          ctx.arc(0, 0, scanWaveRef.current.radius, 0, Math.PI * 2);
-          ctx.stroke();
-          ctx.restore();
-        }
-      }
-
       // ─── C. REFINED ELLIPTICAL ORBITS ───────────────────────────
       planetsRef.current.forEach(p => {
         const isSelected = selectedId === p.id;
@@ -467,7 +429,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
 
       planetsRef.current.forEach(p => {
         if (!p.isDragging) {
-          p.angle += p.baseSpeed * dt * 0.05 * warpSpeedRef.current * motionMultiplier;
+          p.angle += p.baseSpeed * dt * 0.05 * motionMultiplier;
         }
 
         const naturalOrbitX = Math.cos(p.angle) * p.baseRadius;
@@ -1003,6 +965,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       const targetPlanet = hitPlanet as PlanetPhysics;
       interactionRef.current.dragPlanetId = targetPlanet.id;
       interactionRef.current.isSlingshot = true;
+      // eslint-disable-next-line react-hooks/immutability
       targetPlanet.isDragging = true;
       targetPlanet.dragX = worldX;
       targetPlanet.dragY = worldY;
@@ -1088,58 +1051,27 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
     cameraRef.current.targetZoom = Math.max(0.65, Math.min(1.8, cameraRef.current.targetZoom + zoomDelta));
   };
 
-  const handleRadarPing = useCallback(() => {
-    setIsScanning(true);
-    scanWaveRef.current = { radius: 30, maxRadius: 750, active: true };
-    setTimeout(() => setIsScanning(false), 2200);
-  }, []);
-
-  const toggleWarpSpeed = useCallback(() => {
-    setWarpSpeed(prev => {
-      const next = prev === 1 ? 2.5 : 1;
-      warpSpeedRef.current = next;
-      return next;
-    });
-  }, []);
-
   return (
     <div 
       ref={containerRef}
       tabIndex={0}
       onKeyDown={handleContainerKeyDown}
-      className="relative w-full h-[540px] sm:h-[620px] md:h-[680px] lg:h-[750px] xl:h-[800px] overflow-hidden select-none bg-[var(--color-void)] focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-cyan)]"
+      className="relative w-full h-[580px] sm:h-[660px] md:h-[720px] lg:h-[780px] xl:h-[840px] 2xl:h-[880px] overflow-hidden select-none bg-[var(--color-void)] focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-cyan)]"
       role="region"
       aria-label="On-Chain Conviction: Web3 Solar System with Usmaan Gani"
     >
       {/* ─────────────────────────────────────────────────────
-          SUBTLE CELESTIAL CAMERA & WARP TOOLBAR (Bottom-Left on Desktop)
+          SUBTLE CELESTIAL CAMERA RESET (Bottom-Left on Desktop)
           ───────────────────────────────────────────────────── */}
       <div className="hidden lg:flex absolute bottom-4 left-6 z-30 pointer-events-auto items-center gap-2">
         <button
-          onClick={handleRadarPing}
-          aria-label="Emit Deep-Space Radar Frequency Sweep"
-          className="px-3 py-2 rounded-lg border border-[var(--color-cyan)]/40 bg-[var(--color-surface)]/90 text-[var(--color-cyan)] hover:bg-[var(--color-cyan)]/15 font-mono text-[10px] font-bold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer min-h-[36px] focus-visible:ring-2 focus-visible:ring-[var(--color-cyan)] focus-visible:outline-none"
-        >
-          <Radio size={13} className={isScanning ? "animate-pulse" : ""} />
-          <span>RADAR PING</span>
-        </button>
-
-        <button
-          onClick={toggleWarpSpeed}
-          aria-label="Toggle Relativistic Orbital Warp Velocity"
-          className="px-3 py-2 rounded-lg border border-[var(--color-amber)]/40 bg-[var(--color-surface)]/90 text-[var(--color-amber)] hover:bg-[var(--color-amber)]/15 font-mono text-[10px] font-bold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer min-h-[36px] focus-visible:ring-2 focus-visible:ring-[var(--color-amber)] focus-visible:outline-none"
-        >
-          <Zap size={13} className={warpSpeed > 1 ? "animate-bounce" : ""} />
-          <span>{warpSpeed > 1 ? "2.5X WARP" : "1X SPEED"}</span>
-        </button>
-
-        <button
           onClick={handleResetCamera}
           aria-label="Reset Camera View to Default"
-          className="p-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/80 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-bright)] transition-colors cursor-pointer min-w-[36px] min-h-[36px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-[var(--color-cyan)] focus-visible:outline-none"
+          className="px-2.5 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/85 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-bright)] transition-colors cursor-pointer min-h-[32px] flex items-center gap-1.5 text-[10px] font-mono font-bold focus-visible:ring-2 focus-visible:ring-[var(--color-cyan)] focus-visible:outline-none backdrop-blur-md"
           title="Reset Camera View"
         >
-          <RotateCcw size={14} />
+          <RotateCcw size={12} />
+          <span>RESET VIEW</span>
         </button>
       </div>
 
@@ -1163,33 +1095,15 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
           MOBILE/TABLET CONTROLS & CLEAN PLANET SELECTOR CAROUSEL
           ───────────────────────────────────────────────────── */}
       <div className="lg:hidden absolute bottom-3 left-3 right-3 z-30 flex flex-col gap-2 pointer-events-auto">
-        {/* Quick mobile warp and radar toggles with WCAG touch sizes */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleRadarPing}
-              aria-label="Emit Radar Sweep"
-              className="px-2.5 py-1.5 rounded-lg border border-[var(--color-cyan)]/40 bg-[var(--color-surface)]/90 text-[var(--color-cyan)] font-mono text-[9px] font-bold flex items-center gap-1.5 shadow-sm cursor-pointer min-h-[36px]"
-            >
-              <Radio size={11} className={isScanning ? "animate-pulse" : ""} />
-              <span>RADAR</span>
-            </button>
-            <button
-              onClick={toggleWarpSpeed}
-              aria-label="Toggle Orbital Warp Velocity"
-              className="px-2.5 py-1.5 rounded-lg border border-[var(--color-amber)]/40 bg-[var(--color-surface)]/90 text-[var(--color-amber)] font-mono text-[9px] font-bold flex items-center gap-1.5 shadow-sm cursor-pointer min-h-[36px]"
-            >
-              <Zap size={11} className={warpSpeed > 1 ? "animate-bounce" : ""} />
-              <span>{warpSpeed > 1 ? "2.5X" : "1X"}</span>
-            </button>
-          </div>
+        <div className="flex items-center justify-end">
           <button
             onClick={handleResetCamera}
             aria-label="Reset Camera View"
-            className="p-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/80 text-[var(--color-text-muted)] cursor-pointer min-w-[36px] min-h-[36px] flex items-center justify-center"
+            className="px-2 py-1 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]/85 text-[var(--color-text-secondary)] cursor-pointer text-[9px] font-mono flex items-center gap-1 min-h-[28px]"
             title="Reset Camera View"
           >
-            <RotateCcw size={12} />
+            <RotateCcw size={11} />
+            <span>RESET</span>
           </button>
         </div>
 
