@@ -404,60 +404,112 @@ function Terminal() {
   );
 }
 
-/* ─── Metrics with fluctuation ───────────────────────────── */
-interface Metric { label: string; base: number; color: string; }
-const METRICS: Metric[] = [
-  { label: "CPU",  base: 42, color: "var(--color-amber)" },
-  { label: "MEM",  base: 68, color: "var(--color-amber-bright)" },
-  { label: "NET",  base: 71, color: "var(--color-text-muted)" },
-  { label: "AI",   base: 63, color: "var(--color-amber)" },
-];
+/* ─── Real Visitor Telemetry Panel ───────────────────────── */
+interface HardwareStat {
+  label: string;
+  value: string;
+  detail: string;
+  color: string;
+}
 
-const LiveMetric = memo(function LiveMetricComponent({ metric }: { metric: Metric }) {
-  const [val, setVal] = useState(metric.base);
-  const [animated, setAnimated] = useState(0);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const obs = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) {
-        setTimeout(() => setAnimated(val), 100);
-        obs.disconnect();
-      }
-    }, { threshold: 0.1 });
-    if (ref.current) obs.observe(ref.current);
-    return () => obs.disconnect();
-  }, [val]);
+function VisitorTelemetryPanel() {
+  const [stats, setStats] = useState<HardwareStat[]>([
+    { label: "CPU_THREADS", value: "DETECTING", detail: "LOGICAL CORES", color: "var(--color-text-muted)" },
+    { label: "DEVICE_MEMORY", value: "DETECTING", detail: "RAM TIER", color: "var(--color-text-muted)" },
+    { label: "NETWORK_RTT", value: "PINGING", detail: "LATENCY", color: "var(--color-text-muted)" },
+    { label: "DISPLAY_MATRIX", value: "READING", detail: "VIEWPORT", color: "var(--color-text-muted)" },
+    { label: "DISPLAY_DPR", value: "READING", detail: "DENSITY", color: "var(--color-text-muted)" },
+  ]);
+  const [clientPlatform, setClientPlatform] = useState("PROBING...");
 
   useEffect(() => {
-    // Throttled to fluctuate every 6-8 seconds instead of ~3 seconds to save re-renders
-    const id = setInterval(() => {
-      if (document.hidden) return; // Skip updating value if browser tab is inactive!
-      const next = Math.max(5, Math.min(96, metric.base + (Math.random() - 0.5) * 18));
-      setVal(Math.round(next));
-      setAnimated(Math.round(next));
-    }, 6000 + Math.random() * 2000);
-    return () => clearInterval(id);
-  }, [metric.base]);
+    if (typeof window === "undefined") return;
+
+    const detectHardware = () => {
+      const cores = navigator.hardwareConcurrency ? `${navigator.hardwareConcurrency} THREADS` : "MULTI-CORE";
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const navAny = navigator as any;
+      const memGB = navAny.deviceMemory ? `≥${navAny.deviceMemory} GB RAM` : "PROTECTED";
+
+      const conn = navAny.connection || navAny.mozConnection || navAny.webkitConnection;
+      const connType = conn?.effectiveType ? String(conn.effectiveType).toUpperCase() : "ONLINE";
+      const rtt = conn?.rtt ? `${conn.rtt}ms RTT` : "LOW_LATENCY";
+
+      const screenRes = `${window.screen.width}x${window.screen.height}`;
+      const dpr = `${window.devicePixelRatio || 1}x DPR`;
+
+      const platformStr = navAny.userAgentData?.platform || (navigator.platform ? navigator.platform : "HOST_DEVICE");
+      setClientPlatform(String(platformStr).toUpperCase().slice(0, 16));
+
+      setStats([
+        {
+          label: "CPU_THREADS",
+          value: cores,
+          detail: "CORES",
+          color: "var(--color-online)",
+        },
+        {
+          label: "DEVICE_MEMORY",
+          value: memGB,
+          detail: "RAM",
+          color: "var(--color-amber)",
+        },
+        {
+          label: "NETWORK_PING",
+          value: rtt,
+          detail: connType,
+          color: "var(--color-cyan)",
+        },
+        {
+          label: "DISPLAY_RES",
+          value: screenRes,
+          detail: "PIXELS",
+          color: "var(--color-online)",
+        },
+        {
+          label: "PIXEL_RATIO",
+          value: dpr,
+          detail: "SCALE",
+          color: "var(--color-amber)",
+        },
+      ]);
+    };
+
+    detectHardware();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const conn = (navigator as any).connection;
+    if (conn && conn.addEventListener) {
+      conn.addEventListener("change", detectHardware);
+      return () => conn.removeEventListener("change", detectHardware);
+    }
+  }, []);
 
   return (
-    <div ref={ref} style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: "var(--color-text-muted)", letterSpacing: "0.09em" }}>{metric.label}</span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: metric.color, transition: "color 0.4s" }}>{val}%</span>
+    <div className="panel hover-glow-edge" style={{ contain: "layout paint style" }}>
+      <div className="panel-header flex items-center justify-between">
+        <span className="panel-title font-mono text-[10px]">client_telemetry.sys</span>
+        <span style={{ fontSize: "7px", color: "var(--color-online)", fontFamily: "var(--font-mono)" }}>
+          ● {clientPlatform}
+        </span>
       </div>
-      <div className="metric-bar-track">
-        <div style={{
-          height: "100%", borderRadius: "1px",
-          background: metric.color,
-          width: `${animated}%`,
-          transition: "width 1.8s ease-out",
-          opacity: 0.7,
-        }} />
+      <div className="panel-body font-mono text-[9px]" style={{ padding: "12px 14px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          {stats.map((s) => (
+            <div key={s.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ color: "var(--color-text-secondary)", fontSize: "8.5px" }}>{s.label}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span style={{ color: "var(--color-text-muted)", fontSize: "8px" }}>{s.detail}</span>
+                <span style={{ color: s.color, fontWeight: "bold" }}>[{s.value}]</span>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
-});
+}
 
 /* ─── Stat block ─────────────────────────────────────────── */
 const Stat = memo(function StatComponent({ label, value, highlight = false }: { label: string; value: string; highlight?: boolean }) {
@@ -737,32 +789,8 @@ export function Hero() {
             <Terminal />
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-              {/* Metrics */}
-              {/* Active Systems Operations Monitor */}
-              <div className="panel hover-glow-edge" style={{ contain: "layout paint style" }}>
-                <div className="panel-header flex items-center justify-between">
-                  <span className="panel-title">active_systems.log</span>
-                  <span style={{ fontSize: "7px", color: "var(--color-online)", fontFamily: "var(--font-mono)" }}>
-                    ● SYS_OK
-                  </span>
-                </div>
-                <div className="panel-body font-mono text-[9px]" style={{ padding: "12px 14px" }}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                    {[
-                      { label: "LOCAL_LLM_CLUSTER",    value: "ONLINE", color: "var(--color-online)" },
-                      { label: "AUTOMATION_PIPELINES", value: "ACTIVE", color: "var(--color-amber)" },
-                      { label: "NODE_INFRASTRUCTURE",  value: "SYNCED", color: "var(--color-online)" },
-                      { label: "GPU_INFERENCE_CORE",   value: "READY",  color: "var(--color-cyan)" },
-                      { label: "CONTACT_UPLINK",       value: "STABLE", color: "var(--color-cyan)" }
-                    ].map((sys) => (
-                      <div key={sys.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ color: "var(--color-text-secondary)", fontSize: "8.5px" }}>{sys.label}</span>
-                        <span style={{ color: sys.color, fontWeight: "bold" }}>[{sys.value}]</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              {/* Real Client / Visitor Hardware & Network Telemetry */}
+              <VisitorTelemetryPanel />
 
               {/* Node graph */}
               <div className="panel">
