@@ -236,6 +236,45 @@ export default function AdminPage() {
     }
   }, []);
 
+  // Keyboard shortcuts (Escape to dismiss, Cmd/Ctrl+S to save)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (previewingBlog) setPreviewingBlog(null);
+        else if (isEditingBlog) setIsEditingBlog(false);
+        else if (isEditingProject) setIsEditingProject(false);
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+        if (isEditingBlog) {
+          e.preventDefault();
+          handleSaveBlog();
+        } else if (isEditingProject) {
+          e.preventDefault();
+          handleSaveProject();
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [previewingBlog, isEditingBlog, isEditingProject, currentBlog, currentProject, highlightsInput, tagsInput]);
+
+  const insertMarkdown = (prefix: string, suffix: string = "") => {
+    const textarea = document.getElementById("article-markdown-textarea") as HTMLTextAreaElement | null;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = currentBlog.body || "";
+    const selected = text.substring(start, end);
+    const replacement = `${prefix}${selected || "heading"}${suffix}`;
+    const newBody = text.substring(0, start) + replacement + text.substring(end);
+    setCurrentBlog((prev) => ({ ...prev, body: newBody }));
+    setTimeout(() => {
+      textarea.focus();
+      const cursorTarget = start + prefix.length + (selected ? selected.length : 7);
+      textarea.setSelectionRange(cursorTarget, cursorTarget);
+    }, 15);
+  };
+
   const validateExistingSession = async (token: string) => {
     setIsLoadingAuth(true);
     try {
@@ -1720,18 +1759,71 @@ export default function AdminPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Left Column: Markdown Source Editor */}
                   <div className="flex flex-col">
-                    <div className="flex items-center justify-between mb-2 font-mono text-xs text-[var(--color-text-muted)]">
-                      <span className="font-bold text-[var(--color-cyan)] flex items-center gap-1.5">
-                        <FileText size={14} />
-                        <span>Markdown Article Editor</span>
-                      </span>
-                      <span>
-                        {(currentBlog.body || "").length.toLocaleString()} characters ·{" "}
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2 font-mono text-xs text-[var(--color-text-muted)]">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-bold text-[var(--color-cyan)] flex items-center gap-1.5 mr-2">
+                          <FileText size={14} />
+                          <span>Markdown Source</span>
+                        </span>
+                        {/* Quick Markdown Format Triggers */}
+                        <button
+                          type="button"
+                          onClick={() => insertMarkdown("## ", "\n\n")}
+                          className="px-2 py-0.5 rounded border border-[var(--color-border)] hover:border-[var(--color-amber)] text-[10px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+                          title="Insert Heading 2"
+                        >
+                          H2
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => insertMarkdown("### ", "\n\n")}
+                          className="px-2 py-0.5 rounded border border-[var(--color-border)] hover:border-[var(--color-amber)] text-[10px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+                          title="Insert Subheading 3"
+                        >
+                          H3
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => insertMarkdown("> ", "\n\n")}
+                          className="px-2 py-0.5 rounded border border-[var(--color-border)] hover:border-[var(--color-amber)] text-[10px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+                          title="Insert Quote block"
+                        >
+                          Quote
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => insertMarkdown("- ", "\n")}
+                          className="px-2 py-0.5 rounded border border-[var(--color-border)] hover:border-[var(--color-amber)] text-[10px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+                          title="Insert Bullet Item"
+                        >
+                          • List
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => insertMarkdown("**", "**")}
+                          className="px-2 py-0.5 rounded border border-[var(--color-border)] hover:border-[var(--color-amber)] text-[10px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+                          title="Insert Bold text"
+                        >
+                          **B**
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => insertMarkdown("`", "`")}
+                          className="px-2 py-0.5 rounded border border-[var(--color-border)] hover:border-[var(--color-amber)] text-[10px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
+                          title="Insert Inline Code"
+                        >
+                          `code`
+                        </button>
+                      </div>
+
+                      <span className="text-[11px]">
+                        {(currentBlog.body || "").length.toLocaleString()} chars ·{" "}
                         {Math.max(1, Math.round(((currentBlog.body || "").split(/\s+/).filter(Boolean).length) / 200))} min read
                       </span>
                     </div>
 
                     <textarea
+                      id="article-markdown-textarea"
                       rows={18}
                       value={currentBlog.body || ""}
                       onChange={(e) => setCurrentBlog({ ...currentBlog, body: e.target.value })}
