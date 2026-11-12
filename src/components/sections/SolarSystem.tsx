@@ -3,7 +3,7 @@
 
 import React, { useEffect, useRef, memo, useState, useCallback } from "react";
 import { ECOSYSTEMS_DATA, EcosystemData } from "@/config/networkData";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Zap, Radio } from "lucide-react";
 
 type PlanetPhysics = EcosystemData & {
   angle: number;
@@ -79,6 +79,10 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const [isDayMode, setIsDayMode] = useState<boolean>(false);
+  const [warpSpeed, setWarpSpeed] = useState<number>(1);
+  const warpSpeedRef = useRef<number>(1);
+  const [isScanning, setIsScanning] = useState<boolean>(false);
+  const scanWaveRef = useRef<{ radius: number; maxRadius: number; active: boolean } | null>(null);
 
   // Camera & Gesture navigation
   const cameraRef = useRef({
@@ -364,6 +368,38 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
         ctx.stroke();
       });
 
+      // ─── AMBIENT & ACTIVE RADAR SCAN SWEEPS ───────────────────────
+      const ambientRadarR = ((time * 0.08) % (isMobile ? 380 : 640));
+      ctx.save();
+      ctx.strokeStyle = isDay ? "rgba(2, 132, 199, 0.16)" : "rgba(0, 217, 255, 0.18)";
+      ctx.lineWidth = 1.0;
+      ctx.setLineDash([3, 6]);
+      ctx.beginPath();
+      ctx.arc(0, 0, ambientRadarR, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+
+      // Manual High-Energy Radar Sweep Ping
+      if (scanWaveRef.current && scanWaveRef.current.active) {
+        scanWaveRef.current.radius += dt * 0.42;
+        const progress = scanWaveRef.current.radius / scanWaveRef.current.maxRadius;
+        if (progress >= 1) {
+          scanWaveRef.current.active = false;
+        } else {
+          const waveAlpha = (1 - progress) * (isDay ? 0.65 : 0.85);
+          ctx.save();
+          ctx.strokeStyle = isDay ? `rgba(216, 67, 21, ${waveAlpha})` : `rgba(255, 123, 0, ${waveAlpha})`;
+          ctx.shadowColor = isDay ? "#D84315" : "#FF7B00";
+          ctx.shadowBlur = 14;
+          ctx.lineWidth = 2.2;
+          ctx.beginPath();
+          ctx.arc(0, 0, scanWaveRef.current.radius, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
       // ─── C. REFINED ELLIPTICAL ORBITS ───────────────────────────
       planetsRef.current.forEach(p => {
         const isSelected = selectedId === p.id;
@@ -414,7 +450,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
 
       planetsRef.current.forEach(p => {
         if (!p.isDragging) {
-          p.angle += p.baseSpeed * dt * 0.05;
+          p.angle += p.baseSpeed * dt * 0.05 * warpSpeedRef.current;
         }
 
         const naturalOrbitX = Math.cos(p.angle) * p.baseRadius;
@@ -601,6 +637,47 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       ctx.textBaseline = "middle";
       ctx.fillText("theUG_", 4, badgeY + badgeH / 2);
       ctx.restore();
+
+      // ─── CONSTELLATION CROSS-CHAIN BRIDGES & LINK THREADS ────────
+      const CONSTELLATIONS = [
+        { from: "eth", to: "base" },
+        { from: "eth", to: "polygon" },
+        { from: "eth", to: "hyperliquid" },
+        { from: "eth", to: "btc" },
+        { from: "eth", to: "sol" },
+        { from: "sol", to: "sui" },
+      ];
+
+      CONSTELLATIONS.forEach(({ from, to }) => {
+        const p1 = planetsRef.current.find(p => p.id === from);
+        const p2 = planetsRef.current.find(p => p.id === to);
+        if (!p1 || !p2) return;
+
+        const isConnectedToSelected = selectedId === from || selectedId === to;
+        const isConnectedToHovered = p1.isHovered || p2.isHovered;
+        const highlight = isConnectedToSelected || isConnectedToHovered;
+
+        ctx.save();
+        ctx.lineWidth = highlight ? 1.4 : 0.65;
+        ctx.strokeStyle = highlight
+          ? (isDay ? "rgba(2, 132, 199, 0.60)" : "rgba(0, 217, 255, 0.65)")
+          : (isDay ? "rgba(100, 116, 139, 0.10)" : "rgba(255, 255, 255, 0.08)");
+        
+        if (highlight) {
+          ctx.setLineDash([4, 4]);
+          ctx.lineDashOffset = -time * 0.025;
+          ctx.shadowColor = isDay ? "#0284C7" : "#00D9FF";
+          ctx.shadowBlur = 8;
+        } else {
+          ctx.setLineDash([2, 8]);
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.stroke();
+        ctx.restore();
+      });
 
       // ─── F. RENDER THE 11 PLANETARY WORLDS WITH 3D SPHERES & SATURN RINGS ─
       const sortedPlanets = [...planetsRef.current].sort((a, b) => a.z - b.z);
@@ -982,6 +1059,20 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
     cameraRef.current.targetZoom = Math.max(0.65, Math.min(1.8, cameraRef.current.targetZoom + zoomDelta));
   };
 
+  const handleRadarPing = useCallback(() => {
+    setIsScanning(true);
+    scanWaveRef.current = { radius: 30, maxRadius: 750, active: true };
+    setTimeout(() => setIsScanning(false), 2200);
+  }, []);
+
+  const toggleWarpSpeed = useCallback(() => {
+    setWarpSpeed(prev => {
+      const next = prev === 1 ? 2.5 : 1;
+      warpSpeedRef.current = next;
+      return next;
+    });
+  }, []);
+
   return (
     <div 
       ref={containerRef}
@@ -989,9 +1080,27 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       aria-label="On-Chain Conviction: Web3 Solar System with Usmaan Gani"
     >
       {/* ─────────────────────────────────────────────────────
-          SUBTLE CELESTIAL CAMERA RESET
+          SUBTLE CELESTIAL CAMERA & WARP TOOLBAR
           ───────────────────────────────────────────────────── */}
-      <div className="absolute top-4 right-4 lg:top-7 lg:right-[380px] xl:lg:right-[420px] z-30 pointer-events-auto">
+      <div className="absolute top-4 right-4 lg:top-7 lg:right-[380px] xl:lg:right-[420px] z-30 pointer-events-auto flex items-center gap-1.5 sm:gap-2">
+        <button
+          onClick={handleRadarPing}
+          className="px-2.5 py-1.5 rounded-lg border border-[var(--color-cyan)]/40 bg-[var(--color-surface)]/90 text-[var(--color-cyan)] hover:bg-[var(--color-cyan)]/10 font-mono text-[10px] font-bold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+          title="Emit Deep-Space Radar Frequency Sweep"
+        >
+          <Radio size={12} className={isScanning ? "animate-pulse" : ""} />
+          <span className="hidden sm:inline">RADAR PING</span>
+        </button>
+
+        <button
+          onClick={toggleWarpSpeed}
+          className="px-2.5 py-1.5 rounded-lg border border-[var(--color-amber)]/40 bg-[var(--color-surface)]/90 text-[var(--color-amber)] hover:bg-[var(--color-amber)]/10 font-mono text-[10px] font-bold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+          title="Toggle Relativistic Orbital Warp Velocity"
+        >
+          <Zap size={12} className={warpSpeed > 1 ? "animate-bounce" : ""} />
+          <span>{warpSpeed > 1 ? "2.5X WARP" : "1X SPEED"}</span>
+        </button>
+
         <button
           onClick={handleResetCamera}
           className="p-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/80 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-bright)] transition-colors cursor-pointer"
