@@ -568,8 +568,9 @@ function HeroIdentity() {
               display: "flex", 
               flexDirection: "column",
               justifyContent: "flex-start",
-              fontSize: titleIdx === 0 ? undefined : "clamp(42px, 8vw, 76px)",
-              lineHeight: titleIdx === 0 ? 0.88 : 0.95,
+              fontSize: titleIdx === 0 ? undefined : "clamp(52px, 8.5vw, 94px)",
+              lineHeight: titleIdx === 0 ? 0.88 : 0.92,
+              letterSpacing: titleIdx === 0 ? undefined : "-0.01em",
               wordBreak: "break-word",
               minHeight: "clamp(120px, 16vw, 245px)",
             }}
@@ -702,15 +703,30 @@ export function Hero() {
               <Stat label="EXP"    value="4Y+" />
             </div>
 
-            {/* Vertical rule + decorative text */}
-            <div style={{
-              paddingTop: "16px", borderTop: "1px solid var(--color-border)",
-              display: "flex", alignItems: "center", gap: "12px",
-            }}>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: "var(--color-text-muted)", letterSpacing: "0.1em" }}>AVAILABLE FOR COLLABORATION</span>
-              <div style={{ flex: 1, height: "1px", background: "var(--color-border)" }} />
-              <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "var(--color-online)", flexShrink: 0 }} />
-            </div>
+            {/* Highlighted Interactive Collaboration Beacon */}
+            <a
+              href="/contact"
+              className="group flex items-center justify-between p-3.5 rounded-xl border border-[var(--color-online)]/40 bg-[rgba(0,255,102,0.05)] hover:bg-[rgba(0,255,102,0.1)] hover:border-[var(--color-online)] transition-all cursor-pointer shadow-sm"
+              title="Open direct comms with Usmaan Gani"
+            >
+              <div className="flex items-center gap-3">
+                <span className="relative flex h-2.5 w-2.5 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--color-online)] opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[var(--color-online)] shadow-[0_0_8px_var(--color-online)]" />
+                </span>
+                <div className="flex flex-col">
+                  <span className="font-mono text-[11px] font-bold text-[var(--color-text-primary)] tracking-wider uppercase group-hover:text-[var(--color-online)] transition-colors">
+                    AVAILABLE FOR COLLABORATION
+                  </span>
+                  <span className="font-mono text-[10px] text-[var(--color-text-secondary)]">
+                    Active on Web3 protocols & AI systems
+                  </span>
+                </div>
+              </div>
+              <span className="font-mono text-[10px] text-[var(--color-online)] font-bold px-2.5 py-1 rounded-md bg-[rgba(0,255,102,0.12)] border border-[var(--color-online)]/30 group-hover:bg-[var(--color-online)] group-hover:text-black transition-all whitespace-nowrap">
+                Contact Me →
+              </span>
+            </a>
           </div>
 
           {/* ── RIGHT ── */}
