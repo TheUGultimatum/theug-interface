@@ -200,7 +200,7 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<"projects" | "blogs">("projects");
 
   // Credentials
-  const [username, setUsername] = useState<string>("theug");
+  const [username, setUsername] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [pin, setPin] = useState<string>("");
 
@@ -687,7 +687,7 @@ export default function AdminPage() {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="theug"
+                placeholder="Username"
                 className="w-full px-3.5 py-2.5 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
               />
             </div>
@@ -714,7 +714,7 @@ export default function AdminPage() {
                 maxLength={6}
                 value={pin}
                 onChange={(e) => setPin(e.target.value)}
-                placeholder="252252"
+                placeholder="••••••"
                 className="w-full px-3.5 py-2.5 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] tracking-widest focus:outline-none focus:border-[var(--color-amber)]"
               />
             </div>

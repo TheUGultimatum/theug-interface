@@ -1,8 +1,6 @@
 import crypto from "crypto";
 
 const DEFAULT_USERNAME = "theug";
-const DEFAULT_PASSWORD = "theug-ultimatum-2026";
-const DEFAULT_PIN = "252252";
 const SESSION_SECRET = process.env.ADMIN_SESSION_SECRET || "theug-interface-secret-key-99887766";
 const SESSION_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -50,8 +48,14 @@ export function verifyCredentials(
   pin?: string
 ): boolean {
   const expectedUser = process.env.ADMIN_USERNAME || DEFAULT_USERNAME;
-  const expectedPass = process.env.ADMIN_PASSWORD || DEFAULT_PASSWORD;
-  const expectedPin = process.env.ADMIN_PIN || DEFAULT_PIN;
+  const expectedPass = process.env.ADMIN_PASSWORD;
+  const expectedPin = process.env.ADMIN_PIN;
+
+  // Strict Security: Credentials MUST be set in environment variables (.env.local or Vercel)
+  if (!expectedPass || !expectedPin) {
+    console.error("CRITICAL: ADMIN_PASSWORD or ADMIN_PIN is not configured in server environment variables.");
+    return false;
+  }
 
   if (!username || !password || !pin) return false;
 

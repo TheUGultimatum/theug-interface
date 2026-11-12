@@ -13,8 +13,8 @@ function verifyAdminRequest(request: Request): boolean {
   if (verifySessionToken(token)) return true;
 
   const legacyKey = request.headers.get("x-admin-key");
-  const rawSecret = process.env.ADMIN_PASSWORD || "theug-ultimatum-2026";
-  return legacyKey === rawSecret;
+  const rawSecret = process.env.ADMIN_PASSWORD;
+  return Boolean(rawSecret && legacyKey && legacyKey === rawSecret);
 }
 
 async function getStoredBlogs(): Promise<XPost[]> {
