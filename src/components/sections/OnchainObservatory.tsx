@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { motion } from "framer-motion";
 import { ECOSYSTEMS_DATA, EcosystemData } from "@/config/networkData";
 import { SolarSystem } from "@/components/sections/SolarSystem";
 import { ArrowUpRight, Activity, Terminal, Cpu, Move, Minimize2, Maximize2 } from "lucide-react";
@@ -54,59 +55,10 @@ export function OnchainObservatory() {
   const [selectedEcosystem, setSelectedEcosystem] = useState<EcosystemData>(ECOSYSTEMS_DATA[0]); // Bitcoin by default
   const [hudTab, setHudTab] = useState<"THESIS" | "TECH" | "FIELD_LOGS">("THESIS");
   const [isHudCollapsed, setIsHudCollapsed] = useState(false);
-
-  // Dynamic Moveable / Draggable HUD Positioning on Desktop
-  const [hudPos, setHudPos] = useState<{ x: number; y: number } | null>(null);
-  const isDraggingHudRef = useRef(false);
-  const dragStartRef = useRef<{ startMouseX: number; startMouseY: number; startPosX: number; startPosY: number }>({
-    startMouseX: 0,
-    startMouseY: 0,
-    startPosX: 0,
-    startPosY: 0,
-  });
   const stageRef = useRef<HTMLDivElement>(null);
 
   const handleSelect = (ecosystem: EcosystemData) => {
     setSelectedEcosystem(ecosystem);
-  };
-
-  const handleDragHeaderPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    // Only drag on primary pointer click
-    if (e.button !== 0) return;
-    const stage = stageRef.current;
-    if (!stage) return;
-    const stageRect = stage.getBoundingClientRect();
-
-    // Default right/top offset calculation if position not yet initialized
-    const currentX = hudPos !== null ? hudPos.x : (stageRect.width - 380);
-    const currentY = hudPos !== null ? hudPos.y : 32;
-
-    isDraggingHudRef.current = true;
-    dragStartRef.current = {
-      startMouseX: e.clientX,
-      startMouseY: e.clientY,
-      startPosX: currentX,
-      startPosY: currentY,
-    };
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
-  };
-
-  const handleDragHeaderPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDraggingHudRef.current || !stageRef.current) return;
-    const stageRect = stageRef.current.getBoundingClientRect();
-    const dx = e.clientX - dragStartRef.current.startMouseX;
-    const dy = e.clientY - dragStartRef.current.startMouseY;
-
-    const newX = Math.max(16, Math.min(stageRect.width - 340, dragStartRef.current.startPosX + dx));
-    const newY = Math.max(16, Math.min(stageRect.height - 180, dragStartRef.current.startPosY + dy));
-    setHudPos({ x: newX, y: newY });
-  };
-
-  const handleDragHeaderPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    isDraggingHudRef.current = false;
-    try {
-      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-    } catch {}
   };
 
   return (
@@ -181,13 +133,14 @@ export function OnchainObservatory() {
           </div>
         </header>
 
-        {/* DESKTOP DYNAMIC MOVEABLE HOLOGRAPHIC HUD CARD OVERLAY */}
-        <div 
-          className="hidden lg:block absolute z-30 pointer-events-auto transition-[width] duration-200"
+        {/* DESKTOP DYNAMIC MOVEABLE HOLOGRAPHIC HUD CARD OVERLAY (Using Framer Motion Drag) */}
+        <motion.div 
+          drag
+          dragConstraints={stageRef}
+          dragElastic={0.08}
+          dragMomentum={false}
+          className="hidden lg:block absolute top-7 right-7 z-30 pointer-events-auto"
           style={{
-            left: hudPos !== null ? `${hudPos.x}px` : undefined,
-            top: hudPos !== null ? `${hudPos.y}px` : "28px",
-            right: hudPos === null ? "28px" : undefined,
             width: isHudCollapsed ? "280px" : "360px",
           }}
         >
@@ -218,21 +171,21 @@ export function OnchainObservatory() {
 
             {/* Interactive Draggable Handle Header */}
             <div 
-              onPointerDown={handleDragHeaderPointerDown}
-              onPointerMove={handleDragHeaderPointerMove}
-              onPointerUp={handleDragHeaderPointerUp}
-              className="flex items-center justify-between gap-2 mb-3 text-[10px] font-mono text-[var(--color-cyan)] tracking-widest uppercase font-bold cursor-grab active:cursor-grabbing pb-2 border-b border-[var(--color-border)] select-none"
-              title="Click and drag to reposition HUD card"
+              className="flex items-center justify-between gap-2 mb-3 text-[10px] font-mono text-[var(--color-cyan)] tracking-widest uppercase font-bold cursor-grab active:cursor-grabbing pb-2 border-b border-[var(--color-border)] select-none bg-[var(--color-void)]/40 -mx-1 px-2 py-1 rounded"
+              title="Click and drag anywhere to move HUD"
             >
               <div className="flex items-center gap-1.5">
-                <Move size={11} className="text-[var(--color-text-secondary)]" />
-                <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-cyan)] animate-pulse" />
-                <span>DOSSIER // {selectedEcosystem.ticker || selectedEcosystem.name}</span>
+                <Move size={12} className="text-[var(--color-amber)] animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-cyan)]" />
+                <span>DRAG HUD // {selectedEcosystem.ticker || selectedEcosystem.name}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
-                  onClick={() => setIsHudCollapsed(prev => !prev)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsHudCollapsed(prev => !prev);
+                  }}
                   className="p-1 rounded text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-elevated)] cursor-pointer"
                   title={isHudCollapsed ? "Expand HUD" : "Collapse HUD"}
                 >
@@ -427,7 +380,7 @@ export function OnchainObservatory() {
               </>
             )}
           </div>
-        </div>
+        </motion.div>
 
         {/* 120 FPS INTERACTIVE SOLAR SYSTEM CANVAS */}
         <SolarSystem 
