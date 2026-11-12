@@ -324,7 +324,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       const isMobile = w < 768;
 
       const cx = w / 2;
-      const cy = h / 2 - (isMobile ? 20 : 10);
+      const cy = h / 2;
 
       ctx.clearRect(0, 0, w, h);
 
@@ -945,7 +945,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
     const w = rect.width;
     const h = rect.height;
     const cx = w / 2;
-    const cy = h / 2 - (w < 768 ? 20 : 10);
+    const cy = h / 2;
     const cam = cameraRef.current;
 
     const invCos = Math.cos(-cam.rotation);
@@ -1005,7 +1005,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
     const w = rect.width;
     const h = rect.height;
     const cx = w / 2;
-    const cy = h / 2 - (w < 768 ? 20 : 10);
+    const cy = h / 2;
     const cam = cameraRef.current;
 
     if (interactionRef.current.isSlingshot && interactionRef.current.dragPlanetId) {
@@ -1076,25 +1076,25 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
   return (
     <div 
       ref={containerRef}
-      className="relative w-full h-[520px] sm:h-[600px] md:h-[680px] lg:h-[750px] xl:h-[780px] overflow-hidden select-none bg-[var(--color-void)]"
+      className="relative w-full h-[540px] sm:h-[620px] md:h-[680px] lg:h-[750px] xl:h-[800px] overflow-hidden select-none bg-[var(--color-void)]"
       aria-label="On-Chain Conviction: Web3 Solar System with Usmaan Gani"
     >
       {/* ─────────────────────────────────────────────────────
-          SUBTLE CELESTIAL CAMERA & WARP TOOLBAR
+          SUBTLE CELESTIAL CAMERA & WARP TOOLBAR (Bottom-Left on Desktop)
           ───────────────────────────────────────────────────── */}
-      <div className="absolute top-4 right-4 lg:top-7 lg:right-[380px] xl:lg:right-[420px] z-30 pointer-events-auto flex items-center gap-1.5 sm:gap-2">
+      <div className="hidden lg:flex absolute bottom-4 left-6 z-30 pointer-events-auto items-center gap-2">
         <button
           onClick={handleRadarPing}
-          className="px-2.5 py-1.5 rounded-lg border border-[var(--color-cyan)]/40 bg-[var(--color-surface)]/90 text-[var(--color-cyan)] hover:bg-[var(--color-cyan)]/10 font-mono text-[10px] font-bold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+          className="px-2.5 py-1.5 rounded-lg border border-[var(--color-cyan)]/40 bg-[var(--color-surface)]/90 text-[var(--color-cyan)] hover:bg-[var(--color-cyan)]/15 font-mono text-[10px] font-bold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
           title="Emit Deep-Space Radar Frequency Sweep"
         >
           <Radio size={12} className={isScanning ? "animate-pulse" : ""} />
-          <span className="hidden sm:inline">RADAR PING</span>
+          <span>RADAR PING</span>
         </button>
 
         <button
           onClick={toggleWarpSpeed}
-          className="px-2.5 py-1.5 rounded-lg border border-[var(--color-amber)]/40 bg-[var(--color-surface)]/90 text-[var(--color-amber)] hover:bg-[var(--color-amber)]/10 font-mono text-[10px] font-bold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+          className="px-2.5 py-1.5 rounded-lg border border-[var(--color-amber)]/40 bg-[var(--color-surface)]/90 text-[var(--color-amber)] hover:bg-[var(--color-amber)]/15 font-mono text-[10px] font-bold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
           title="Toggle Relativistic Orbital Warp Velocity"
         >
           <Zap size={12} className={warpSpeed > 1 ? "animate-bounce" : ""} />
@@ -1125,30 +1125,60 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       />
 
       {/* ─────────────────────────────────────────────────────
-          MOBILE/TABLET CLEAN PLANET SELECTOR CAROUSEL
+          MOBILE/TABLET CONTROLS & CLEAN PLANET SELECTOR CAROUSEL
           ───────────────────────────────────────────────────── */}
-      <div className="lg:hidden absolute bottom-3 left-3 right-3 z-30 flex items-center gap-1.5 overflow-x-auto scrollbar-none pointer-events-auto pb-0.5">
-        {ECOSYSTEMS_DATA.map((eco) => {
-          const isSelected = selectedId === eco.id;
-          return (
+      <div className="lg:hidden absolute bottom-3 left-3 right-3 z-30 flex flex-col gap-2 pointer-events-auto">
+        {/* Quick mobile warp and radar toggles */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
             <button
-              key={eco.id}
-              onClick={() => onSelect(eco)}
-              className={`px-2.5 py-1 rounded-full font-mono text-[9px] tracking-wider transition-all cursor-pointer shrink-0 flex items-center gap-1.5 ${
-                isSelected
-                  ? "bg-[var(--color-surface)] border-2 font-bold shadow-md"
-                  : "bg-[var(--color-surface)]/80 border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
-              }`}
-              style={{
-                borderColor: isSelected ? eco.color : undefined,
-                color: isSelected ? (isDayMode ? "#000000" : "#ffffff") : undefined,
-              }}
+              onClick={handleRadarPing}
+              className="px-2 py-1 rounded-md border border-[var(--color-cyan)]/40 bg-[var(--color-surface)]/90 text-[var(--color-cyan)] font-mono text-[9px] font-bold flex items-center gap-1 shadow-sm cursor-pointer"
             >
-              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: eco.color }} />
-              <span>{eco.ticker ? `${eco.name} [${eco.ticker}]` : eco.name}</span>
+              <Radio size={10} className={isScanning ? "animate-pulse" : ""} />
+              <span>RADAR</span>
             </button>
-          );
-        })}
+            <button
+              onClick={toggleWarpSpeed}
+              className="px-2 py-1 rounded-md border border-[var(--color-amber)]/40 bg-[var(--color-surface)]/90 text-[var(--color-amber)] font-mono text-[9px] font-bold flex items-center gap-1 shadow-sm cursor-pointer"
+            >
+              <Zap size={10} className={warpSpeed > 1 ? "animate-bounce" : ""} />
+              <span>{warpSpeed > 1 ? "2.5X" : "1X"}</span>
+            </button>
+          </div>
+          <button
+            onClick={handleResetCamera}
+            className="p-1 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]/80 text-[var(--color-text-muted)] cursor-pointer"
+            title="Reset Camera View"
+          >
+            <RotateCcw size={11} />
+          </button>
+        </div>
+
+        {/* Horizontal Planet Carousel */}
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-0.5">
+          {ECOSYSTEMS_DATA.map((eco) => {
+            const isSelected = selectedId === eco.id;
+            return (
+              <button
+                key={eco.id}
+                onClick={() => onSelect(eco)}
+                className={`px-2.5 py-1 rounded-full font-mono text-[9px] tracking-wider transition-all cursor-pointer shrink-0 flex items-center gap-1.5 ${
+                  isSelected
+                    ? "bg-[var(--color-surface)] border-2 font-bold shadow-md"
+                    : "bg-[var(--color-surface)]/80 border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+                }`}
+                style={{
+                  borderColor: isSelected ? eco.color : undefined,
+                  color: isSelected ? (isDayMode ? "#000000" : "#ffffff") : undefined,
+                }}
+              >
+                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: eco.color }} />
+                <span>{eco.ticker ? `${eco.name} [${eco.ticker}]` : eco.name}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

@@ -49,11 +49,11 @@ export function OnchainObservatory() {
   };
 
   return (
-    <div className="relative flex flex-col min-h-screen px-4 md:px-8 lg:px-10 py-6 max-w-[1560px] mx-auto w-full select-none">
+    <div className="relative flex flex-col min-h-[calc(100vh-100px)] px-3 sm:px-6 md:px-8 lg:px-10 py-4 sm:py-6 max-w-[1600px] mx-auto w-full select-none">
       {/* ─────────────────────────────────────────────────────────
           MOBILE / TABLET HEADER (Displayed on < lg screens)
           ───────────────────────────────────────────────────────── */}
-      <div className="lg:hidden mb-5">
+      <div className="lg:hidden mb-4">
         <div className="flex items-center gap-2 mb-2 text-[var(--color-cyan)] text-xs font-mono tracking-widest uppercase font-bold">
           <span>&gt;</span>
           <span>05 / ON-CHAIN CONVICTION</span>
@@ -86,26 +86,26 @@ export function OnchainObservatory() {
           ───────────────────────────────────────────────────────── */}
       <div className="relative w-full rounded-2xl overflow-hidden border border-[var(--color-border)] bg-[var(--color-void)] shadow-[0_0_50px_rgba(0,0,0,0.25)]">
         {/* DESKTOP TOP-LEFT HEADER OVERLAY */}
-        <div className="hidden lg:block absolute top-7 left-8 z-30 pointer-events-none max-w-md">
+        <div className="hidden lg:block absolute top-6 left-6 xl:top-8 xl:left-8 z-30 pointer-events-none max-w-sm xl:max-w-md">
           <div className="flex items-center gap-2 mb-2 text-[var(--color-cyan)] text-xs font-mono tracking-widest uppercase font-bold">
             <span>&gt;</span>
             <span>05 / ON-CHAIN CONVICTION</span>
           </div>
-          <h1 className="text-4xl xl:text-5xl font-black tracking-tight font-mono text-[var(--color-text-primary)] leading-none">
+          <h1 className="text-3xl xl:text-4xl 2xl:text-5xl font-black tracking-tight font-mono text-[var(--color-text-primary)] leading-none">
             <span>ON-CHAIN</span>
             <br />
             <span className="text-[var(--color-amber)] drop-shadow-[0_0_24px_rgba(255,123,0,0.4)]">
               CONVICTION
             </span>
           </h1>
-          <p className="text-xs xl:text-sm text-[var(--color-text-secondary)] font-sans mt-3 leading-relaxed">
+          <p className="text-xs xl:text-sm text-[var(--color-text-secondary)] font-sans mt-2.5 leading-relaxed">
             The ecosystems, chains and networks
             <br />
             I explore, build on and believe in.
             <span className="animate-pulse text-[var(--color-cyan)] font-mono font-bold">_</span>
           </p>
-          <div className="flex items-center gap-2 mt-3.5 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9.5px] font-mono font-bold border border-[var(--color-amber)]/40 bg-[var(--color-amber)]/10 text-[var(--color-amber)]">
+          <div className="flex items-center gap-2 mt-3 flex-wrap">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold border border-[var(--color-amber)]/40 bg-[var(--color-amber)]/10 text-[var(--color-amber)]">
               <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-amber)] animate-pulse" />
               ALPHA &amp; AIRDROP HUNTER
             </span>
@@ -117,8 +117,8 @@ export function OnchainObservatory() {
         </div>
 
         {/* DESKTOP RIGHT-SIDE HOLOGRAPHIC HUD CARD OVERLAY */}
-        <div className="hidden lg:block absolute top-7 right-8 z-30 pointer-events-auto w-84 xl:w-92">
-          <div className="relative p-5 xl:p-6 rounded-2xl bg-[var(--color-surface)]/95 border border-[var(--color-border)] hover:border-[var(--color-border-bright)] backdrop-blur-xl shadow-2xl transition-all overflow-hidden">
+        <div className="hidden lg:block absolute top-6 right-6 xl:top-8 xl:right-8 z-30 pointer-events-auto w-80 xl:w-88 2xl:w-92">
+          <div className="relative p-4 xl:p-5 2xl:p-6 rounded-2xl bg-[var(--color-surface)]/95 border border-[var(--color-border)] hover:border-[var(--color-border-bright)] backdrop-blur-xl shadow-2xl transition-all overflow-hidden">
             {/* Animated Laser Sweep Beam in Token Color */}
             <div 
               key={`sweep-${selectedEcosystem.id}`}
