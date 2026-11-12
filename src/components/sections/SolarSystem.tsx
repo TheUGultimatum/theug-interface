@@ -1,11 +1,12 @@
-// @ts-nocheck
 "use client";
 
 import React, { useEffect, useRef, memo, useState, useCallback } from "react";
 import { ECOSYSTEMS_DATA, EcosystemData } from "@/config/networkData";
 import { RotateCcw, Zap, Radio } from "lucide-react";
 
-type PlanetPhysics = EcosystemData & {
+export type PlanetPhysics = EcosystemData & {
+  baseRadius: number;
+  baseSpeed: number;
   angle: number;
   x: number;
   y: number;
@@ -83,6 +84,8 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
   const warpSpeedRef = useRef<number>(1);
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const scanWaveRef = useRef<{ radius: number; maxRadius: number; active: boolean } | null>(null);
+  const dimensionsRef = useRef<{ w: number; h: number }>({ w: 1000, h: 750 });
+  const prefersReducedMotionRef = useRef<boolean>(false);
 
   // Camera & Gesture navigation
   const cameraRef = useRef({
@@ -111,7 +114,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
   const coronaAngle = useRef(0);
 
   // Animation refs
-  const rafRef = useRef<number>();
+  const rafRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number>(0);
   const planetsRef = useRef<PlanetPhysics[]>([]);
   const starsRef = useRef<Star[]>([]);
@@ -128,7 +131,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
     { active: false, id: "pepe", name: "PEPE", color: "#22C55E", file: "pepe.svg", x: 0, y: 0, vx: 0, vy: 0, alpha: 0, size: 24, trail: [], age: 0, lifespan: 0 },
   ]);
 
-  // 1. WATCH THEME
+  // 1. WATCH THEME & REDUCED MOTION
   useEffect(() => {
     const checkTheme = () => {
       const isDay = document.documentElement.classList.contains("day-mode");
@@ -137,6 +140,21 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
     checkTheme();
     const observer = new MutationObserver(checkTheme);
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+
+    // Check prefers-reduced-motion
+    if (typeof window !== "undefined") {
+      const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+      prefersReducedMotionRef.current = mediaQuery.matches;
+      const onMotionChange = (e: MediaQueryListEvent) => {
+        prefersReducedMotionRef.current = e.matches;
+      };
+      mediaQuery.addEventListener("change", onMotionChange);
+      return () => {
+        observer.disconnect();
+        mediaQuery.removeEventListener("change", onMotionChange);
+      };
+    }
+
     return () => observer.disconnect();
   }, []);
 
@@ -249,7 +267,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
     starsRef.current = stars;
   }, []);
 
-  // 4. RESIZE HANDLER
+  // 4. RESIZE HANDLER (Eliminates layout thrashing in render loop)
   useEffect(() => {
     const handleResize = () => {
       const canvas = canvasRef.current;
@@ -258,6 +276,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
 
       const w = container.clientWidth;
       const h = container.clientHeight;
+      dimensionsRef.current = { w, h };
       const dpr = dprRef.current;
 
       canvas.width = w * dpr;
@@ -279,23 +298,20 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // 5. KEYBOARD ACCESSIBILITY
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-        const idx = ECOSYSTEMS_DATA.findIndex(p => p.id === selectedId);
-        const nextIdx = (idx + 1) % ECOSYSTEMS_DATA.length;
-        onSelect(ECOSYSTEMS_DATA[nextIdx]);
-      } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-        const idx = ECOSYSTEMS_DATA.findIndex(p => p.id === selectedId);
-        const prevIdx = (idx - 1 + ECOSYSTEMS_DATA.length) % ECOSYSTEMS_DATA.length;
-        onSelect(ECOSYSTEMS_DATA[prevIdx]);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedId, onSelect]);
+  // 5. KEYBOARD ACCESSIBILITY (Scoped to container focus)
+  const handleContainerKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      e.preventDefault();
+      const idx = ECOSYSTEMS_DATA.findIndex(p => p.id === selectedId);
+      const nextIdx = (idx + 1) % ECOSYSTEMS_DATA.length;
+      onSelect(ECOSYSTEMS_DATA[nextIdx]);
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      e.preventDefault();
+      const idx = ECOSYSTEMS_DATA.findIndex(p => p.id === selectedId);
+      const prevIdx = (idx - 1 + ECOSYSTEMS_DATA.length) % ECOSYSTEMS_DATA.length;
+      onSelect(ECOSYSTEMS_DATA[prevIdx]);
+    }
+  };
 
   const handleResetCamera = () => {
     cameraRef.current.targetZoom = 1.0;
@@ -319,8 +335,8 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       lastTimeRef.current = time;
       const dt = Math.min(rawDt, 32);
 
-      const w = containerRef.current?.clientWidth || 1000;
-      const h = containerRef.current?.clientHeight || 750;
+      const w = dimensionsRef.current.w;
+      const h = dimensionsRef.current.h;
       const isMobile = w < 768;
 
       const cx = w / 2;
@@ -441,6 +457,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       });
 
       // ─── D. ADVANCE PLANETS & KINETIC MOTION ─────────────────────
+      const motionMultiplier = prefersReducedMotionRef.current ? 0 : 1;
       const invCos = Math.cos(-cam.rotation);
       const invSin = Math.sin(-cam.rotation);
       const relMouseX = (mouseRef.current.x - (cx + cam.panX)) / cam.zoom;
@@ -450,7 +467,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
 
       planetsRef.current.forEach(p => {
         if (!p.isDragging) {
-          p.angle += p.baseSpeed * dt * 0.05 * warpSpeedRef.current;
+          p.angle += p.baseSpeed * dt * 0.05 * warpSpeedRef.current * motionMultiplier;
         }
 
         const naturalOrbitX = Math.cos(p.angle) * p.baseRadius;
@@ -960,24 +977,36 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
     interactionRef.current.startY = clientY;
     interactionRef.current.hasMoved = false;
 
+    // Check for Central Sun Hit (theUG root thesis reset)
+    const sunR = w < 768 ? 42 : 50;
+    const distToSun = Math.hypot(worldX, worldY);
+    if (distToSun < sunR) {
+      handleResetCamera();
+      // Select central sun (or Bitcoin root)
+      const btc = ECOSYSTEMS_DATA[0];
+      if (btc) onSelect(btc);
+      return;
+    }
+
     let hitPlanet: PlanetPhysics | null = null;
     let minD = w < 768 ? 30 : 22;
 
-    planetsRef.current.forEach(p => {
+    for (const p of planetsRef.current) {
       const d = Math.hypot(p.x - worldX, p.y - worldY);
       if (d < minD) {
         minD = d;
         hitPlanet = p;
       }
-    });
+    }
 
-    if (hitPlanet) {
-      interactionRef.current.dragPlanetId = hitPlanet.id;
+    if (hitPlanet !== null) {
+      const targetPlanet = hitPlanet as PlanetPhysics;
+      interactionRef.current.dragPlanetId = targetPlanet.id;
       interactionRef.current.isSlingshot = true;
-      hitPlanet.isDragging = true;
-      hitPlanet.dragX = worldX;
-      hitPlanet.dragY = worldY;
-      onSelect(hitPlanet);
+      targetPlanet.isDragging = true;
+      targetPlanet.dragX = worldX;
+      targetPlanet.dragY = worldY;
+      onSelect(targetPlanet);
     } else {
       interactionRef.current.dragPlanetId = null;
       interactionRef.current.isSlingshot = false;
@@ -1076,7 +1105,10 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
   return (
     <div 
       ref={containerRef}
-      className="relative w-full h-[540px] sm:h-[620px] md:h-[680px] lg:h-[750px] xl:h-[800px] overflow-hidden select-none bg-[var(--color-void)]"
+      tabIndex={0}
+      onKeyDown={handleContainerKeyDown}
+      className="relative w-full h-[540px] sm:h-[620px] md:h-[680px] lg:h-[750px] xl:h-[800px] overflow-hidden select-none bg-[var(--color-void)] focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-cyan)]"
+      role="region"
       aria-label="On-Chain Conviction: Web3 Solar System with Usmaan Gani"
     >
       {/* ─────────────────────────────────────────────────────
@@ -1085,28 +1117,29 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       <div className="hidden lg:flex absolute bottom-4 left-6 z-30 pointer-events-auto items-center gap-2">
         <button
           onClick={handleRadarPing}
-          className="px-2.5 py-1.5 rounded-lg border border-[var(--color-cyan)]/40 bg-[var(--color-surface)]/90 text-[var(--color-cyan)] hover:bg-[var(--color-cyan)]/15 font-mono text-[10px] font-bold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
-          title="Emit Deep-Space Radar Frequency Sweep"
+          aria-label="Emit Deep-Space Radar Frequency Sweep"
+          className="px-3 py-2 rounded-lg border border-[var(--color-cyan)]/40 bg-[var(--color-surface)]/90 text-[var(--color-cyan)] hover:bg-[var(--color-cyan)]/15 font-mono text-[10px] font-bold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer min-h-[36px] focus-visible:ring-2 focus-visible:ring-[var(--color-cyan)] focus-visible:outline-none"
         >
-          <Radio size={12} className={isScanning ? "animate-pulse" : ""} />
+          <Radio size={13} className={isScanning ? "animate-pulse" : ""} />
           <span>RADAR PING</span>
         </button>
 
         <button
           onClick={toggleWarpSpeed}
-          className="px-2.5 py-1.5 rounded-lg border border-[var(--color-amber)]/40 bg-[var(--color-surface)]/90 text-[var(--color-amber)] hover:bg-[var(--color-amber)]/15 font-mono text-[10px] font-bold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
-          title="Toggle Relativistic Orbital Warp Velocity"
+          aria-label="Toggle Relativistic Orbital Warp Velocity"
+          className="px-3 py-2 rounded-lg border border-[var(--color-amber)]/40 bg-[var(--color-surface)]/90 text-[var(--color-amber)] hover:bg-[var(--color-amber)]/15 font-mono text-[10px] font-bold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer min-h-[36px] focus-visible:ring-2 focus-visible:ring-[var(--color-amber)] focus-visible:outline-none"
         >
-          <Zap size={12} className={warpSpeed > 1 ? "animate-bounce" : ""} />
+          <Zap size={13} className={warpSpeed > 1 ? "animate-bounce" : ""} />
           <span>{warpSpeed > 1 ? "2.5X WARP" : "1X SPEED"}</span>
         </button>
 
         <button
           onClick={handleResetCamera}
-          className="p-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/80 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-bright)] transition-colors cursor-pointer"
+          aria-label="Reset Camera View to Default"
+          className="p-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/80 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-bright)] transition-colors cursor-pointer min-w-[36px] min-h-[36px] flex items-center justify-center focus-visible:ring-2 focus-visible:ring-[var(--color-cyan)] focus-visible:outline-none"
           title="Reset Camera View"
         >
-          <RotateCcw size={13} />
+          <RotateCcw size={14} />
         </button>
       </div>
 
@@ -1122,48 +1155,60 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
         onWheel={handleWheel}
         className="absolute inset-0 cursor-grab active:cursor-grabbing touch-none"
         style={{ width: "100%", height: "100%", zIndex: 1 }}
-      />
+      >
+        <p>Interactive Web3 Solar System displaying Usmaan Gani (theUG) as the central sun with 11 orbiting blockchain ecosystems including Bitcoin, Ethereum, Solana, and Base.</p>
+      </canvas>
 
       {/* ─────────────────────────────────────────────────────
           MOBILE/TABLET CONTROLS & CLEAN PLANET SELECTOR CAROUSEL
           ───────────────────────────────────────────────────── */}
       <div className="lg:hidden absolute bottom-3 left-3 right-3 z-30 flex flex-col gap-2 pointer-events-auto">
-        {/* Quick mobile warp and radar toggles */}
+        {/* Quick mobile warp and radar toggles with WCAG touch sizes */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <button
               onClick={handleRadarPing}
-              className="px-2 py-1 rounded-md border border-[var(--color-cyan)]/40 bg-[var(--color-surface)]/90 text-[var(--color-cyan)] font-mono text-[9px] font-bold flex items-center gap-1 shadow-sm cursor-pointer"
+              aria-label="Emit Radar Sweep"
+              className="px-2.5 py-1.5 rounded-lg border border-[var(--color-cyan)]/40 bg-[var(--color-surface)]/90 text-[var(--color-cyan)] font-mono text-[9px] font-bold flex items-center gap-1.5 shadow-sm cursor-pointer min-h-[36px]"
             >
-              <Radio size={10} className={isScanning ? "animate-pulse" : ""} />
+              <Radio size={11} className={isScanning ? "animate-pulse" : ""} />
               <span>RADAR</span>
             </button>
             <button
               onClick={toggleWarpSpeed}
-              className="px-2 py-1 rounded-md border border-[var(--color-amber)]/40 bg-[var(--color-surface)]/90 text-[var(--color-amber)] font-mono text-[9px] font-bold flex items-center gap-1 shadow-sm cursor-pointer"
+              aria-label="Toggle Orbital Warp Velocity"
+              className="px-2.5 py-1.5 rounded-lg border border-[var(--color-amber)]/40 bg-[var(--color-surface)]/90 text-[var(--color-amber)] font-mono text-[9px] font-bold flex items-center gap-1.5 shadow-sm cursor-pointer min-h-[36px]"
             >
-              <Zap size={10} className={warpSpeed > 1 ? "animate-bounce" : ""} />
+              <Zap size={11} className={warpSpeed > 1 ? "animate-bounce" : ""} />
               <span>{warpSpeed > 1 ? "2.5X" : "1X"}</span>
             </button>
           </div>
           <button
             onClick={handleResetCamera}
-            className="p-1 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]/80 text-[var(--color-text-muted)] cursor-pointer"
+            aria-label="Reset Camera View"
+            className="p-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/80 text-[var(--color-text-muted)] cursor-pointer min-w-[36px] min-h-[36px] flex items-center justify-center"
             title="Reset Camera View"
           >
-            <RotateCcw size={11} />
+            <RotateCcw size={12} />
           </button>
         </div>
 
-        {/* Horizontal Planet Carousel */}
-        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-0.5">
+        {/* Horizontal Planet Carousel with accessibility roles */}
+        <div 
+          className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-0.5"
+          role="tablist"
+          aria-label="Blockchain ecosystems"
+        >
           {ECOSYSTEMS_DATA.map((eco) => {
             const isSelected = selectedId === eco.id;
             return (
               <button
                 key={eco.id}
+                role="tab"
+                aria-selected={isSelected}
+                aria-label={`Select ${eco.name}`}
                 onClick={() => onSelect(eco)}
-                className={`px-2.5 py-1 rounded-full font-mono text-[9px] tracking-wider transition-all cursor-pointer shrink-0 flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-full font-mono text-[9.5px] tracking-wider transition-all cursor-pointer shrink-0 flex items-center gap-1.5 min-h-[36px] ${
                   isSelected
                     ? "bg-[var(--color-surface)] border-2 font-bold shadow-md"
                     : "bg-[var(--color-surface)]/80 border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
