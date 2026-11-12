@@ -1,13 +1,16 @@
 export interface XPost {
   id: string;
+  slug?: string;
   title: string;
-  url: string;
+  type?: "article" | "x-post";
+  url?: string;
   publishedAt: string;
   readTime: string;
-  category: "Web3" | "AI & Agents" | "Build In Public" | "CT Alpha";
+  category: "Web3" | "AI & Agents" | "Build In Public" | "CT Alpha" | "Engineering";
   summary: string;
-  content: string[];
-  stats: {
+  body?: string; // Full markdown / article text for normal articles on the website
+  content?: string[];
+  stats?: {
     likes?: string;
     reposts?: string;
     views?: string;
@@ -18,7 +21,7 @@ export interface XPost {
 }
 
 /**
- * Real X Dispatches & Blog Posts for Usmaan Gani (@Usmaangani252).
- * Currently empty - real posts and articles will be added directly.
+ * Real Articles & X Dispatches for Usmaan Gani (@Usmaangani252).
+ * Managed directly via the /admin console or updated here.
  */
 export const BLOGS_DATA: XPost[] = [];

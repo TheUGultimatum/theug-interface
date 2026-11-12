@@ -33,15 +33,21 @@ import {
   Heart,
   Repeat2,
   ArrowUpRight,
+  FileText,
 } from "lucide-react";
 
-const PRESET_COLORS = [
-  { label: "High-Heat Amber", color: "var(--color-amber)", rgb: "255,94,58" },
-  { label: "Cyan Circuit", color: "var(--color-cyan)", rgb: "0,212,255" },
-  { label: "Electric Blue", color: "var(--color-electric)", rgb: "68,136,255" },
-  { label: "Matrix Purple", color: "var(--color-purple)", rgb: "136,85,255" },
-  { label: "Acid Green", color: "#44d62c", rgb: "68,214,44" },
-];
+function XIcon({ size = 12, className = "" }: { size?: number; className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      style={{ width: size, height: size }}
+      className={`fill-current ${className}`}
+    >
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
+  );
+}
 
 const PRESET_CATEGORIES = [
   "WEB3 / GAMING",
@@ -56,6 +62,7 @@ const BLOG_CATEGORIES: Array<XPost["category"]> = [
   "AI & Agents",
   "Build In Public",
   "CT Alpha",
+  "Engineering",
 ];
 
 const EMPTY_PROJECT: Project = {
@@ -79,12 +86,15 @@ const EMPTY_PROJECT: Project = {
 
 const EMPTY_BLOG: XPost = {
   id: "",
+  slug: "",
   title: "",
-  url: "https://x.com/Usmaangani252",
+  type: "article",
+  url: "",
   publishedAt: new Date().toLocaleDateString("en-US", { month: "short", year: "numeric" }),
-  readTime: "3 min read · Thread",
+  readTime: "3 min read",
   category: "Web3",
   summary: "",
+  body: "",
   content: [],
   stats: {
     likes: "",
@@ -105,7 +115,7 @@ export default function AdminPage() {
   // Active Management Tab: "projects" or "blogs"
   const [activeTab, setActiveTab] = useState<"projects" | "blogs">("projects");
 
-  // Multi-factor credentials state
+  // Credentials
   const [username, setUsername] = useState<string>("theug");
   const [password, setPassword] = useState<string>("");
   const [pin, setPin] = useState<string>("");
@@ -122,14 +132,12 @@ export default function AdminPage() {
   const [currentBlog, setCurrentBlog] = useState<XPost>(EMPTY_BLOG);
   const [highlightsInput, setHighlightsInput] = useState<string>("");
   const [tagsInput, setTagsInput] = useState<string>("");
-  const [contentInput, setContentInput] = useState<string>("");
   const [isFetchingPreview, setIsFetchingPreview] = useState<boolean>(false);
   const [previewingBlog, setPreviewingBlog] = useState<XPost | null>(null);
 
-  // Filter & Search
+  // Search & Filter
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [activeProjectFilter, setActiveProjectFilter] = useState<string>("ALL");
-  const [activeBlogFilter, setActiveBlogFilter] = useState<string>("ALL");
+  const [activeFilter, setActiveFilter] = useState<string>("ALL");
 
   // Notifications & Uploads
   const [statusMessage, setStatusMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
@@ -195,7 +203,7 @@ export default function AdminPage() {
         localStorage.setItem("theug_admin_session_token", data.token);
         loadProjects(data.token);
         loadBlogs(data.token);
-        notify("Access Granted: Admin Clearance Verified", "success");
+        notify("Logged in successfully", "success");
       } else {
         setAuthError(data.error || "Authentication failed");
       }
@@ -247,7 +255,7 @@ export default function AdminPage() {
 
   const notify = (text: string, type: "success" | "error" = "success") => {
     setStatusMessage({ text, type });
-    setTimeout(() => setStatusMessage(null), 4500);
+    setTimeout(() => setStatusMessage(null), 4000);
   };
 
   /* ─────────────────────────────────────────────────────────
@@ -329,7 +337,7 @@ export default function AdminPage() {
   };
 
   const handleDeleteProject = async (id: string, name: string) => {
-    if (!window.confirm(`Are you sure you want to delete "${name}"?`)) return;
+    if (!window.confirm(`Delete project "${name}"?`)) return;
 
     try {
       const res = await fetch(`/api/admin/projects?id=${encodeURIComponent(id)}`, {
@@ -340,11 +348,9 @@ export default function AdminPage() {
       if (data.success) {
         setProjects(data.projects);
         notify(`Project "${name}" removed`);
-      } else {
-        notify(data.error || "Failed to delete project", "error");
       }
     } catch {
-      notify("Network error while deleting project", "error");
+      notify("Error deleting project", "error");
     }
   };
 
@@ -366,46 +372,38 @@ export default function AdminPage() {
         },
         body: JSON.stringify({ projects: newProjects }),
       });
-      notify("Project order updated");
+      notify("Order updated");
     } catch {
-      notify("Failed to persist order", "error");
+      notify("Failed to save order", "error");
     }
   };
 
-  const handleExportProjectsJson = () => {
-    const jsonStr = JSON.stringify(projects, null, 2);
-    const blob = new Blob([jsonStr], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `theug-projects-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    notify("Downloaded projects.json backup");
-  };
-
   /* ─────────────────────────────────────────────────────────
-     BLOG / DISPATCH ACTIONS
+     BLOG / ARTICLE ACTIONS
      ───────────────────────────────────────────────────────── */
   const handleOpenBlogEditor = (blog?: XPost) => {
     if (blog) {
-      setCurrentBlog(blog);
+      setCurrentBlog({
+        ...blog,
+        type: blog.type || (blog.body ? "article" : "x-post"),
+      });
       setHighlightsInput((blog.highlights || []).join("\n"));
       setTagsInput((blog.tags || []).join(", "));
-      setContentInput((blog.content || []).join("\n\n"));
     } else {
-      setCurrentBlog(EMPTY_BLOG);
+      setCurrentBlog({
+        ...EMPTY_BLOG,
+        type: "article",
+      });
       setHighlightsInput("");
       setTagsInput("#Web3");
-      setContentInput("");
     }
     setIsEditingBlog(true);
   };
 
   const handleAutoFetchLink = async (customUrl?: string) => {
     const targetUrl = customUrl || currentBlog.url;
-    if (!targetUrl || !targetUrl.trim() || targetUrl.trim() === "https://x.com/Usmaangani252") {
-      notify("Please enter a specific post or article URL to preview", "error");
+    if (!targetUrl || !targetUrl.trim()) {
+      notify("Please enter an X post or article URL to auto-fill", "error");
       return;
     }
 
@@ -423,10 +421,10 @@ export default function AdminPage() {
           ...prev,
           title: prev.title.trim() && prev.title !== "Dispatch Title" ? prev.title : (data.title || prev.title),
           summary: prev.summary.trim() ? prev.summary : (data.summary || prev.summary),
-          content: data.content && data.content.length > 0 ? data.content : prev.content,
+          body: prev.body || (data.content ? data.content.join("\n\n") : ""),
         }));
 
-        if (data.tags && data.tags.length > 0 && (!tagsInput || tagsInput === "#Web3")) {
+        if (data.tags && data.tags.length > 0) {
           setTagsInput(data.tags.join(", "));
         }
 
@@ -434,9 +432,9 @@ export default function AdminPage() {
           setHighlightsInput(data.content.slice(1, 4).join("\n"));
         }
 
-        notify("⚡ Auto-preview fetched! Details populated.");
+        notify("⚡ Auto-preview data fetched successfully!");
       } else {
-        notify(data.error || "Could not fetch link metadata", "error");
+        notify(data.error || "Could not fetch preview", "error");
       }
     } catch {
       notify("Network error while fetching preview", "error");
@@ -447,7 +445,7 @@ export default function AdminPage() {
 
   const handleSaveBlog = async () => {
     if (!currentBlog.title.trim()) {
-      notify("Dispatch title is required", "error");
+      notify("Title is required", "error");
       return;
     }
 
@@ -461,23 +459,22 @@ export default function AdminPage() {
       .map((s) => s.trim())
       .filter(Boolean);
 
-    const content = contentInput
-      .split("\n\n")
-      .map((s) => s.trim())
-      .filter(Boolean);
+    const slug =
+      currentBlog.slug?.trim() ||
+      currentBlog.id?.trim() ||
+      currentBlog.title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "");
 
     const blogToSave: XPost = {
       ...currentBlog,
-      id:
-        currentBlog.id.trim() ||
-        currentBlog.title
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/(^-|-$)/g, ""),
-      url: currentBlog.url.trim() || "https://x.com/Usmaangani252",
+      id: slug,
+      slug,
+      type: currentBlog.type || (currentBlog.body?.trim() ? "article" : "x-post"),
+      url: currentBlog.url?.trim() || (currentBlog.type === "x-post" ? "https://x.com/Usmaangani252" : ""),
       highlights,
       tags,
-      content,
     };
 
     try {
@@ -494,9 +491,9 @@ export default function AdminPage() {
         setBlogs(data.blogs);
         setIsEditingBlog(false);
         setCurrentBlog(EMPTY_BLOG);
-        notify(`Dispatch "${blogToSave.title}" published!`);
+        notify(`Published "${blogToSave.title}"!`);
       } else {
-        notify(data.error || "Failed to save dispatch", "error");
+        notify(data.error || "Failed to save", "error");
       }
     } catch {
       notify("Network error while saving dispatch", "error");
@@ -504,7 +501,7 @@ export default function AdminPage() {
   };
 
   const handleDeleteBlog = async (id: string, title: string) => {
-    if (!window.confirm(`Are you sure you want to delete dispatch "${title}"?`)) return;
+    if (!window.confirm(`Delete "${title}"?`)) return;
 
     try {
       const res = await fetch(`/api/admin/blogs?id=${encodeURIComponent(id)}`, {
@@ -514,12 +511,10 @@ export default function AdminPage() {
       const data = await res.json();
       if (data.success) {
         setBlogs(data.blogs);
-        notify(`Dispatch "${title}" removed`);
-      } else {
-        notify(data.error || "Failed to delete dispatch", "error");
+        notify(`Deleted "${title}"`);
       }
     } catch {
-      notify("Network error while deleting dispatch", "error");
+      notify("Error deleting dispatch", "error");
     }
   };
 
@@ -541,45 +536,40 @@ export default function AdminPage() {
         },
         body: JSON.stringify({ blogs: newBlogs }),
       });
-      notify("Dispatch order updated");
+      notify("Order updated");
     } catch {
-      notify("Failed to persist dispatch order", "error");
+      notify("Failed to save order", "error");
     }
   };
 
-  const handleExportBlogsJson = () => {
-    const jsonStr = JSON.stringify(blogs, null, 2);
-    const blob = new Blob([jsonStr], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `theug-blogs-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    notify("Downloaded blogs.json backup");
-  };
-
-  // Filtered queries
+  // Filter queries
   const filteredProjects = projects.filter((p) => {
+    const q = searchQuery.toLowerCase().trim();
     const matchesSearch =
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.tagline.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.stack.some((s) => s.toLowerCase().includes(searchQuery.toLowerCase()));
+      !q ||
+      p.name.toLowerCase().includes(q) ||
+      p.tagline?.toLowerCase().includes(q) ||
+      p.stack.some((s) => s.toLowerCase().includes(q));
     const matchesFilter =
-      activeProjectFilter === "ALL" ||
-      (activeProjectFilter === "FEATURED" && p.featured) ||
-      (activeProjectFilter === "LIVE" && p.status === "live") ||
-      (activeProjectFilter === "PRIVATE" && p.isPrivate);
+      activeFilter === "ALL" ||
+      (activeFilter === "FEATURED" && p.featured) ||
+      (activeFilter === "LIVE" && p.status === "live") ||
+      (activeFilter === "PRIVATE" && p.isPrivate);
     return matchesSearch && matchesFilter;
   });
 
   const filteredBlogs = blogs.filter((b) => {
+    const q = searchQuery.toLowerCase().trim();
     const matchesSearch =
-      b.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      b.summary.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      b.tags?.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()));
+      !q ||
+      b.title.toLowerCase().includes(q) ||
+      b.summary.toLowerCase().includes(q) ||
+      b.tags?.some((t) => t.toLowerCase().includes(q));
     const matchesFilter =
-      activeBlogFilter === "ALL" || b.category === activeBlogFilter;
+      activeFilter === "ALL" ||
+      b.category === activeFilter ||
+      (activeFilter === "ARTICLES" && (b.type === "article" || b.body)) ||
+      (activeFilter === "X_POSTS" && (b.type === "x-post" && !b.body));
     return matchesSearch && matchesFilter;
   });
 
@@ -589,73 +579,51 @@ export default function AdminPage() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-[85vh] flex items-center justify-center px-4 py-12">
-        <div
-          className="panel max-w-lg w-full p-8 relative overflow-hidden"
-          style={{
-            border: "1px solid var(--color-border-bright)",
-            background: "linear-gradient(180deg, rgba(16,16,20,0.96) 0%, rgba(8,8,12,0.99) 100%)",
-            boxShadow: "0 12px 48px rgba(0,0,0,0.9), 0 0 32px rgba(255,94,58,0.08)",
-          }}
-        >
-          <div className="flex items-center gap-3.5 pb-5 border-b border-[var(--color-border)]">
-            <div className="p-2.5 rounded-lg bg-[rgba(255,94,58,0.12)] text-[var(--color-amber)] border border-[rgba(255,94,58,0.3)] shadow-[0_0_12px_rgba(255,94,58,0.2)]">
-              <Shield size={24} />
+        <div className="max-w-md w-full p-8 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg">
+          <div className="flex items-center gap-3 pb-5 border-b border-[var(--color-border)]">
+            <div className="p-2.5 rounded-lg bg-[rgba(255,94,58,0.1)] text-[var(--color-amber)]">
+              <Shield size={22} />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[var(--color-amber)] animate-pulse" />
-                <h1 className="font-mono text-sm tracking-widest text-[var(--color-text-primary)] font-bold">
-                  SYS.ADMIN // MULTI-FACTOR CLEARANCE
-                </h1>
-              </div>
-              <p className="font-mono text-[9px] text-[var(--color-text-muted)] tracking-wider mt-0.5">
-                SECURE IDENTITY VERIFICATION GATEWAY
+              <h1 className="font-bold text-base text-[var(--color-text-primary)]">
+                Admin Console Login
+              </h1>
+              <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
+                theUG_ Portfolio Management
               </p>
             </div>
           </div>
 
-          <form onSubmit={handleLogin} className="mt-6 flex flex-col gap-4">
+          <form onSubmit={handleLogin} className="mt-6 flex flex-col gap-4 text-xs font-mono">
             <div>
-              <label className="flex items-center justify-between font-mono text-[10px] uppercase tracking-wider text-[var(--color-text-secondary)] mb-1.5">
-                <span className="flex items-center gap-1.5">
-                  <UserCheck size={12} className="text-[var(--color-cyan)]" />
-                  ADMIN IDENTIFIER / USERNAME
-                </span>
-                <span className="text-[9px] text-[var(--color-text-muted)]">DEFAULT: theug</span>
+              <label className="block text-[11px] text-[var(--color-text-secondary)] mb-1 font-semibold">
+                Username
               </label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="theug"
-                className="w-full px-3.5 py-2.5 font-mono text-xs bg-[var(--color-surface)] border border-[var(--color-border)] rounded focus:outline-none focus:border-[var(--color-cyan)] text-[var(--color-text-primary)] transition-colors"
+                className="w-full px-3.5 py-2.5 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
               />
             </div>
 
             <div>
-              <label className="flex items-center justify-between font-mono text-[10px] uppercase tracking-wider text-[var(--color-text-secondary)] mb-1.5">
-                <span className="flex items-center gap-1.5">
-                  <Lock size={12} className="text-[var(--color-amber)]" />
-                  SECURITY PASSPHRASE
-                </span>
-                <span className="text-[9px] text-[var(--color-text-muted)]">DEFAULT: theug-ultimatum-2026</span>
+              <label className="block text-[11px] text-[var(--color-text-secondary)] mb-1 font-semibold">
+                Password
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password..."
-                className="w-full px-3.5 py-2.5 font-mono text-xs bg-[var(--color-surface)] border border-[var(--color-border)] rounded focus:outline-none focus:border-[var(--color-amber)] text-[var(--color-text-primary)] transition-colors"
+                placeholder="••••••••••••"
+                className="w-full px-3.5 py-2.5 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
               />
             </div>
 
             <div>
-              <label className="flex items-center justify-between font-mono text-[10px] uppercase tracking-wider text-[var(--color-text-secondary)] mb-1.5">
-                <span className="flex items-center gap-1.5">
-                  <KeyRound size={12} className="text-[var(--color-purple)]" />
-                  6-DIGIT CLEARANCE PIN
-                </span>
-                <span className="text-[9px] text-[var(--color-text-muted)]">DEFAULT: 252252</span>
+              <label className="block text-[11px] text-[var(--color-text-secondary)] mb-1 font-semibold">
+                6-Digit PIN
               </label>
               <input
                 type="password"
@@ -663,13 +631,13 @@ export default function AdminPage() {
                 value={pin}
                 onChange={(e) => setPin(e.target.value)}
                 placeholder="252252"
-                className="w-full px-3.5 py-2.5 font-mono text-xs bg-[var(--color-surface)] border border-[var(--color-border)] rounded focus:outline-none focus:border-[var(--color-purple)] text-[var(--color-text-primary)] tracking-widest transition-colors"
+                className="w-full px-3.5 py-2.5 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] tracking-widest focus:outline-none focus:border-[var(--color-amber)]"
               />
             </div>
 
             {authError && (
-              <div className="p-3 rounded bg-[rgba(255,51,51,0.12)] border border-[rgba(255,51,51,0.3)] flex items-center gap-2.5 text-[var(--color-error)] font-mono text-[10px] animate-shake">
-                <AlertCircle size={15} className="shrink-0" />
+              <div className="p-3 rounded bg-[rgba(255,51,51,0.1)] border border-[rgba(255,51,51,0.3)] text-[var(--color-error)] text-xs flex items-center gap-2">
+                <AlertCircle size={14} className="shrink-0" />
                 <span>{authError}</span>
               </div>
             )}
@@ -677,27 +645,27 @@ export default function AdminPage() {
             <button
               type="submit"
               disabled={isLoadingAuth}
-              className="mt-3 py-3 px-4 rounded bg-gradient-to-r from-[var(--color-amber)] to-[var(--color-amber-bright)] text-black font-mono font-bold text-xs tracking-wider uppercase hover:brightness-110 active:scale-[0.99] transition-all cursor-pointer flex items-center justify-center gap-2 shadow-[0_0_16px_rgba(255,94,58,0.3)]"
+              className="mt-2 py-3 px-4 rounded bg-[var(--color-amber)] text-black font-bold text-xs uppercase tracking-wider hover:opacity-90 transition-opacity cursor-pointer flex items-center justify-center gap-2"
             >
               {isLoadingAuth ? (
                 <>
-                  <RefreshCw size={15} className="animate-spin" />
-                  VERIFYING HARDWARE KEYS...
+                  <RefreshCw size={14} className="animate-spin" />
+                  <span>Verifying...</span>
                 </>
               ) : (
                 <>
-                  <Shield size={15} />
-                  AUTHENTICATE & UNLOCK CONSOLE
+                  <Lock size={14} />
+                  <span>Authenticate & Open Console</span>
                 </>
               )}
             </button>
           </form>
 
-          <div className="mt-6 pt-4 border-t border-[var(--color-border)] flex items-center justify-between font-mono text-[9px] text-[var(--color-text-muted)]">
-            <Link href="/" className="hover:text-[var(--color-amber)] transition-colors flex items-center gap-1">
-              ← Return to portfolio
+          <div className="mt-6 pt-4 border-t border-[var(--color-border)] flex items-center justify-between text-[11px] text-[var(--color-text-muted)] font-mono">
+            <Link href="/" className="hover:text-[var(--color-amber)] transition-colors">
+              ← Return to site
             </Link>
-            <span className="text-[var(--color-online)]">SHA-256 HMAC ACTIVE</span>
+            <span>v2.4 Clear</span>
           </div>
         </div>
       </div>
@@ -708,165 +676,138 @@ export default function AdminPage() {
      AUTHENTICATED ADMIN CONSOLE
      ───────────────────────────────────────────────────────── */
   return (
-    <div className="min-h-screen px-4 md:px-8 py-8 max-w-[1400px] mx-auto font-mono pb-24">
+    <div className="min-h-screen px-4 md:px-8 py-8 max-w-[1280px] mx-auto pb-24">
       {/* Toast Notification */}
       {statusMessage && (
         <div
-          className={`fixed bottom-8 right-8 z-50 px-5 py-3.5 rounded border shadow-2xl flex items-center gap-3 text-xs tracking-wide transition-all ${
+          className={`fixed bottom-8 right-8 z-50 px-4 py-3 rounded-lg border shadow-xl flex items-center gap-2.5 text-xs font-mono transition-all ${
             statusMessage.type === "success"
-              ? "bg-[rgba(10,24,18,0.96)] border-[#00d9ff]/50 text-[#00d9ff] shadow-[0_0_24px_rgba(0,217,255,0.2)]"
-              : "bg-[rgba(28,10,10,0.96)] border-[var(--color-error)]/50 text-[var(--color-error)] shadow-[0_0_24px_rgba(255,51,51,0.2)]"
+              ? "bg-[var(--color-surface)] border-[var(--color-online)] text-[var(--color-text-primary)]"
+              : "bg-[var(--color-surface)] border-[var(--color-error)] text-[var(--color-error)]"
           }`}
         >
-          {statusMessage.type === "success" ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+          {statusMessage.type === "success" ? (
+            <CheckCircle2 size={16} className="text-[var(--color-online)]" />
+          ) : (
+            <AlertCircle size={16} />
+          )}
           <span>{statusMessage.text}</span>
         </div>
       )}
 
-      {/* TOP HEADER */}
+      {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-[var(--color-border)]">
         <div>
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[var(--color-online)] animate-pulse" />
-            <span className="text-[10px] text-[var(--color-online)] tracking-widest uppercase font-bold">
-              SYS.ADMIN // CLEARANCE ACTIVE (THEUG ARCHITECT)
+            <span className="w-2 h-2 rounded-full bg-[var(--color-online)]" />
+            <span className="text-xs font-mono text-[var(--color-text-muted)] uppercase tracking-wider font-semibold">
+              TheUG Console · Verified Admin
             </span>
           </div>
-          <h1 className="text-xl md:text-2xl font-bold text-[var(--color-text-primary)] tracking-wider mt-1">
-            PORTFOLIO COMMAND CONSOLE
+          <h1 className="text-2xl font-bold text-[var(--color-text-primary)] mt-1">
+            Site Control Hub
           </h1>
-          <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
-            Manage live Web3 projects, code repositories, and authentic X dispatches
+          <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
+            Manage your live Web3 projects, articles, and X thread dispatches with instant sync.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2.5 font-mono text-xs">
           <Link
             href={activeTab === "projects" ? "/projects" : "/blogs"}
             target="_blank"
-            className="px-3.5 py-2 rounded border border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-cyan)] text-[var(--color-text-secondary)] hover:text-[var(--color-cyan)] text-xs flex items-center gap-1.5 transition-all"
+            className="px-3.5 py-2 rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-bright)] flex items-center gap-1.5 transition-colors"
           >
-            <Eye size={14} />
-            <span>VIEW LIVE {activeTab.toUpperCase()}</span>
+            <Eye size={13} />
+            <span>Live {activeTab.toUpperCase()}</span>
           </Link>
 
           <button
-            onClick={activeTab === "projects" ? handleExportProjectsJson : handleExportBlogsJson}
-            className="px-3.5 py-2 rounded border border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-amber)] text-[var(--color-text-secondary)] hover:text-[var(--color-amber)] text-xs flex items-center gap-1.5 transition-all cursor-pointer"
-          >
-            <Download size={14} />
-            <span>EXPORT JSON</span>
-          </button>
-
-          <button
             onClick={handleLogout}
-            title="Log out"
-            className="px-3 py-2 rounded border border-[var(--color-border)] hover:border-[var(--color-error)] text-[var(--color-text-muted)] hover:text-[var(--color-error)] transition-colors cursor-pointer flex items-center gap-1.5 text-xs"
+            className="px-3 py-2 rounded border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-error)] hover:border-[var(--color-error)] transition-colors cursor-pointer flex items-center gap-1.5"
           >
-            <LogOut size={14} />
-            <span>LOGOUT</span>
+            <LogOut size={13} />
+            <span>Logout</span>
           </button>
         </div>
       </div>
 
-      {/* ─────────────────────────────────────────────────────
-          TAB SWITCHER: PROJECTS vs BLOGS
-          ───────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-3 mt-6 border-b border-[var(--color-border)] pb-3">
-        <button
-          onClick={() => {
-            setActiveTab("projects");
-            setSearchQuery("");
-          }}
-          className={`px-5 py-2.5 rounded-lg text-xs font-bold tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
-            activeTab === "projects"
-              ? "bg-[var(--color-amber)] text-black shadow-[0_0_16px_rgba(255,94,58,0.35)]"
-              : "bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)]"
-          }`}
-        >
-          <FolderOpen size={15} />
-          <span>PROJECTS INVENTORY ({projects.length})</span>
-        </button>
+      {/* Clean Tab Bar */}
+      <div className="flex items-center justify-between gap-4 mt-6 border-b border-[var(--color-border)] pb-3">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              setActiveTab("projects");
+              setActiveFilter("ALL");
+              setSearchQuery("");
+            }}
+            className={`px-4 py-2 rounded-lg text-xs font-bold tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
+              activeTab === "projects"
+                ? "bg-[var(--color-amber)] text-black font-semibold shadow-sm"
+                : "bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)]"
+            }`}
+          >
+            <FolderOpen size={14} />
+            <span>PROJECTS ({projects.length})</span>
+          </button>
 
-        <button
-          onClick={() => {
-            setActiveTab("blogs");
-            setSearchQuery("");
-          }}
-          className={`px-5 py-2.5 rounded-lg text-xs font-bold tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
-            activeTab === "blogs"
-              ? "bg-[var(--color-amber)] text-black shadow-[0_0_16px_rgba(255,94,58,0.35)]"
-              : "bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)]"
-          }`}
-        >
-          <BookOpen size={15} />
-          <span>BLOGS & DISPATCHES ({blogs.length})</span>
-        </button>
-      </div>
+          <button
+            onClick={() => {
+              setActiveTab("blogs");
+              setActiveFilter("ALL");
+              setSearchQuery("");
+            }}
+            className={`px-4 py-2 rounded-lg text-xs font-bold tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
+              activeTab === "blogs"
+                ? "bg-[var(--color-amber)] text-black font-semibold shadow-sm"
+                : "bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)]"
+            }`}
+          >
+            <BookOpen size={14} />
+            <span>ARTICLES & DISPATCHES ({blogs.length})</span>
+          </button>
+        </div>
 
-      {/* ─────────────────────────────────────────────────────
-          TAB 1: PROJECTS SECTION
-          ───────────────────────────────────────────────────── */}
-      {activeTab === "projects" && (
-        <>
-          {/* Hero Banner */}
-          <div className="my-6 p-6 rounded-xl border border-[rgba(255,94,58,0.3)] bg-gradient-to-r from-[rgba(255,94,58,0.08)] to-transparent flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 text-[var(--color-amber)] text-[10px] tracking-widest font-bold">
-                <Sparkles size={14} />
-                <span>PROJECT INVENTORY</span>
-              </div>
-              <h2 className="text-lg md:text-xl font-bold text-[var(--color-text-primary)] mt-1">
-                Feature a build, site, or decentralized node
-              </h2>
-              <p className="text-xs text-[var(--color-text-secondary)] mt-1 max-w-xl">
-                Upload screenshots, configure tech stack tags, set GitHub links, and publish to your portfolio.
-              </p>
-            </div>
-
+        {/* Action Button */}
+        <div>
+          {activeTab === "projects" ? (
             <button
               onClick={() => {
                 setCurrentProject(EMPTY_PROJECT);
                 setIsEditingProject(true);
               }}
-              className="shrink-0 px-6 py-3 rounded-lg bg-[var(--color-amber)] text-black font-mono font-bold text-xs tracking-wider uppercase hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2 shadow-[0_0_16px_rgba(255,94,58,0.3)]"
+              className="px-4 py-2 rounded-lg bg-[var(--color-text-primary)] text-[var(--color-void)] font-bold text-xs flex items-center gap-1.5 hover:opacity-90 transition-opacity cursor-pointer font-mono"
             >
-              <Plus size={16} strokeWidth={3} />
-              <span>+ CREATE NEW PROJECT</span>
+              <Plus size={15} />
+              <span>New Project</span>
             </button>
-          </div>
+          ) : (
+            <button
+              onClick={() => handleOpenBlogEditor()}
+              className="px-4 py-2 rounded-lg bg-[var(--color-text-primary)] text-[var(--color-void)] font-bold text-xs flex items-center gap-1.5 hover:opacity-90 transition-opacity cursor-pointer font-mono"
+            >
+              <Plus size={15} />
+              <span>Write Article / Dispatch</span>
+            </button>
+          )}
+        </div>
+      </div>
 
-          {/* Metrics Strip */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 my-6">
-            {[
-              { label: "TOTAL INVENTORY", value: projects.length, color: "var(--color-cyan)" },
-              { label: "LIVE APPS", value: projects.filter((p) => p.status === "live").length, color: "var(--color-online)" },
-              { label: "SPOTLIGHTS", value: projects.filter((p) => p.featured).length, color: "var(--color-amber)" },
-              { label: "PRIVATE REPOS", value: projects.filter((p) => p.isPrivate).length, color: "var(--color-purple)" },
-            ].map((m, idx) => (
-              <div
-                key={idx}
-                className="panel p-3.5 flex flex-col justify-between"
-                style={{ border: "1px solid var(--color-border)", background: "var(--color-surface)" }}
-              >
-                <span className="text-[9px] text-[var(--color-text-muted)] tracking-wider">{m.label}</span>
-                <span className="text-xl font-bold mt-1" style={{ color: m.color }}>
-                  {m.value}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {/* Search & Filters */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 my-6 pb-4 border-b border-[var(--color-border)]">
-            <div className="flex flex-wrap gap-2">
+      {/* ─────────────────────────────────────────────────────
+          TAB 1: PROJECTS INVENTORY
+          ───────────────────────────────────────────────────── */}
+      {activeTab === "projects" && (
+        <div className="mt-6">
+          {/* Search & Filter Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-[var(--color-border)] font-mono text-xs">
+            <div className="flex flex-wrap gap-1.5">
               {["ALL", "LIVE", "FEATURED", "PRIVATE"].map((filter) => (
                 <button
                   key={filter}
-                  onClick={() => setActiveProjectFilter(filter)}
+                  onClick={() => setActiveFilter(filter)}
                   className={`px-3 py-1.5 rounded text-xs transition-colors cursor-pointer ${
-                    activeProjectFilter === filter
-                      ? "bg-[var(--color-text-primary)] text-black font-bold"
+                    activeFilter === filter
+                      ? "bg-[var(--color-text-primary)] text-[var(--color-void)] font-bold"
                       : "bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)]"
                   }`}
                 >
@@ -875,36 +816,41 @@ export default function AdminPage() {
               ))}
             </div>
 
-            <div className="relative min-w-[260px]">
+            <div className="relative min-w-[240px]">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search projects..."
-                className="w-full px-3.5 py-1.5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-cyan)]"
+                className="w-full px-3.5 py-1.5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
               />
             </div>
           </div>
 
           {/* Projects List */}
-          <div className="flex flex-col gap-3">
+          <div className="space-y-3">
             {filteredProjects.length === 0 ? (
-              <div className="py-12 text-center border border-dashed border-[var(--color-border)] rounded-lg">
-                <p className="text-sm text-[var(--color-text-muted)]">No projects match the selected criteria.</p>
+              <div className="py-16 text-center border border-dashed border-[var(--color-border)] rounded-lg bg-[var(--color-surface)]">
+                <p className="text-sm text-[var(--color-text-secondary)]">No projects found.</p>
+                <button
+                  onClick={() => {
+                    setCurrentProject(EMPTY_PROJECT);
+                    setIsEditingProject(true);
+                  }}
+                  className="mt-3 px-4 py-2 rounded bg-[var(--color-amber)] text-black font-bold text-xs inline-flex items-center gap-1.5"
+                >
+                  <Plus size={14} />
+                  <span>Create First Project</span>
+                </button>
               </div>
             ) : (
               filteredProjects.map((project, idx) => (
                 <div
                   key={project.id || idx}
-                  className="panel p-4 md:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:border-[var(--color-border-bright)]"
-                  style={{
-                    background: "var(--color-surface)",
-                    border: "1px solid var(--color-border)",
-                    borderLeft: `4px solid rgb(${project.accentRgb})`,
-                  }}
+                  className="p-4 md:p-5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:border-[var(--color-border-bright)] shadow-sm"
                 >
                   {project.bannerUrl && (
-                    <div className="relative w-24 h-16 rounded overflow-hidden border border-white/10 shrink-0 bg-black hidden sm:block">
+                    <div className="relative w-20 h-14 rounded overflow-hidden border border-[var(--color-border)] shrink-0 bg-black hidden sm:block">
                       <Image
                         src={project.bannerUrl}
                         alt={project.name}
@@ -915,50 +861,43 @@ export default function AdminPage() {
                   )}
 
                   <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <span className="text-[10px] text-[var(--color-text-muted)] tracking-wider">
+                    <div className="flex flex-wrap items-center gap-2 mb-1 text-[11px] font-mono">
+                      <span className="text-[var(--color-text-muted)] font-semibold">
                         {project.category}
                       </span>
-                      <span className="text-[var(--color-text-ghost)]">•</span>
-                      <span
-                        className="px-1.5 py-0.5 rounded text-[9px] uppercase font-bold"
-                        style={{
-                          color: `rgb(${project.accentRgb})`,
-                          background: `rgba(${project.accentRgb},0.08)`,
-                          border: `1px solid rgba(${project.accentRgb},0.25)`,
-                        }}
-                      >
+                      <span>•</span>
+                      <span className="uppercase text-[var(--color-online)] font-bold">
                         {project.status}
                       </span>
                       {project.featured && (
-                        <span className="px-1.5 py-0.5 rounded text-[9px] bg-[rgba(255,94,58,0.12)] text-[var(--color-amber)] border border-[rgba(255,94,58,0.3)] flex items-center gap-1 font-bold">
-                          ★ FEATURED
+                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-[rgba(255,94,58,0.1)] text-[var(--color-amber)] font-bold">
+                          ★ Featured
                         </span>
                       )}
                       {project.isPrivate && (
-                        <span className="px-1.5 py-0.5 rounded text-[9px] bg-white/5 text-[var(--color-text-muted)] border border-white/10 flex items-center gap-1">
-                          <Lock size={10} className="text-[var(--color-amber)]" />
-                          PRIVATE REPO
+                        <span className="text-[var(--color-text-muted)] flex items-center gap-1">
+                          <Lock size={10} />
+                          Private
                         </span>
                       )}
                     </div>
 
                     <div className="flex items-baseline gap-2">
-                      <h3 className="text-sm md:text-base font-bold text-[var(--color-text-primary)] truncate">
+                      <h3 className="font-bold text-base text-[var(--color-text-primary)]">
                         {project.name}
                       </h3>
-                      <span className="text-[10px] text-[var(--color-text-muted)]">{project.year}</span>
+                      <span className="text-xs text-[var(--color-text-muted)] font-mono">{project.year}</span>
                     </div>
 
-                    <p className="text-xs text-[var(--color-text-secondary)] mt-1 line-clamp-1">
+                    <p className="text-xs text-[var(--color-text-secondary)] mt-0.5 line-clamp-1">
                       {project.tagline || project.description}
                     </p>
 
-                    <div className="flex flex-wrap gap-1.5 mt-2.5">
+                    <div className="flex flex-wrap gap-1.5 mt-2 font-mono text-[10px]">
                       {project.stack.map((tech) => (
                         <span
                           key={tech}
-                          className="px-1.5 py-0.5 text-[9px] rounded bg-[var(--color-void)] border border-[var(--color-border)] text-[var(--color-text-muted)]"
+                          className="px-2 py-0.5 rounded bg-[var(--color-elevated)] text-[var(--color-text-secondary)]"
                         >
                           {tech}
                         </span>
@@ -966,8 +905,8 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-[var(--color-border)]">
-                    <div className="flex flex-col gap-0.5 mr-2">
+                  <div className="flex items-center gap-2 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-[var(--color-border)] font-mono text-xs">
+                    <div className="flex flex-col gap-0.5 mr-1">
                       <button
                         onClick={() => handleReorderProject(idx, "up")}
                         disabled={idx === 0}
@@ -991,22 +930,10 @@ export default function AdminPage() {
                         href={project.liveUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-2 rounded border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-cyan)] hover:border-[var(--color-cyan)] transition-colors"
+                        className="p-2 rounded border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
                         title="Open live app"
                       >
-                        <ExternalLink size={14} />
-                      </a>
-                    )}
-
-                    {project.githubUrl && (
-                      <a
-                        href={project.githubUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 rounded border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-amber)] hover:border-[var(--color-amber)] transition-colors"
-                        title="Open repository"
-                      >
-                        <Code2 size={14} />
+                        <ExternalLink size={13} />
                       </a>
                     )}
 
@@ -1015,10 +942,10 @@ export default function AdminPage() {
                         setCurrentProject(project);
                         setIsEditingProject(true);
                       }}
-                      className="px-3 py-1.5 rounded border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-amber)] hover:text-[var(--color-amber)] text-xs flex items-center gap-1 transition-colors cursor-pointer"
+                      className="px-3 py-1.5 rounded border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-amber)] hover:text-[var(--color-amber)] flex items-center gap-1 transition-colors cursor-pointer"
                     >
                       <Edit3 size={13} />
-                      <span>EDIT</span>
+                      <span>Edit</span>
                     </button>
 
                     <button
@@ -1026,76 +953,31 @@ export default function AdminPage() {
                       className="p-2 rounded border border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-error)] hover:text-[var(--color-error)] transition-colors cursor-pointer"
                       title="Delete project"
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={13} />
                     </button>
                   </div>
                 </div>
               ))
             )}
           </div>
-        </>
+        </div>
       )}
 
       {/* ─────────────────────────────────────────────────────
-          TAB 2: BLOGS & DISPATCHES SECTION
+          TAB 2: ARTICLES & DISPATCHES
           ───────────────────────────────────────────────────── */}
       {activeTab === "blogs" && (
-        <>
-          {/* Hero Banner */}
-          <div className="my-6 p-6 rounded-xl border border-[rgba(0,217,255,0.3)] bg-gradient-to-r from-[rgba(0,217,255,0.08)] to-transparent flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 text-[var(--color-cyan)] text-[10px] tracking-widest font-bold">
-                <BookOpen size={14} />
-                <span>DISPATCHES ARCHIVE</span>
-              </div>
-              <h2 className="text-lg md:text-xl font-bold text-[var(--color-text-primary)] mt-1">
-                Post an article, X thread preview, or alpha breakdown
-              </h2>
-              <p className="text-xs text-[var(--color-text-secondary)] mt-1 max-w-xl">
-                Add your real dispatches from @Usmaangani252 with custom key takeaways, category tags, and direct links to X.
-              </p>
-            </div>
-
-            <button
-              onClick={() => handleOpenBlogEditor()}
-              className="shrink-0 px-6 py-3 rounded-lg bg-[var(--color-amber)] text-black font-mono font-bold text-xs tracking-wider uppercase hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2 shadow-[0_0_16px_rgba(255,94,58,0.3)]"
-            >
-              <Plus size={16} strokeWidth={3} />
-              <span>+ WRITE NEW DISPATCH</span>
-            </button>
-          </div>
-
-          {/* Metrics Strip */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 my-6">
-            {[
-              { label: "TOTAL DISPATCHES", value: blogs.length, color: "var(--color-cyan)" },
-              { label: "WEB3 ESSAYS", value: blogs.filter((b) => b.category === "Web3").length, color: "var(--color-online)" },
-              { label: "AI & AGENTS", value: blogs.filter((b) => b.category === "AI & Agents").length, color: "var(--color-amber)" },
-              { label: "PINNED TO TOP", value: blogs.filter((b) => b.isPinned).length, color: "var(--color-purple)" },
-            ].map((m, idx) => (
-              <div
-                key={idx}
-                className="panel p-3.5 flex flex-col justify-between"
-                style={{ border: "1px solid var(--color-border)", background: "var(--color-surface)" }}
-              >
-                <span className="text-[9px] text-[var(--color-text-muted)] tracking-wider">{m.label}</span>
-                <span className="text-xl font-bold mt-1" style={{ color: m.color }}>
-                  {m.value}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {/* Search & Category Filter */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 my-6 pb-4 border-b border-[var(--color-border)]">
-            <div className="flex flex-wrap gap-2">
-              {["ALL", ...BLOG_CATEGORIES].map((category) => (
+        <div className="mt-6">
+          {/* Search & Filter Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-[var(--color-border)] font-mono text-xs">
+            <div className="flex flex-wrap gap-1.5">
+              {["ALL", "ARTICLES", "X_POSTS", ...BLOG_CATEGORIES].map((category) => (
                 <button
                   key={category}
-                  onClick={() => setActiveBlogFilter(category)}
+                  onClick={() => setActiveFilter(category)}
                   className={`px-3 py-1.5 rounded text-xs transition-colors cursor-pointer ${
-                    activeBlogFilter === category
-                      ? "bg-[var(--color-text-primary)] text-black font-bold"
+                    activeFilter === category
+                      ? "bg-[var(--color-text-primary)] text-[var(--color-void)] font-bold"
                       : "bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)]"
                   }`}
                 >
@@ -1104,317 +986,281 @@ export default function AdminPage() {
               ))}
             </div>
 
-            <div className="relative min-w-[260px]">
+            <div className="relative min-w-[240px]">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search dispatches..."
-                className="w-full px-3.5 py-1.5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-cyan)]"
+                placeholder="Search articles or tags..."
+                className="w-full px-3.5 py-1.5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
               />
             </div>
           </div>
 
           {/* Blogs List */}
-          <div className="flex flex-col gap-3">
+          <div className="space-y-3">
             {filteredBlogs.length === 0 ? (
-              <div className="py-16 text-center border border-dashed border-[var(--color-border)] rounded-lg">
+              <div className="py-16 text-center border border-dashed border-[var(--color-border)] rounded-lg bg-[var(--color-surface)]">
                 <BookOpen size={28} className="mx-auto text-[var(--color-text-muted)] mb-3 opacity-40" />
-                <p className="text-sm font-bold text-[var(--color-text-primary)]">No dispatches published yet</p>
+                <p className="text-sm font-bold text-[var(--color-text-primary)]">No articles or dispatches published yet</p>
                 <p className="text-xs text-[var(--color-text-secondary)] mt-1 max-w-sm mx-auto">
-                  Click the button below to add your first post or thread from @Usmaangani252.
+                  Post a normal long-form article on the website or embed a live thread from X.
                 </p>
                 <button
                   onClick={() => handleOpenBlogEditor()}
-                  className="mt-4 px-4 py-2 rounded bg-[var(--color-amber)] text-black font-bold text-xs inline-flex items-center gap-1.5 cursor-pointer"
+                  className="mt-4 px-4 py-2 rounded bg-[var(--color-amber)] text-black font-bold text-xs inline-flex items-center gap-1.5 cursor-pointer font-mono"
                 >
                   <Plus size={14} />
                   <span>Write First Dispatch</span>
                 </button>
               </div>
             ) : (
-              filteredBlogs.map((blog, idx) => (
-                <div
-                  key={blog.id || idx}
-                  className="panel p-4 md:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:border-[var(--color-border-bright)]"
-                  style={{
-                    background: "var(--color-surface)",
-                    border: "1px solid var(--color-border)",
-                    borderLeft: blog.isPinned ? "4px solid var(--color-amber)" : "4px solid var(--color-cyan)",
-                  }}
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                      <span className="px-2 py-0.5 rounded text-[9px] uppercase font-bold border border-[var(--color-border)] bg-[rgba(255,255,255,0.04)] text-[var(--color-text-secondary)]">
-                        {blog.category}
-                      </span>
-                      {blog.isPinned && (
-                        <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-[rgba(255,94,58,0.12)] text-[var(--color-amber)] border border-[rgba(255,94,58,0.3)] flex items-center gap-1">
-                          <Pin size={10} className="fill-current" />
-                          PINNED
+              filteredBlogs.map((blog, idx) => {
+                const isArticle = blog.type === "article" || Boolean(blog.body);
+                return (
+                  <div
+                    key={blog.id || idx}
+                    className="p-4 md:p-5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:border-[var(--color-border-bright)] shadow-sm"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1.5 text-xs font-mono">
+                        <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold border border-[var(--color-border)] bg-[var(--color-elevated)] text-[var(--color-text-secondary)]">
+                          {blog.category}
                         </span>
-                      )}
-                      <span className="text-[11px] text-[var(--color-text-muted)]">
-                        {blog.publishedAt} · {blog.readTime}
-                      </span>
-                    </div>
-
-                    <h3 className="text-base font-bold text-[var(--color-text-primary)] leading-snug">
-                      {blog.title}
-                    </h3>
-
-                    <p className="text-xs text-[var(--color-text-secondary)] mt-1 line-clamp-2">
-                      {blog.summary}
-                    </p>
-
-                    {blog.tags && blog.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mt-2.5">
-                        {blog.tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="text-[10px] text-[var(--color-text-muted)] font-mono"
-                          >
-                            {tag}
+                        {isArticle ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] text-[var(--color-cyan)] font-semibold">
+                            <FileText size={11} />
+                            Article
                           </span>
-                        ))}
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[10px] text-[var(--color-text-muted)]">
+                            <XIcon size={11} />
+                            X Post
+                          </span>
+                        )}
+                        {blog.isPinned && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[rgba(255,94,58,0.1)] text-[var(--color-amber)]">
+                            ★ Pinned
+                          </span>
+                        )}
+                        <span className="text-[11px] text-[var(--color-text-muted)]">
+                          {blog.publishedAt} · {blog.readTime}
+                        </span>
                       </div>
-                    )}
-                  </div>
 
-                  <div className="flex items-center gap-2 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-[var(--color-border)]">
-                    <div className="flex flex-col gap-0.5 mr-2">
-                      <button
-                        onClick={() => handleReorderBlog(idx, "up")}
-                        disabled={idx === 0}
-                        className="p-1 rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] disabled:opacity-20 cursor-pointer"
-                        title="Move up"
-                      >
-                        <ArrowUp size={12} />
-                      </button>
-                      <button
-                        onClick={() => handleReorderBlog(idx, "down")}
-                        disabled={idx === blogs.length - 1}
-                        className="p-1 rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] disabled:opacity-20 cursor-pointer"
-                        title="Move down"
-                      >
-                        <ArrowDown size={12} />
-                      </button>
+                      <h3 className="text-base font-bold text-[var(--color-text-primary)] leading-snug">
+                        {blog.title}
+                      </h3>
+
+                      <p className="text-xs text-[var(--color-text-secondary)] mt-1 line-clamp-2">
+                        {blog.summary}
+                      </p>
+
+                      {blog.tags && blog.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-2.5 font-mono text-[10px]">
+                          {blog.tags.map((tag) => (
+                            <span key={tag} className="text-[var(--color-text-muted)]">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
-                    {blog.url && (
-                      <a
-                        href={blog.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 rounded border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-amber)] hover:border-[var(--color-amber)] transition-colors"
-                        title="View thread on X"
+                    <div className="flex items-center gap-2 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-[var(--color-border)] font-mono text-xs">
+                      <div className="flex flex-col gap-0.5 mr-1">
+                        <button
+                          onClick={() => handleReorderBlog(idx, "up")}
+                          disabled={idx === 0}
+                          className="p-1 rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] disabled:opacity-20 cursor-pointer"
+                          title="Move up"
+                        >
+                          <ArrowUp size={12} />
+                        </button>
+                        <button
+                          onClick={() => handleReorderBlog(idx, "down")}
+                          disabled={idx === blogs.length - 1}
+                          className="p-1 rounded text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] disabled:opacity-20 cursor-pointer"
+                          title="Move down"
+                        >
+                          <ArrowDown size={12} />
+                        </button>
+                      </div>
+
+                      <button
+                        onClick={() => setPreviewingBlog(blog)}
+                        className="px-2.5 py-1.5 rounded border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-cyan)] hover:text-[var(--color-cyan)] flex items-center gap-1 transition-colors cursor-pointer"
+                        title="Instant preview"
                       >
-                        <ExternalLink size={14} />
-                      </a>
-                    )}
+                        <Eye size={13} />
+                        <span>Preview</span>
+                      </button>
 
-                    <button
-                      onClick={() => setPreviewingBlog(blog)}
-                      className="px-2.5 py-1.5 rounded border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-cyan)] hover:text-[var(--color-cyan)] text-xs flex items-center gap-1 transition-colors cursor-pointer"
-                      title="Instant preview"
-                    >
-                      <Eye size={13} />
-                      <span>PREVIEW</span>
-                    </button>
+                      {isArticle && (
+                        <Link
+                          href={`/blogs/${blog.slug || blog.id}`}
+                          target="_blank"
+                          className="p-2 rounded border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+                          title="Open reader page"
+                        >
+                          <ExternalLink size={13} />
+                        </Link>
+                      )}
 
-                    <button
-                      onClick={() => handleOpenBlogEditor(blog)}
-                      className="px-3 py-1.5 rounded border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-amber)] hover:text-[var(--color-amber)] text-xs flex items-center gap-1 transition-colors cursor-pointer"
-                    >
-                      <Edit3 size={13} />
-                      <span>EDIT</span>
-                    </button>
+                      <button
+                        onClick={() => handleOpenBlogEditor(blog)}
+                        className="px-3 py-1.5 rounded border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-amber)] hover:text-[var(--color-amber)] flex items-center gap-1 transition-colors cursor-pointer"
+                      >
+                        <Edit3 size={13} />
+                        <span>Edit</span>
+                      </button>
 
-                    <button
-                      onClick={() => handleDeleteBlog(blog.id, blog.title)}
-                      className="p-2 rounded border border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-error)] hover:text-[var(--color-error)] transition-colors cursor-pointer"
-                      title="Delete dispatch"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                      <button
+                        onClick={() => handleDeleteBlog(blog.id, blog.title)}
+                        className="p-2 rounded border border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-error)] hover:text-[var(--color-error)] transition-colors cursor-pointer"
+                        title="Delete dispatch"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
-        </>
+        </div>
       )}
 
       {/* ─────────────────────────────────────────────────────
-          PROJECT EDITOR MODAL
+          PROJECT CREATOR / EDITOR MODAL
           ───────────────────────────────────────────────────── */}
       {isEditingProject && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-          <div
-            className="panel max-w-4xl w-full my-6 p-6 md:p-8 relative max-h-[92vh] overflow-y-auto"
-            style={{
-              background: "var(--color-surface)",
-              border: "1px solid var(--color-border-bright)",
-              boxShadow: "0 16px 64px rgba(0,0,0,0.95), 0 0 32px rgba(0,212,255,0.1)",
-            }}
-          >
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="max-w-3xl w-full my-6 p-6 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl max-h-[92vh] overflow-y-auto font-mono text-xs">
             <div className="flex items-center justify-between pb-4 border-b border-[var(--color-border)]">
-              <div className="flex items-center gap-2.5">
-                <div className="p-1.5 rounded bg-[rgba(255,94,58,0.15)] text-[var(--color-amber)]">
-                  <Sparkles size={16} />
-                </div>
-                <div>
-                  <h2 className="text-sm md:text-base font-bold text-[var(--color-text-primary)] tracking-wider">
-                    {currentProject.id ? `EDIT // ${currentProject.name}` : "CREATE NEW PROJECT"}
-                  </h2>
-                  <p className="text-[10px] text-[var(--color-text-muted)]">
-                    Configure details, banner image, and visibility
-                  </p>
-                </div>
+              <div>
+                <h2 className="text-base font-bold text-[var(--color-text-primary)]">
+                  {currentProject.id ? `Edit Project: ${currentProject.name}` : "Create New Project"}
+                </h2>
+                <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
+                  Configure project showcase card and repositories
+                </p>
               </div>
               <button
                 onClick={() => setIsEditingProject(false)}
-                className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] text-sm px-2 py-1 cursor-pointer"
+                className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] px-2 py-1 cursor-pointer"
               >
-                ✕ CANCEL
+                ✕ Cancel
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-              <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">
+              <div className="flex flex-col gap-3.5">
                 <div>
-                  <label className="block text-[10px] text-[var(--color-text-secondary)] mb-1 font-bold">
-                    PROJECT NAME *
+                  <label className="block text-[11px] text-[var(--color-text-secondary)] font-semibold mb-1">
+                    Project Name *
                   </label>
                   <input
                     type="text"
                     value={currentProject.name}
                     onChange={(e) => setCurrentProject({ ...currentProject, name: e.target.value })}
                     placeholder="e.g. THEUG HUB"
-                    className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-cyan)]"
+                    className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] text-[var(--color-text-secondary)] mb-1 font-bold">
-                    TAGLINE
+                  <label className="block text-[11px] text-[var(--color-text-secondary)] font-semibold mb-1">
+                    Tagline
                   </label>
                   <input
                     type="text"
                     value={currentProject.tagline}
                     onChange={(e) => setCurrentProject({ ...currentProject, tagline: e.target.value })}
                     placeholder="e.g. Decentralized identity & community hub"
-                    className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-cyan)]"
+                    className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] text-[var(--color-text-secondary)] mb-1 font-bold">
-                    DESCRIPTION
+                  <label className="block text-[11px] text-[var(--color-text-secondary)] font-semibold mb-1">
+                    Category
                   </label>
-                  <textarea
-                    rows={3}
-                    value={currentProject.description}
-                    onChange={(e) => setCurrentProject({ ...currentProject, description: e.target.value })}
-                    placeholder="Details about architecture, purpose, and problems solved..."
-                    className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-cyan)]"
-                  />
+                  <select
+                    value={currentProject.category}
+                    onChange={(e) => setCurrentProject({ ...currentProject, category: e.target.value })}
+                    className="w-full px-2.5 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
+                  >
+                    {PRESET_CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] text-[var(--color-text-secondary)] mb-1 font-bold">
-                      CATEGORY
-                    </label>
-                    <select
-                      value={currentProject.category}
-                      onChange={(e) => setCurrentProject({ ...currentProject, category: e.target.value })}
-                      className="w-full px-2.5 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-cyan)]"
-                    >
-                      {PRESET_CATEGORIES.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] text-[var(--color-text-secondary)] mb-1 font-bold">
-                      STATUS
+                    <label className="block text-[11px] text-[var(--color-text-secondary)] font-semibold mb-1">
+                      Status
                     </label>
                     <select
                       value={currentProject.status}
                       onChange={(e) =>
                         setCurrentProject({ ...currentProject, status: e.target.value as ProjectStatus })
                       }
-                      className="w-full px-2.5 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-cyan)]"
+                      className="w-full px-2.5 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
                     >
-                      <option value="live">LIVE [ ● ACTIVE ]</option>
-                      <option value="wip">WIP [ ◑ IN PROGRESS ]</option>
-                      <option value="archived">ARCHIVED [ ○ OFF ]</option>
+                      <option value="live">Live (Active)</option>
+                      <option value="wip">In Progress</option>
+                      <option value="archived">Archived</option>
                     </select>
                   </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] text-[var(--color-text-secondary)] mb-1 font-bold">
-                      DEPLOY TARGET
-                    </label>
-                    <input
-                      type="text"
-                      value={currentProject.deployTarget || ""}
-                      onChange={(e) => setCurrentProject({ ...currentProject, deployTarget: e.target.value })}
-                      placeholder="e.g. VERCEL, VPS, BASE"
-                      className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-cyan)]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] text-[var(--color-text-secondary)] mb-1 font-bold">
-                      YEAR
+                    <label className="block text-[11px] text-[var(--color-text-secondary)] font-semibold mb-1">
+                      Year
                     </label>
                     <input
                       type="text"
                       value={currentProject.year}
                       onChange={(e) => setCurrentProject({ ...currentProject, year: e.target.value })}
-                      className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-cyan)]"
+                      className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] text-[var(--color-text-secondary)] mb-1 font-bold">
-                    LIVE URL
+                  <label className="block text-[11px] text-[var(--color-text-secondary)] font-semibold mb-1">
+                    Live URL
                   </label>
                   <input
                     type="url"
                     value={currentProject.liveUrl || ""}
                     onChange={(e) => setCurrentProject({ ...currentProject, liveUrl: e.target.value })}
-                    placeholder="https://yourproject.com"
-                    className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-cyan)]"
+                    placeholder="https://..."
+                    className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] text-[var(--color-text-secondary)] mb-1 font-bold">
-                    GITHUB REPOSITORY URL
+                  <label className="block text-[11px] text-[var(--color-text-secondary)] font-semibold mb-1">
+                    GitHub URL
                   </label>
                   <input
                     type="url"
                     value={currentProject.githubUrl || ""}
                     onChange={(e) => setCurrentProject({ ...currentProject, githubUrl: e.target.value })}
                     placeholder="https://github.com/TheUGultimatum/..."
-                    className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-cyan)]"
+                    className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
                   />
                 </div>
               </div>
 
               {/* Right Column */}
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-3.5">
                 <div>
-                  <label className="block text-[10px] text-[var(--color-text-secondary)] mb-1 font-bold">
-                    PROJECT BANNER / SCREENSHOT
+                  <label className="block text-[11px] text-[var(--color-text-secondary)] font-semibold mb-1">
+                    Banner Screenshot
                   </label>
                   <input
                     type="file"
@@ -1426,12 +1272,12 @@ export default function AdminPage() {
 
                   <div
                     onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-all border-[var(--color-border)] hover:border-[var(--color-amber)]"
+                    className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-all border-[var(--color-border)] hover:border-[var(--color-amber)] bg-[var(--color-elevated)]"
                   >
                     {isUploadingImage ? (
-                      <div className="flex flex-col items-center justify-center gap-2 py-2">
-                        <RefreshCw size={20} className="text-[var(--color-cyan)] animate-spin" />
-                        <span className="text-[11px] text-[var(--color-cyan)]">UPLOADING IMAGE...</span>
+                      <div className="flex items-center justify-center gap-2 py-2">
+                        <RefreshCw size={16} className="animate-spin text-[var(--color-amber)]" />
+                        <span>Uploading image...</span>
                       </div>
                     ) : currentProject.bannerUrl ? (
                       <div className="flex items-center gap-3">
@@ -1444,28 +1290,22 @@ export default function AdminPage() {
                           />
                         </div>
                         <div className="text-left flex-1 min-w-0">
-                          <div className="text-[11px] text-[var(--color-online)] font-bold truncate">
-                            ✓ Image Active
-                          </div>
-                          <div className="text-[9px] text-[var(--color-text-secondary)] hover:underline">
-                            Click to replace image
-                          </div>
+                          <div className="text-xs font-bold text-[var(--color-online)]">✓ Image Attached</div>
+                          <div className="text-[10px] text-[var(--color-text-muted)] truncate">Click to replace</div>
                         </div>
                       </div>
                     ) : (
-                      <div className="flex flex-col items-center justify-center gap-1.5 py-2">
-                        <Upload size={16} className="text-[var(--color-text-muted)]" />
-                        <span className="text-[11px] text-[var(--color-text-primary)] font-bold">
-                          Upload banner screenshot
-                        </span>
+                      <div className="py-2 flex flex-col items-center gap-1 text-[var(--color-text-muted)]">
+                        <Upload size={16} />
+                        <span>Click to upload banner image</span>
                       </div>
                     )}
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] text-[var(--color-text-secondary)] mb-1 font-bold">
-                    TECH STACK MODULES
+                  <label className="block text-[11px] text-[var(--color-text-secondary)] font-semibold mb-1">
+                    Tech Stack (Press Enter)
                   </label>
                   <div className="flex gap-2">
                     <input
@@ -1484,8 +1324,8 @@ export default function AdminPage() {
                           }
                         }
                       }}
-                      placeholder="e.g. Next.js, Rust (Press Enter)"
-                      className="flex-1 px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-cyan)]"
+                      placeholder="e.g. Next.js, Rust"
+                      className="flex-1 px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)]"
                     />
                     <button
                       type="button"
@@ -1498,16 +1338,16 @@ export default function AdminPage() {
                           setStackInput("");
                         }
                       }}
-                      className="px-3 py-2 rounded bg-[var(--color-elevated)] border border-[var(--color-border)] hover:border-[var(--color-cyan)] text-xs text-[var(--color-cyan)] cursor-pointer"
+                      className="px-3 py-2 rounded bg-[var(--color-elevated)] border border-[var(--color-border)] text-xs text-[var(--color-text-primary)] cursor-pointer"
                     >
-                      ADD
+                      Add
                     </button>
                   </div>
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {currentProject.stack.map((tag) => (
                       <span
                         key={tag}
-                        className="px-2 py-0.5 rounded text-[10px] bg-[var(--color-void)] border border-[var(--color-border)] text-[var(--color-text-secondary)] flex items-center gap-1"
+                        className="px-2 py-0.5 rounded text-[10px] bg-[var(--color-elevated)] text-[var(--color-text-secondary)] flex items-center gap-1"
                       >
                         {tag}
                         <button
@@ -1518,7 +1358,7 @@ export default function AdminPage() {
                               stack: prev.stack.filter((s) => s !== tag),
                             }))
                           }
-                          className="text-[var(--color-text-muted)] hover:text-[var(--color-error)] ml-1"
+                          className="hover:text-[var(--color-error)] ml-1"
                         >
                           ✕
                         </button>
@@ -1528,41 +1368,19 @@ export default function AdminPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] text-[var(--color-text-secondary)] mb-1 font-bold">
-                    ACCENT COLOR
+                  <label className="block text-[11px] text-[var(--color-text-secondary)] font-semibold mb-1">
+                    Description
                   </label>
-                  <div className="flex flex-wrap gap-2">
-                    {PRESET_COLORS.map((col) => {
-                      const isSelected = currentProject.accentRgb === col.rgb;
-                      return (
-                        <button
-                          key={col.label}
-                          type="button"
-                          onClick={() =>
-                            setCurrentProject({
-                              ...currentProject,
-                              accentColor: col.color,
-                              accentRgb: col.rgb,
-                            })
-                          }
-                          className={`px-2.5 py-1.5 rounded text-[10px] flex items-center gap-1.5 border transition-all cursor-pointer ${
-                            isSelected
-                              ? "border-[var(--color-text-primary)] bg-[var(--color-elevated)] font-bold shadow-[0_0_8px_rgba(255,255,255,0.1)]"
-                              : "border-[var(--color-border)] hover:border-[var(--color-border-bright)]"
-                          }`}
-                        >
-                          <span
-                            className="w-2.5 h-2.5 rounded-full"
-                            style={{ background: `rgb(${col.rgb})` }}
-                          />
-                          <span>{col.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <textarea
+                    rows={4}
+                    value={currentProject.description}
+                    onChange={(e) => setCurrentProject({ ...currentProject, description: e.target.value })}
+                    placeholder="Short architectural overview..."
+                    className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
+                  />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 p-3 rounded bg-[var(--color-void)] border border-[var(--color-border)]">
+                <div className="grid grid-cols-2 gap-3 p-3 rounded bg-[var(--color-elevated)] border border-[var(--color-border)]">
                   <label className="flex items-center gap-2 cursor-pointer select-none">
                     <input
                       type="checkbox"
@@ -1570,7 +1388,7 @@ export default function AdminPage() {
                       onChange={(e) => setCurrentProject({ ...currentProject, featured: e.target.checked })}
                       className="accent-[var(--color-amber)]"
                     />
-                    <span className="text-xs text-[var(--color-text-primary)]">★ Spotlight / Featured</span>
+                    <span className="text-xs">★ Featured / Spotlight</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer select-none">
                     <input
@@ -1579,27 +1397,27 @@ export default function AdminPage() {
                       onChange={(e) => setCurrentProject({ ...currentProject, isPrivate: e.target.checked })}
                       className="accent-[var(--color-amber)]"
                     />
-                    <span className="text-xs text-[var(--color-text-primary)]">Private Repository</span>
+                    <span className="text-xs">Private Repo</span>
                   </label>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-[var(--color-border)]">
+            <div className="flex items-center justify-end gap-3 pt-5 mt-6 border-t border-[var(--color-border)]">
               <button
                 type="button"
                 onClick={() => setIsEditingProject(false)}
-                className="px-4 py-2.5 rounded border border-[var(--color-border)] text-xs text-[var(--color-text-muted)] hover:text-white"
+                className="px-4 py-2 rounded border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)]"
               >
-                CANCEL
+                Cancel
               </button>
               <button
                 type="button"
                 onClick={handleSaveProject}
-                className="px-6 py-2.5 rounded bg-[var(--color-amber)] text-black font-bold text-xs tracking-wider flex items-center gap-2 hover:brightness-110 active:scale-95 transition-all shadow-[0_0_16px_rgba(255,94,58,0.3)]"
+                className="px-6 py-2 rounded bg-[var(--color-amber)] text-black font-bold text-xs tracking-wider flex items-center gap-1.5 hover:opacity-90 transition-opacity"
               >
-                <Save size={14} />
-                <span>SAVE & PUBLISH PROJECT</span>
+                <Save size={13} />
+                <span>Save Project</span>
               </button>
             </div>
           </div>
@@ -1607,69 +1425,87 @@ export default function AdminPage() {
       )}
 
       {/* ─────────────────────────────────────────────────────
-          BLOG / DISPATCH EDITOR MODAL
+          BLOG / ARTICLE CREATOR MODAL
           ───────────────────────────────────────────────────── */}
       {isEditingBlog && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-          <div
-            className="panel max-w-4xl w-full my-6 p-6 md:p-8 relative max-h-[92vh] overflow-y-auto"
-            style={{
-              background: "var(--color-surface)",
-              border: "1px solid var(--color-border-bright)",
-              boxShadow: "0 16px 64px rgba(0,0,0,0.95), 0 0 32px rgba(255,94,58,0.15)",
-            }}
-          >
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="max-w-4xl w-full my-6 p-6 md:p-8 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl max-h-[92vh] overflow-y-auto font-mono text-xs">
             <div className="flex items-center justify-between pb-4 border-b border-[var(--color-border)]">
-              <div className="flex items-center gap-2.5">
-                <div className="p-1.5 rounded bg-[rgba(255,94,58,0.15)] text-[var(--color-amber)]">
-                  <BookOpen size={16} />
-                </div>
-                <div>
-                  <h2 className="text-sm md:text-base font-bold text-[var(--color-text-primary)] tracking-wider">
-                    {currentBlog.id ? `EDIT // ${currentBlog.title}` : "WRITE NEW DISPATCH"}
-                  </h2>
-                  <p className="text-[10px] text-[var(--color-text-muted)]">
-                    Publish an authentic technical note or thread from @Usmaangani252
-                  </p>
-                </div>
+              <div>
+                <h2 className="text-base font-bold text-[var(--color-text-primary)]">
+                  {currentBlog.id ? `Edit: ${currentBlog.title}` : "Write New Dispatch or Article"}
+                </h2>
+                <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5">
+                  Publish a full article directly on the website, or embed an X thread preview.
+                </p>
               </div>
               <button
                 onClick={() => setIsEditingBlog(false)}
-                className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] text-sm px-2 py-1 cursor-pointer"
+                className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] px-2 py-1 cursor-pointer"
               >
-                ✕ CANCEL
+                ✕ Cancel
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            {/* Type Switcher: Article vs X Post */}
+            <div className="flex items-center gap-2 mt-4 p-1.5 rounded-lg bg-[var(--color-elevated)] border border-[var(--color-border)] w-fit">
+              <button
+                type="button"
+                onClick={() => setCurrentBlog({ ...currentBlog, type: "article" })}
+                className={`px-3 py-1.5 rounded text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                  currentBlog.type === "article" || (!currentBlog.type && currentBlog.body)
+                    ? "bg-[var(--color-surface)] text-[var(--color-text-primary)] shadow-sm font-bold"
+                    : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+                }`}
+              >
+                <FileText size={13} />
+                <span>Full Website Article</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setCurrentBlog({ ...currentBlog, type: "x-post" })}
+                className={`px-3 py-1.5 rounded text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                  currentBlog.type === "x-post" && !currentBlog.body
+                    ? "bg-[var(--color-surface)] text-[var(--color-text-primary)] shadow-sm font-bold"
+                    : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+                }`}
+              >
+                <XIcon size={13} />
+                <span>X Post / Thread Embed</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-5">
               {/* Left Column: Form Fields */}
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-3.5">
                 <div>
-                  <label className="block text-[10px] text-[var(--color-text-secondary)] mb-1 font-bold">
-                    DISPATCH TITLE *
+                  <label className="block text-[11px] text-[var(--color-text-secondary)] font-semibold mb-1">
+                    Title *
                   </label>
                   <input
                     type="text"
                     value={currentBlog.title}
                     onChange={(e) => setCurrentBlog({ ...currentBlog, title: e.target.value })}
-                    placeholder="e.g. The Architecture Behind My Web3 Convictions"
+                    placeholder="e.g. Architectural Breakdown of On-Chain Convictions"
                     className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
                   />
                 </div>
 
+                {/* X URL with Auto Preview Button */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-[10px] text-[var(--color-text-secondary)] font-bold">
-                      LINK TO POST ON X OR ARTICLE *
+                    <label className="text-[11px] text-[var(--color-text-secondary)] font-semibold">
+                      Link to X Thread / Post {currentBlog.type === "x-post" ? "*" : "(Optional)"}
                     </label>
-                    <span className="text-[9px] text-[var(--color-amber)]">
-                      Paste URL & click Auto Preview
+                    <span className="text-[10px] text-[var(--color-amber)]">
+                      Auto-fill from X URL
                     </span>
                   </div>
                   <div className="flex gap-2">
                     <input
                       type="url"
-                      value={currentBlog.url}
+                      value={currentBlog.url || ""}
                       onChange={(e) => setCurrentBlog({ ...currentBlog, url: e.target.value })}
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
@@ -1677,25 +1513,25 @@ export default function AdminPage() {
                           handleAutoFetchLink();
                         }
                       }}
-                      placeholder="https://x.com/Usmaangani252/status/... or article URL"
+                      placeholder="https://x.com/Usmaangani252/status/..."
                       className="flex-1 px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
                     />
                     <button
                       type="button"
                       onClick={() => handleAutoFetchLink()}
                       disabled={isFetchingPreview}
-                      className="px-3.5 py-2 rounded bg-[rgba(255,94,58,0.15)] border border-[var(--color-amber)] text-[var(--color-amber)] hover:bg-[var(--color-amber)] hover:text-black font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap"
-                      title="Fetch title, summary, hashtags, and preview from the URL"
+                      className="px-3 py-2 rounded bg-[rgba(255,94,58,0.12)] border border-[var(--color-amber)] text-[var(--color-amber)] hover:bg-[var(--color-amber)] hover:text-black font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap disabled:opacity-50"
+                      title="Fetch title, summary, hashtags, and content from the link"
                     >
                       {isFetchingPreview ? (
                         <>
                           <RefreshCw size={13} className="animate-spin" />
-                          <span>FETCHING...</span>
+                          <span>Fetching...</span>
                         </>
                       ) : (
                         <>
                           <Sparkles size={13} />
-                          <span>AUTO PREVIEW</span>
+                          <span>⚡ Auto-Fill</span>
                         </>
                       )}
                     </button>
@@ -1704,8 +1540,8 @@ export default function AdminPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[10px] text-[var(--color-text-secondary)] mb-1 font-bold">
-                      CATEGORY
+                    <label className="block text-[11px] text-[var(--color-text-secondary)] font-semibold mb-1">
+                      Category
                     </label>
                     <select
                       value={currentBlog.category}
@@ -1726,129 +1562,83 @@ export default function AdminPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] text-[var(--color-text-secondary)] mb-1 font-bold">
-                      READ TIME / FORMAT
+                    <label className="block text-[11px] text-[var(--color-text-secondary)] font-semibold mb-1">
+                      Read Time / Format
                     </label>
                     <input
                       type="text"
                       value={currentBlog.readTime}
                       onChange={(e) => setCurrentBlog({ ...currentBlog, readTime: e.target.value })}
-                      placeholder="e.g. 3 min read · Thread"
+                      placeholder="e.g. 4 min read"
                       className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] text-[var(--color-text-secondary)] mb-1 font-bold">
-                    PUBLICATION DATE
-                  </label>
-                  <input
-                    type="text"
-                    value={currentBlog.publishedAt}
-                    onChange={(e) => setCurrentBlog({ ...currentBlog, publishedAt: e.target.value })}
-                    placeholder="e.g. Nov 2026"
-                    className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] text-[var(--color-text-secondary)] mb-1 font-bold">
-                    EXECUTIVE SUMMARY (1-2 SENTENCES)
+                  <label className="block text-[11px] text-[var(--color-text-secondary)] font-semibold mb-1">
+                    Executive Summary / Excerpt (Lead sentence)
                   </label>
                   <textarea
-                    rows={3}
+                    rows={2}
                     value={currentBlog.summary}
                     onChange={(e) => setCurrentBlog({ ...currentBlog, summary: e.target.value })}
-                    placeholder="Brief hook or thesis statement summarizing the dispatch..."
+                    placeholder="Brief hook or thesis statement summarizing the article..."
                     className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
                   />
                 </div>
+
+                {/* Full Article Body for Normal Articles */}
+                {(currentBlog.type === "article" || currentBlog.body !== undefined) && (
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[11px] text-[var(--color-text-secondary)] font-semibold">
+                        Full Article Body (Markdown supported)
+                      </label>
+                      <span className="text-[10px] text-[var(--color-text-muted)]">
+                        Use ## for headings, separate with empty lines
+                      </span>
+                    </div>
+                    <textarea
+                      rows={6}
+                      value={currentBlog.body || ""}
+                      onChange={(e) => setCurrentBlog({ ...currentBlog, body: e.target.value })}
+                      placeholder="Write your full article here directly...&#10;&#10;## Key Concept&#10;Explain in detail with code or examples...&#10;&#10;Conclusion..."
+                      className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)] font-mono leading-relaxed"
+                    />
+                  </div>
+                )}
               </div>
 
-              {/* Right Column: Content & Live Preview */}
-              <div className="flex flex-col gap-4">
+              {/* Right Column: Tags, Highlights & Live Preview */}
+              <div className="flex flex-col gap-3.5">
                 <div>
-                  <label className="block text-[10px] text-[var(--color-text-secondary)] mb-1 font-bold">
-                    CORE TAKEAWAYS / BULLETS (ONE PER LINE)
+                  <label className="block text-[11px] text-[var(--color-text-secondary)] font-semibold mb-1">
+                    Core Highlights / Takeaways (One per line)
                   </label>
                   <textarea
-                    rows={3}
+                    rows={2}
                     value={highlightsInput}
                     onChange={(e) => setHighlightsInput(e.target.value)}
-                    placeholder="Key takeaway 1&#10;Key takeaway 2&#10;Key takeaway 3"
+                    placeholder="Takeaway 1&#10;Takeaway 2&#10;Takeaway 3"
                     className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] text-[var(--color-text-secondary)] mb-1 font-bold">
-                    TAGS (COMMA SEPARATED)
+                  <label className="block text-[11px] text-[var(--color-text-secondary)] font-semibold mb-1">
+                    Tags (Comma separated)
                   </label>
                   <input
                     type="text"
                     value={tagsInput}
                     onChange={(e) => setTagsInput(e.target.value)}
-                    placeholder="#Web3, #Solidity, #Base"
+                    placeholder="#Web3, #Base, #Solidity"
                     className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
                   />
                 </div>
 
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <label className="block text-[9px] text-[var(--color-text-muted)] mb-1">
-                      LIKES (OPTIONAL)
-                    </label>
-                    <input
-                      type="text"
-                      value={currentBlog.stats?.likes || ""}
-                      onChange={(e) =>
-                        setCurrentBlog({
-                          ...currentBlog,
-                          stats: { ...currentBlog.stats, likes: e.target.value },
-                        })
-                      }
-                      placeholder="e.g. 142"
-                      className="w-full px-2.5 py-1.5 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[9px] text-[var(--color-text-muted)] mb-1">
-                      REPOSTS
-                    </label>
-                    <input
-                      type="text"
-                      value={currentBlog.stats?.reposts || ""}
-                      onChange={(e) =>
-                        setCurrentBlog({
-                          ...currentBlog,
-                          stats: { ...currentBlog.stats, reposts: e.target.value },
-                        })
-                      }
-                      placeholder="e.g. 28"
-                      className="w-full px-2.5 py-1.5 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[9px] text-[var(--color-text-muted)] mb-1">
-                      VIEWS
-                    </label>
-                    <input
-                      type="text"
-                      value={currentBlog.stats?.views || ""}
-                      onChange={(e) =>
-                        setCurrentBlog({
-                          ...currentBlog,
-                          stats: { ...currentBlog.stats, views: e.target.value },
-                        })
-                      }
-                      placeholder="e.g. 4.8K"
-                      className="w-full px-2.5 py-1.5 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)]"
-                    />
-                  </div>
-                </div>
-
-                <div className="p-3 rounded bg-[var(--color-void)] border border-[var(--color-border)]">
+                <div className="flex items-center gap-4 p-3 rounded-lg bg-[var(--color-elevated)] border border-[var(--color-border)]">
                   <label className="flex items-center gap-2 cursor-pointer select-none">
                     <input
                       type="checkbox"
@@ -1856,34 +1646,31 @@ export default function AdminPage() {
                       onChange={(e) => setCurrentBlog({ ...currentBlog, isPinned: e.target.checked })}
                       className="accent-[var(--color-amber)]"
                     />
-                    <span className="text-xs text-[var(--color-text-primary)]">
-                      Pin to Top of Dispatches Archive
-                    </span>
+                    <span className="text-xs font-semibold">★ Pin to Top of Dispatches</span>
                   </label>
                 </div>
 
-                {/* Real-Time Live Preview Card inside Editor */}
-                <div className="p-3.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-void)]">
+                {/* Real-Time Live Preview Card */}
+                <div className="mt-1 p-3.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-elevated)]">
                   <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-[var(--color-border)]">
                     <span className="text-[10px] uppercase font-bold text-[var(--color-amber)] flex items-center gap-1.5">
                       <Eye size={12} />
-                      <span>LIVE DISPATCH PREVIEW</span>
+                      <span>Live Card Preview</span>
                     </span>
-                    <span className="text-[9px] text-[var(--color-text-muted)] font-mono">
-                      (Live look on /blogs)
+                    <span className="text-[10px] text-[var(--color-text-muted)]">
+                      {currentBlog.type === "article" || currentBlog.body ? "Article Mode" : "X Post Mode"}
                     </span>
                   </div>
 
-                  <article className="p-3.5 rounded border border-[var(--color-border)] bg-[var(--color-surface)]">
+                  <article className="p-3.5 rounded border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm">
                     <div className="flex items-center justify-between text-xs mb-1.5 font-mono">
                       <div className="flex items-center gap-1.5">
-                        <span className="px-2 py-0.5 rounded text-[9px] uppercase font-semibold border border-[var(--color-border)] text-[var(--color-text-secondary)]">
+                        <span className="px-1.5 py-0.5 rounded text-[9px] uppercase font-bold border border-[var(--color-border)] text-[var(--color-text-secondary)]">
                           {currentBlog.category || "Web3"}
                         </span>
                         {currentBlog.isPinned && (
-                          <span className="text-[9px] text-[var(--color-amber)] flex items-center gap-1">
-                            <Pin size={9} className="fill-current" />
-                            Pinned
+                          <span className="text-[9px] text-[var(--color-amber)] font-bold">
+                            ★ Featured
                           </span>
                         )}
                       </div>
@@ -1897,31 +1684,13 @@ export default function AdminPage() {
                     </h4>
 
                     <p className="text-xs text-[var(--color-text-secondary)] mb-2 line-clamp-2 leading-relaxed">
-                      {currentBlog.summary || "Summary or excerpt preview..."}
+                      {currentBlog.summary || "Summary preview will appear here..."}
                     </p>
 
-                    {highlightsInput && (
-                      <ul className="mb-2 space-y-1 border-l border-[var(--color-border)] pl-2">
-                        {highlightsInput
-                          .split("\n")
-                          .filter(Boolean)
-                          .slice(0, 2)
-                          .map((h, i) => (
-                            <li key={i} className="text-[10px] text-[var(--color-text-muted)] truncate">
-                              {h}
-                            </li>
-                          ))}
-                      </ul>
-                    )}
-
-                    <div className="pt-2 border-t border-[var(--color-border)] flex items-center justify-between mt-2">
-                      <div className="flex items-center gap-3 text-[10px] font-mono text-[var(--color-text-muted)]">
-                        {currentBlog.stats?.likes && <span>❤️ {currentBlog.stats.likes}</span>}
-                        {currentBlog.stats?.reposts && <span>🔁 {currentBlog.stats.reposts}</span>}
-                        {currentBlog.stats?.views && <span>👁️ {currentBlog.stats.views}</span>}
-                      </div>
-                      <span className="text-[10px] text-[var(--color-amber)] font-mono flex items-center gap-1">
-                        <span>Read on X</span>
+                    <div className="pt-2 border-t border-[var(--color-border)] flex items-center justify-between mt-2 font-mono text-[11px]">
+                      <span className="text-[var(--color-text-muted)]">@Usmaangani252</span>
+                      <span className="text-[var(--color-amber)] font-semibold flex items-center gap-1">
+                        <span>{currentBlog.type === "article" || currentBlog.body ? "Read Article" : "View on X"}</span>
                         <ArrowUpRight size={11} />
                       </span>
                     </div>
@@ -1930,21 +1699,21 @@ export default function AdminPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-[var(--color-border)]">
+            <div className="flex items-center justify-end gap-3 pt-5 mt-6 border-t border-[var(--color-border)]">
               <button
                 type="button"
                 onClick={() => setIsEditingBlog(false)}
-                className="px-4 py-2.5 rounded border border-[var(--color-border)] text-xs text-[var(--color-text-muted)] hover:text-white"
+                className="px-4 py-2 rounded border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)]"
               >
-                CANCEL
+                Cancel
               </button>
               <button
                 type="button"
                 onClick={handleSaveBlog}
-                className="px-6 py-2.5 rounded bg-[var(--color-amber)] text-black font-bold text-xs tracking-wider flex items-center gap-2 hover:brightness-110 active:scale-95 transition-all shadow-[0_0_16px_rgba(255,94,58,0.3)]"
+                className="px-6 py-2 rounded bg-[var(--color-amber)] text-black font-bold text-xs tracking-wider flex items-center gap-1.5 hover:opacity-90 transition-opacity"
               >
-                <Save size={14} />
-                <span>SAVE & PUBLISH DISPATCH</span>
+                <Save size={13} />
+                <span>Publish Dispatch</span>
               </button>
             </div>
           </div>
@@ -1952,61 +1721,43 @@ export default function AdminPage() {
       )}
 
       {/* ─────────────────────────────────────────────────────
-          QUICK DISPATCH PREVIEW MODAL
+          QUICK PREVIEW MODAL
           ───────────────────────────────────────────────────── */}
       {previewingBlog && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div
-            className="panel max-w-lg w-full p-6 relative"
-            style={{
-              background: "var(--color-surface)",
-              border: "1px solid var(--color-border-bright)",
-              boxShadow: "0 16px 64px rgba(0,0,0,0.95), 0 0 32px rgba(0,217,255,0.15)",
-            }}
-          >
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="max-w-md w-full p-6 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl font-mono text-xs">
             <div className="flex items-center justify-between pb-3 border-b border-[var(--color-border)] mb-4">
-              <div className="flex items-center gap-2">
-                <Eye size={16} className="text-[var(--color-cyan)]" />
-                <span className="font-bold text-xs uppercase tracking-wider text-[var(--color-text-primary)]">
-                  DISPATCH CARD LIVE PREVIEW
-                </span>
-              </div>
+              <span className="font-bold text-xs uppercase tracking-wider text-[var(--color-text-primary)]">
+                Live Card Preview
+              </span>
               <button
                 onClick={() => setPreviewingBlog(null)}
-                className="text-[var(--color-text-muted)] hover:text-white text-xs px-2 py-1 cursor-pointer"
+                className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] cursor-pointer"
               >
-                ✕ CLOSE
+                ✕ Close
               </button>
             </div>
 
-            <article className="p-5 rounded-lg border border-[var(--color-border)] bg-[var(--color-void)]">
-              <div className="flex items-center justify-between text-xs mb-2 font-mono">
-                <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded text-[10px] uppercase font-semibold border border-[var(--color-border)] text-[var(--color-text-secondary)]">
-                    {previewingBlog.category}
-                  </span>
-                  {previewingBlog.isPinned && (
-                    <span className="text-[10px] text-[var(--color-amber)] flex items-center gap-1 font-semibold">
-                      <Pin size={10} className="fill-current" />
-                      Pinned
-                    </span>
-                  )}
-                </div>
+            <article className="p-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-elevated)]">
+              <div className="flex items-center justify-between text-xs mb-2">
+                <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold border border-[var(--color-border)] text-[var(--color-text-secondary)]">
+                  {previewingBlog.category}
+                </span>
                 <span className="text-[11px] text-[var(--color-text-muted)]">
                   {previewingBlog.publishedAt} · {previewingBlog.readTime}
                 </span>
               </div>
 
-              <h3 className="font-bold text-base text-[var(--color-text-primary)] mb-2 leading-snug">
+              <h3 className="font-bold text-base text-[var(--color-text-primary)] mb-1 leading-snug">
                 {previewingBlog.title}
               </h3>
 
-              <p className="text-xs text-[var(--color-text-secondary)] mb-4 leading-relaxed">
+              <p className="text-xs text-[var(--color-text-secondary)] mb-3 leading-relaxed">
                 {previewingBlog.summary}
               </p>
 
               {previewingBlog.highlights && previewingBlog.highlights.length > 0 && (
-                <ul className="mb-4 space-y-1.5 border-l border-[var(--color-border)] pl-3">
+                <ul className="mb-3 space-y-1 border-l-2 border-[var(--color-border)] pl-2.5">
                   {previewingBlog.highlights.map((h, i) => (
                     <li key={i} className="text-xs text-[var(--color-text-muted)]">
                       {h}
@@ -2015,69 +1766,43 @@ export default function AdminPage() {
                 </ul>
               )}
 
-              {previewingBlog.tags && previewingBlog.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mb-4">
-                  {previewingBlog.tags.map((t, i) => (
-                    <span key={i} className="font-mono text-[10px] text-[var(--color-text-muted)]">
-                      {t}
-                    </span>
-                  ))}
-                </div>
-              )}
+              <div className="pt-3 border-t border-[var(--color-border)] flex items-center justify-between">
+                <button
+                  onClick={() => {
+                    const toEdit = previewingBlog;
+                    setPreviewingBlog(null);
+                    handleOpenBlogEditor(toEdit);
+                  }}
+                  className="px-3 py-1.5 rounded border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                >
+                  Edit
+                </button>
 
-              <div className="pt-3 border-t border-[var(--color-border)] flex items-center justify-between mt-auto">
-                <div className="flex items-center gap-3 text-xs font-mono text-[var(--color-text-muted)]">
-                  {previewingBlog.stats?.likes && <span>❤️ {previewingBlog.stats.likes}</span>}
-                  {previewingBlog.stats?.reposts && <span>🔁 {previewingBlog.stats.reposts}</span>}
-                  {previewingBlog.stats?.views && <span>👁️ {previewingBlog.stats.views}</span>}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      const toEdit = previewingBlog;
-                      setPreviewingBlog(null);
-                      handleOpenBlogEditor(toEdit);
-                    }}
-                    className="px-3 py-1.5 rounded border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] hover:text-white cursor-pointer"
+                {previewingBlog.type === "article" || previewingBlog.body ? (
+                  <Link
+                    href={`/blogs/${previewingBlog.slug || previewingBlog.id}`}
+                    target="_blank"
+                    className="px-3.5 py-1.5 rounded bg-[var(--color-amber)] text-black font-bold text-xs flex items-center gap-1"
                   >
-                    Edit
-                  </button>
+                    <span>Read Article</span>
+                    <ArrowUpRight size={12} />
+                  </Link>
+                ) : (
                   <a
-                    href={previewingBlog.url}
+                    href={previewingBlog.url || "https://x.com/Usmaangani252"}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-3.5 py-1.5 rounded bg-[var(--color-amber)] text-black font-bold text-xs flex items-center gap-1 hover:brightness-110"
+                    className="px-3.5 py-1.5 rounded bg-[var(--color-amber)] text-black font-bold text-xs flex items-center gap-1"
                   >
                     <span>View on X</span>
                     <ArrowUpRight size={12} />
                   </a>
-                </div>
+                )}
               </div>
             </article>
           </div>
         </div>
       )}
-
-      {/* ─────────────────────────────────────────────────────
-          FLOATING ACTION BUTTON
-          ───────────────────────────────────────────────────── */}
-      <div className="fixed bottom-6 right-6 z-40">
-        <button
-          onClick={() => {
-            if (activeTab === "projects") {
-              setCurrentProject(EMPTY_PROJECT);
-              setIsEditingProject(true);
-            } else {
-              handleOpenBlogEditor();
-            }
-          }}
-          className="px-5 py-3.5 rounded-full bg-gradient-to-r from-[var(--color-amber)] to-[var(--color-amber-bright)] text-black font-bold text-xs tracking-wider uppercase shadow-[0_0_24px_rgba(255,94,58,0.5)] flex items-center gap-2 hover:scale-105 active:scale-95 transition-all cursor-pointer"
-        >
-          <Plus size={18} strokeWidth={3} />
-          <span>{activeTab === "projects" ? "CREATE PROJECT" : "WRITE DISPATCH"}</span>
-        </button>
-      </div>
     </div>
   );
 }

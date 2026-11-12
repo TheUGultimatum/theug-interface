@@ -82,7 +82,15 @@ export async function POST(request: Request) {
         .replace(/(^-|-$)/g, "");
     }
 
-    if (!post.url) {
+    if (!post.slug) {
+      post.slug = post.id;
+    }
+
+    if (!post.type) {
+      post.type = post.body?.trim() ? "article" : "x-post";
+    }
+
+    if (!post.url && post.type === "x-post") {
       post.url = "https://x.com/Usmaangani252";
     }
 
