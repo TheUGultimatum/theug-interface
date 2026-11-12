@@ -34,6 +34,7 @@ import {
   Repeat2,
   ArrowUpRight,
   FileText,
+  Search,
 } from "lucide-react";
 
 function XIcon({ size = 12, className = "" }: { size?: number; className?: string }) {
@@ -115,7 +116,7 @@ function ArticleSplitPreview({
 }) {
   const paragraphs = blog.body ? blog.body.split("\n\n").filter(Boolean) : [];
   return (
-    <div className="p-6 md:p-8 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] max-h-[580px] overflow-y-auto space-y-5 shadow-inner">
+    <div className="p-6 md:p-8 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] h-[520px] overflow-y-auto space-y-5 shadow-inner">
       <div className="flex items-center justify-between text-xs font-mono text-[var(--color-text-muted)] pb-3 border-b border-[var(--color-border)]">
         <span className="px-2.5 py-1 rounded-md text-[10px] uppercase font-bold text-[var(--color-amber)] bg-[rgba(255,94,58,0.08)] border border-[var(--color-border)]">
           {blog.category || "Web3"}
@@ -855,9 +856,9 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* Clean Spacious Tab Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-5 border-b border-[var(--color-border)]">
-        <div className="flex items-center gap-3">
+      {/* Refined Navigation & Action Toolbar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-2.5 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] mb-8 shadow-sm">
+        <div className="flex items-center gap-2 p-1 rounded-xl bg-[var(--color-elevated)]">
           <button
             onClick={() => {
               setActiveTab("projects");
@@ -867,7 +868,7 @@ export default function AdminPage() {
             className={`px-5 py-2.5 rounded-xl text-xs md:text-sm font-bold tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
               activeTab === "projects"
                 ? "bg-[var(--color-amber)] text-black font-semibold shadow-md"
-                : "bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)]"
+                : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
             }`}
           >
             <FolderOpen size={16} />
@@ -883,7 +884,7 @@ export default function AdminPage() {
             className={`px-5 py-2.5 rounded-xl text-xs md:text-sm font-bold tracking-wider flex items-center gap-2.5 transition-all cursor-pointer ${
               activeTab === "blogs"
                 ? "bg-[var(--color-amber)] text-black font-semibold shadow-md"
-                : "bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)]"
+                : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
             }`}
           >
             <BookOpen size={16} />
@@ -891,15 +892,15 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {/* Action Button */}
-        <div>
+        {/* Action Trigger */}
+        <div className="px-1 pb-1 sm:p-0">
           {activeTab === "projects" ? (
             <button
               onClick={() => {
                 setCurrentProject(EMPTY_PROJECT);
                 setIsEditingProject(true);
               }}
-              className="px-5 py-2.5 rounded-xl bg-[var(--color-text-primary)] text-[var(--color-void)] font-bold text-xs md:text-sm flex items-center gap-2 hover:opacity-90 transition-opacity cursor-pointer font-mono shadow-sm"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[var(--color-text-primary)] text-[var(--color-void)] font-bold text-xs md:text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity cursor-pointer font-mono shadow-sm"
             >
               <Plus size={16} />
               <span>New Project</span>
@@ -907,7 +908,7 @@ export default function AdminPage() {
           ) : (
             <button
               onClick={() => handleOpenBlogEditor()}
-              className="px-5 py-2.5 rounded-xl bg-[var(--color-text-primary)] text-[var(--color-void)] font-bold text-xs md:text-sm flex items-center gap-2 hover:opacity-90 transition-opacity cursor-pointer font-mono shadow-sm"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[var(--color-text-primary)] text-[var(--color-void)] font-bold text-xs md:text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity cursor-pointer font-mono shadow-sm"
             >
               <Plus size={16} />
               <span>Write Article / Dispatch</span>
@@ -922,16 +923,16 @@ export default function AdminPage() {
       {activeTab === "projects" && (
         <div>
           {/* Search & Filter Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-5 border-b border-[var(--color-border)] font-mono text-xs md:text-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-[var(--color-border)] font-mono text-xs md:text-sm">
             <div className="flex flex-wrap gap-2">
               {["ALL", "LIVE", "FEATURED", "PRIVATE"].map((filter) => (
                 <button
                   key={filter}
                   onClick={() => setActiveFilter(filter)}
-                  className={`px-4 py-2 rounded-xl text-xs md:text-sm transition-colors cursor-pointer ${
+                  className={`px-4 py-2 rounded-xl text-xs md:text-sm transition-all cursor-pointer ${
                     activeFilter === filter
                       ? "bg-[var(--color-text-primary)] text-[var(--color-void)] font-bold shadow-sm"
-                      : "bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)]"
+                      : "bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)] hover:border-[var(--color-border-bright)]"
                   }`}
                 >
                   {filter}
@@ -940,12 +941,13 @@ export default function AdminPage() {
             </div>
 
             <div className="relative min-w-[280px]">
+              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] pointer-events-none" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search projects..."
-                className="w-full px-4 py-2.5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl text-xs md:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)] shadow-inner"
+                className="w-full pl-10 pr-4 py-2.5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl text-xs md:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)] shadow-inner transition-colors"
               />
             </div>
           </div>
@@ -1028,23 +1030,23 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2.5 shrink-0 pt-4 md:pt-0 border-t md:border-t-0 border-[var(--color-border)] font-mono text-xs">
-                    <div className="flex flex-col gap-1 mr-1">
+                  <div className="flex items-center gap-2 shrink-0 pt-4 md:pt-0 border-t md:border-t-0 border-[var(--color-border)] font-mono text-xs">
+                    <div className="inline-flex flex-col rounded-xl border border-[var(--color-border)] bg-[var(--color-elevated)] overflow-hidden shadow-sm">
                       <button
                         onClick={() => handleReorderProject(idx, "up")}
                         disabled={idx === 0}
-                        className="p-1.5 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-elevated)] disabled:opacity-20 cursor-pointer"
+                        className="p-1.5 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface)] disabled:opacity-20 cursor-pointer border-b border-[var(--color-border)] transition-colors"
                         title="Move up"
                       >
-                        <ArrowUp size={14} />
+                        <ArrowUp size={13} />
                       </button>
                       <button
                         onClick={() => handleReorderProject(idx, "down")}
                         disabled={idx === projects.length - 1}
-                        className="p-1.5 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-elevated)] disabled:opacity-20 cursor-pointer"
+                        className="p-1.5 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface)] disabled:opacity-20 cursor-pointer transition-colors"
                         title="Move down"
                       >
-                        <ArrowDown size={14} />
+                        <ArrowDown size={13} />
                       </button>
                     </div>
 
@@ -1053,7 +1055,7 @@ export default function AdminPage() {
                         href={project.liveUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-2.5 rounded-xl border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-elevated)] transition-colors"
+                        className="h-9 w-9 rounded-xl border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-elevated)] hover:border-[var(--color-border-bright)] transition-all flex items-center justify-center shadow-sm"
                         title="Open live app"
                       >
                         <ExternalLink size={15} />
@@ -1065,7 +1067,7 @@ export default function AdminPage() {
                         setCurrentProject(project);
                         setIsEditingProject(true);
                       }}
-                      className="px-3.5 py-2 rounded-xl border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-amber)] hover:text-[var(--color-amber)] flex items-center gap-1.5 transition-colors cursor-pointer"
+                      className="h-9 px-3.5 rounded-xl border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-amber)] hover:text-[var(--color-amber)] flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
                     >
                       <Edit3 size={14} />
                       <span>Edit</span>
@@ -1073,7 +1075,7 @@ export default function AdminPage() {
 
                     <button
                       onClick={() => handleDeleteProject(project.id, project.name)}
-                      className="p-2.5 rounded-xl border border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-error)] hover:text-[var(--color-error)] transition-colors cursor-pointer"
+                      className="h-9 w-9 rounded-xl border border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-error)] hover:text-[var(--color-error)] hover:bg-[rgba(255,51,51,0.06)] transition-all cursor-pointer flex items-center justify-center shadow-sm"
                       title="Delete project"
                     >
                       <Trash2 size={15} />
@@ -1092,16 +1094,16 @@ export default function AdminPage() {
       {activeTab === "blogs" && (
         <div>
           {/* Search & Filter Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-5 border-b border-[var(--color-border)] font-mono text-xs md:text-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-[var(--color-border)] font-mono text-xs md:text-sm">
             <div className="flex flex-wrap gap-2">
               {["ALL", "ARTICLES", "X_POSTS", ...BLOG_CATEGORIES].map((category) => (
                 <button
                   key={category}
                   onClick={() => setActiveFilter(category)}
-                  className={`px-4 py-2 rounded-xl text-xs md:text-sm transition-colors cursor-pointer ${
+                  className={`px-4 py-2 rounded-xl text-xs md:text-sm transition-all cursor-pointer ${
                     activeFilter === category
                       ? "bg-[var(--color-text-primary)] text-[var(--color-void)] font-bold shadow-sm"
-                      : "bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)]"
+                      : "bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)] hover:border-[var(--color-border-bright)]"
                   }`}
                 >
                   {category}
@@ -1110,12 +1112,13 @@ export default function AdminPage() {
             </div>
 
             <div className="relative min-w-[280px]">
+              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] pointer-events-none" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search articles or tags..."
-                className="w-full px-4 py-2.5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl text-xs md:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)] shadow-inner"
+                className="w-full pl-10 pr-4 py-2.5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl text-xs md:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)] shadow-inner transition-colors"
               />
             </div>
           </div>
@@ -1182,7 +1185,7 @@ export default function AdminPage() {
                       {blog.tags && blog.tags.length > 0 && (
                         <div className="flex flex-wrap gap-2 mt-3 font-mono text-xs">
                           {blog.tags.map((tag) => (
-                            <span key={tag} className="px-2 py-0.5 rounded bg-[var(--color-elevated)] border border-[var(--color-border)] text-[var(--color-text-muted)]">
+                            <span key={tag} className="px-2.5 py-1 rounded-md bg-[var(--color-elevated)] border border-[var(--color-border)] text-[var(--color-text-muted)]">
                               {tag}
                             </span>
                           ))}
@@ -1190,29 +1193,29 @@ export default function AdminPage() {
                       )}
                     </div>
 
-                    <div className="flex items-center gap-2.5 shrink-0 pt-4 md:pt-0 border-t md:border-t-0 border-[var(--color-border)] font-mono text-xs">
-                      <div className="flex flex-col gap-1 mr-1">
+                    <div className="flex items-center gap-2 shrink-0 pt-4 md:pt-0 border-t md:border-t-0 border-[var(--color-border)] font-mono text-xs">
+                      <div className="inline-flex flex-col rounded-xl border border-[var(--color-border)] bg-[var(--color-elevated)] overflow-hidden shadow-sm">
                         <button
                           onClick={() => handleReorderBlog(idx, "up")}
                           disabled={idx === 0}
-                          className="p-1.5 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-elevated)] disabled:opacity-20 cursor-pointer"
+                          className="p-1.5 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface)] disabled:opacity-20 cursor-pointer border-b border-[var(--color-border)] transition-colors"
                           title="Move up"
                         >
-                          <ArrowUp size={14} />
+                          <ArrowUp size={13} />
                         </button>
                         <button
                           onClick={() => handleReorderBlog(idx, "down")}
                           disabled={idx === blogs.length - 1}
-                          className="p-1.5 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-elevated)] disabled:opacity-20 cursor-pointer"
+                          className="p-1.5 text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-surface)] disabled:opacity-20 cursor-pointer transition-colors"
                           title="Move down"
                         >
-                          <ArrowDown size={14} />
+                          <ArrowDown size={13} />
                         </button>
                       </div>
 
                       <button
                         onClick={() => setPreviewingBlog(blog)}
-                        className="px-3.5 py-2 rounded-xl border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-cyan)] hover:text-[var(--color-cyan)] flex items-center gap-1.5 transition-colors cursor-pointer"
+                        className="h-9 px-3.5 rounded-xl border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-cyan)] hover:text-[var(--color-cyan)] flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
                         title="Instant preview"
                       >
                         <Eye size={14} />
@@ -1223,7 +1226,7 @@ export default function AdminPage() {
                         <Link
                           href={`/blogs/${blog.slug || blog.id}`}
                           target="_blank"
-                          className="p-2.5 rounded-xl border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-elevated)] transition-colors"
+                          className="h-9 w-9 rounded-xl border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-elevated)] hover:border-[var(--color-border-bright)] transition-all flex items-center justify-center shadow-sm"
                           title="Open reader page"
                         >
                           <ExternalLink size={15} />
@@ -1232,7 +1235,7 @@ export default function AdminPage() {
 
                       <button
                         onClick={() => handleOpenBlogEditor(blog)}
-                        className="px-3.5 py-2 rounded-xl border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-amber)] hover:text-[var(--color-amber)] flex items-center gap-1.5 transition-colors cursor-pointer"
+                        className="h-9 px-3.5 rounded-xl border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-amber)] hover:text-[var(--color-amber)] flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
                       >
                         <Edit3 size={14} />
                         <span>Edit</span>
@@ -1240,7 +1243,7 @@ export default function AdminPage() {
 
                       <button
                         onClick={() => handleDeleteBlog(blog.id, blog.title)}
-                        className="p-2.5 rounded-xl border border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-error)] hover:text-[var(--color-error)] transition-colors cursor-pointer"
+                        className="h-9 w-9 rounded-xl border border-[var(--color-border)] text-[var(--color-text-muted)] hover:border-[var(--color-error)] hover:text-[var(--color-error)] hover:bg-[rgba(255,51,51,0.06)] transition-all cursor-pointer flex items-center justify-center shadow-sm"
                         title="Delete dispatch"
                       >
                         <Trash2 size={15} />
@@ -1277,10 +1280,10 @@ export default function AdminPage() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">
-              <div className="flex flex-col gap-3.5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+              <div className="flex flex-col gap-4">
                 <div>
-                  <label className="block text-[11px] text-[var(--color-text-secondary)] font-semibold mb-1">
+                  <label className="block text-xs text-[var(--color-text-secondary)] font-semibold mb-1.5">
                     Project Name *
                   </label>
                   <input
@@ -1288,12 +1291,12 @@ export default function AdminPage() {
                     value={currentProject.name}
                     onChange={(e) => setCurrentProject({ ...currentProject, name: e.target.value })}
                     placeholder="e.g. THEUG HUB"
-                    className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
+                    className="w-full px-4 py-2.5 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded-xl text-xs md:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)] transition-colors shadow-sm"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] text-[var(--color-text-secondary)] font-semibold mb-1">
+                  <label className="block text-xs text-[var(--color-text-secondary)] font-semibold mb-1.5">
                     Tagline
                   </label>
                   <input
@@ -1301,18 +1304,18 @@ export default function AdminPage() {
                     value={currentProject.tagline}
                     onChange={(e) => setCurrentProject({ ...currentProject, tagline: e.target.value })}
                     placeholder="e.g. Decentralized identity & community hub"
-                    className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
+                    className="w-full px-4 py-2.5 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded-xl text-xs md:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)] transition-colors shadow-sm"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] text-[var(--color-text-secondary)] font-semibold mb-1">
+                  <label className="block text-xs text-[var(--color-text-secondary)] font-semibold mb-1.5">
                     Category
                   </label>
                   <select
                     value={currentProject.category}
                     onChange={(e) => setCurrentProject({ ...currentProject, category: e.target.value })}
-                    className="w-full px-2.5 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
+                    className="w-full px-3.5 py-2.5 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded-xl text-xs md:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)] transition-colors shadow-sm"
                   >
                     {PRESET_CATEGORIES.map((cat) => (
                       <option key={cat} value={cat}>
@@ -1322,9 +1325,9 @@ export default function AdminPage() {
                   </select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3.5">
                   <div>
-                    <label className="block text-[11px] text-[var(--color-text-secondary)] font-semibold mb-1">
+                    <label className="block text-xs text-[var(--color-text-secondary)] font-semibold mb-1.5">
                       Status
                     </label>
                     <select
@@ -1332,7 +1335,7 @@ export default function AdminPage() {
                       onChange={(e) =>
                         setCurrentProject({ ...currentProject, status: e.target.value as ProjectStatus })
                       }
-                      className="w-full px-2.5 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
+                      className="w-full px-3.5 py-2.5 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded-xl text-xs md:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)] transition-colors shadow-sm"
                     >
                       <option value="live">Live (Active)</option>
                       <option value="wip">In Progress</option>
@@ -1340,20 +1343,20 @@ export default function AdminPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[11px] text-[var(--color-text-secondary)] font-semibold mb-1">
+                    <label className="block text-xs text-[var(--color-text-secondary)] font-semibold mb-1.5">
                       Year
                     </label>
                     <input
                       type="text"
                       value={currentProject.year}
                       onChange={(e) => setCurrentProject({ ...currentProject, year: e.target.value })}
-                      className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
+                      className="w-full px-4 py-2.5 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded-xl text-xs md:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)] transition-colors shadow-sm"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] text-[var(--color-text-secondary)] font-semibold mb-1">
+                  <label className="block text-xs text-[var(--color-text-secondary)] font-semibold mb-1.5">
                     Live URL
                   </label>
                   <input
@@ -1361,12 +1364,12 @@ export default function AdminPage() {
                     value={currentProject.liveUrl || ""}
                     onChange={(e) => setCurrentProject({ ...currentProject, liveUrl: e.target.value })}
                     placeholder="https://..."
-                    className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
+                    className="w-full px-4 py-2.5 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded-xl text-xs md:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)] transition-colors shadow-sm"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] text-[var(--color-text-secondary)] font-semibold mb-1">
+                  <label className="block text-xs text-[var(--color-text-secondary)] font-semibold mb-1.5">
                     GitHub URL
                   </label>
                   <input
@@ -1374,15 +1377,15 @@ export default function AdminPage() {
                     value={currentProject.githubUrl || ""}
                     onChange={(e) => setCurrentProject({ ...currentProject, githubUrl: e.target.value })}
                     placeholder="https://github.com/TheUGultimatum/..."
-                    className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
+                    className="w-full px-4 py-2.5 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded-xl text-xs md:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)] transition-colors shadow-sm"
                   />
                 </div>
               </div>
 
               {/* Right Column */}
-              <div className="flex flex-col gap-3.5">
+              <div className="flex flex-col gap-4">
                 <div>
-                  <label className="block text-[11px] text-[var(--color-text-secondary)] font-semibold mb-1">
+                  <label className="block text-xs text-[var(--color-text-secondary)] font-semibold mb-1.5">
                     Banner Screenshot
                   </label>
                   <input
@@ -1395,16 +1398,16 @@ export default function AdminPage() {
 
                   <div
                     onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-all border-[var(--color-border)] hover:border-[var(--color-amber)] bg-[var(--color-elevated)]"
+                    className="border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all border-[var(--color-border)] hover:border-[var(--color-amber)] bg-[var(--color-elevated)]"
                   >
                     {isUploadingImage ? (
-                      <div className="flex items-center justify-center gap-2 py-2">
+                      <div className="flex items-center justify-center gap-2 py-3">
                         <RefreshCw size={16} className="animate-spin text-[var(--color-amber)]" />
                         <span>Uploading image...</span>
                       </div>
                     ) : currentProject.bannerUrl ? (
-                      <div className="flex items-center gap-3">
-                        <div className="relative w-16 h-12 rounded overflow-hidden border border-[var(--color-border)] shrink-0 bg-black">
+                      <div className="flex items-center gap-3.5">
+                        <div className="relative w-20 h-14 rounded-lg overflow-hidden border border-[var(--color-border)] shrink-0 bg-black shadow-sm">
                           <Image
                             src={currentProject.bannerUrl}
                             alt="Banner Preview"
@@ -1414,20 +1417,20 @@ export default function AdminPage() {
                         </div>
                         <div className="text-left flex-1 min-w-0">
                           <div className="text-xs font-bold text-[var(--color-online)]">✓ Image Attached</div>
-                          <div className="text-[10px] text-[var(--color-text-muted)] truncate">Click to replace</div>
+                          <div className="text-[11px] text-[var(--color-text-muted)] truncate">Click to replace</div>
                         </div>
                       </div>
                     ) : (
-                      <div className="py-2 flex flex-col items-center gap-1 text-[var(--color-text-muted)]">
-                        <Upload size={16} />
-                        <span>Click to upload banner image</span>
+                      <div className="py-3 flex flex-col items-center gap-1.5 text-[var(--color-text-muted)]">
+                        <Upload size={18} />
+                        <span className="text-xs">Click to upload banner image</span>
                       </div>
                     )}
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] text-[var(--color-text-secondary)] font-semibold mb-1">
+                  <label className="block text-xs text-[var(--color-text-secondary)] font-semibold mb-1.5">
                     Tech Stack (Press Enter)
                   </label>
                   <div className="flex gap-2">
@@ -1448,7 +1451,7 @@ export default function AdminPage() {
                         }
                       }}
                       placeholder="e.g. Next.js, Rust"
-                      className="flex-1 px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)]"
+                      className="flex-1 px-4 py-2.5 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded-xl text-xs md:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
                     />
                     <button
                       type="button"
@@ -1461,16 +1464,16 @@ export default function AdminPage() {
                           setStackInput("");
                         }
                       }}
-                      className="px-3 py-2 rounded bg-[var(--color-elevated)] border border-[var(--color-border)] text-xs text-[var(--color-text-primary)] cursor-pointer"
+                      className="px-4 py-2.5 rounded-xl bg-[var(--color-elevated)] border border-[var(--color-border)] hover:border-[var(--color-border-bright)] text-xs text-[var(--color-text-primary)] cursor-pointer font-semibold transition-colors"
                     >
                       Add
                     </button>
                   </div>
-                  <div className="flex flex-wrap gap-1.5 mt-2">
+                  <div className="flex flex-wrap gap-1.5 mt-2.5">
                     {currentProject.stack.map((tag) => (
                       <span
                         key={tag}
-                        className="px-2 py-0.5 rounded text-[10px] bg-[var(--color-elevated)] text-[var(--color-text-secondary)] flex items-center gap-1"
+                        className="px-2.5 py-1 rounded-md text-[11px] bg-[var(--color-elevated)] border border-[var(--color-border)] text-[var(--color-text-secondary)] flex items-center gap-1.5"
                       >
                         {tag}
                         <button
@@ -1481,7 +1484,7 @@ export default function AdminPage() {
                               stack: prev.stack.filter((s) => s !== tag),
                             }))
                           }
-                          className="hover:text-[var(--color-error)] ml-1"
+                          className="hover:text-[var(--color-error)] ml-0.5 cursor-pointer"
                         >
                           ✕
                         </button>
@@ -1491,7 +1494,7 @@ export default function AdminPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] text-[var(--color-text-secondary)] font-semibold mb-1">
+                  <label className="block text-xs text-[var(--color-text-secondary)] font-semibold mb-1.5">
                     Description
                   </label>
                   <textarea
@@ -1499,11 +1502,11 @@ export default function AdminPage() {
                     value={currentProject.description}
                     onChange={(e) => setCurrentProject({ ...currentProject, description: e.target.value })}
                     placeholder="Short architectural overview..."
-                    className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
+                    className="w-full px-4 py-2.5 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded-xl text-xs md:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)] leading-relaxed"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 p-3 rounded bg-[var(--color-elevated)] border border-[var(--color-border)]">
+                <div className="grid grid-cols-2 gap-3.5 p-3.5 rounded-xl bg-[var(--color-elevated)] border border-[var(--color-border)]">
                   <label className="flex items-center gap-2 cursor-pointer select-none">
                     <input
                       type="checkbox"
@@ -1511,7 +1514,7 @@ export default function AdminPage() {
                       onChange={(e) => setCurrentProject({ ...currentProject, featured: e.target.checked })}
                       className="accent-[var(--color-amber)]"
                     />
-                    <span className="text-xs">★ Featured / Spotlight</span>
+                    <span className="text-xs font-semibold">★ Featured / Spotlight</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer select-none">
                     <input
@@ -1520,7 +1523,7 @@ export default function AdminPage() {
                       onChange={(e) => setCurrentProject({ ...currentProject, isPrivate: e.target.checked })}
                       className="accent-[var(--color-amber)]"
                     />
-                    <span className="text-xs">Private Repo</span>
+                    <span className="text-xs font-semibold">Private Repo</span>
                   </label>
                 </div>
               </div>
@@ -1759,67 +1762,69 @@ export default function AdminPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Left Column: Markdown Source Editor */}
                   <div className="flex flex-col">
-                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2 font-mono text-xs text-[var(--color-text-muted)]">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-bold text-[var(--color-cyan)] flex items-center gap-1.5 mr-2">
-                          <FileText size={14} />
-                          <span>Markdown Source</span>
-                        </span>
-                        {/* Quick Markdown Format Triggers */}
-                        <button
-                          type="button"
-                          onClick={() => insertMarkdown("## ", "\n\n")}
-                          className="px-2 py-0.5 rounded border border-[var(--color-border)] hover:border-[var(--color-amber)] text-[10px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
-                          title="Insert Heading 2"
-                        >
-                          H2
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => insertMarkdown("### ", "\n\n")}
-                          className="px-2 py-0.5 rounded border border-[var(--color-border)] hover:border-[var(--color-amber)] text-[10px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
-                          title="Insert Subheading 3"
-                        >
-                          H3
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => insertMarkdown("> ", "\n\n")}
-                          className="px-2 py-0.5 rounded border border-[var(--color-border)] hover:border-[var(--color-amber)] text-[10px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
-                          title="Insert Quote block"
-                        >
-                          Quote
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => insertMarkdown("- ", "\n")}
-                          className="px-2 py-0.5 rounded border border-[var(--color-border)] hover:border-[var(--color-amber)] text-[10px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
-                          title="Insert Bullet Item"
-                        >
-                          • List
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => insertMarkdown("**", "**")}
-                          className="px-2 py-0.5 rounded border border-[var(--color-border)] hover:border-[var(--color-amber)] text-[10px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
-                          title="Insert Bold text"
-                        >
-                          **B**
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => insertMarkdown("`", "`")}
-                          className="px-2 py-0.5 rounded border border-[var(--color-border)] hover:border-[var(--color-amber)] text-[10px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
-                          title="Insert Inline Code"
-                        >
-                          `code`
-                        </button>
-                      </div>
-
-                      <span className="text-[11px]">
+                    <div className="flex items-center justify-between mb-2 font-mono text-xs text-[var(--color-text-muted)]">
+                      <span className="font-bold text-[var(--color-cyan)] flex items-center gap-1.5">
+                        <FileText size={14} />
+                        <span>Markdown Source</span>
+                      </span>
+                      <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-[var(--color-elevated)] border border-[var(--color-border)]">
                         {(currentBlog.body || "").length.toLocaleString()} chars ·{" "}
                         {Math.max(1, Math.round(((currentBlog.body || "").split(/\s+/).filter(Boolean).length) / 200))} min read
                       </span>
+                    </div>
+
+                    {/* Quick Markdown Format Toolbar */}
+                    <div className="flex items-center gap-1.5 p-1.5 rounded-xl bg-[var(--color-elevated)] border border-[var(--color-border)] mb-3 overflow-x-auto">
+                      <button
+                        type="button"
+                        onClick={() => insertMarkdown("## ", "\n\n")}
+                        className="px-2.5 py-1 rounded-lg border border-transparent hover:border-[var(--color-border)] hover:bg-[var(--color-surface)] text-[11px] font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all cursor-pointer"
+                        title="Insert Heading 2"
+                      >
+                        H2
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => insertMarkdown("### ", "\n\n")}
+                        className="px-2.5 py-1 rounded-lg border border-transparent hover:border-[var(--color-border)] hover:bg-[var(--color-surface)] text-[11px] font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all cursor-pointer"
+                        title="Insert Subheading 3"
+                      >
+                        H3
+                      </button>
+                      <div className="w-[1px] h-4 bg-[var(--color-border)] mx-1" />
+                      <button
+                        type="button"
+                        onClick={() => insertMarkdown("> ", "\n\n")}
+                        className="px-2.5 py-1 rounded-lg border border-transparent hover:border-[var(--color-border)] hover:bg-[var(--color-surface)] text-[11px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all cursor-pointer"
+                        title="Insert Quote block"
+                      >
+                        &gt; Quote
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => insertMarkdown("- ", "\n")}
+                        className="px-2.5 py-1 rounded-lg border border-transparent hover:border-[var(--color-border)] hover:bg-[var(--color-surface)] text-[11px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all cursor-pointer"
+                        title="Insert Bullet Item"
+                      >
+                        • List
+                      </button>
+                      <div className="w-[1px] h-4 bg-[var(--color-border)] mx-1" />
+                      <button
+                        type="button"
+                        onClick={() => insertMarkdown("**", "**")}
+                        className="px-2.5 py-1 rounded-lg border border-transparent hover:border-[var(--color-border)] hover:bg-[var(--color-surface)] text-[11px] font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all cursor-pointer"
+                        title="Insert Bold text"
+                      >
+                        **B**
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => insertMarkdown("`", "`")}
+                        className="px-2.5 py-1 rounded-lg border border-transparent hover:border-[var(--color-border)] hover:bg-[var(--color-surface)] text-[11px] font-mono text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all cursor-pointer"
+                        title="Insert Inline Code"
+                      >
+                        `code`
+                      </button>
                     </div>
 
                     <textarea
@@ -1828,10 +1833,10 @@ export default function AdminPage() {
                       value={currentBlog.body || ""}
                       onChange={(e) => setCurrentBlog({ ...currentBlog, body: e.target.value })}
                       placeholder="Write your complete essay or technical breakdown here directly...&#10;&#10;## High-Level Architecture&#10;Describe the core thesis and mechanics here...&#10;&#10;### Key Discoveries&#10;Explain in detail with code or design decisions...&#10;&#10;> Quote or key rule of thumb&#10;&#10;Conclusion and final verdict..."
-                      className="w-full flex-1 min-h-[420px] p-5 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded-2xl text-xs md:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)] font-mono leading-relaxed shadow-inner"
+                      className="w-full h-[520px] p-5 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded-2xl text-xs md:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)] font-mono leading-relaxed shadow-inner resize-none overflow-y-auto"
                     />
                     <div className="mt-2 text-[11px] text-[var(--color-text-muted)] flex items-center justify-between font-mono">
-                      <span>Supports ## Heading, ### Subheading, &gt; Quote, bullet points, and blank-line separation</span>
+                      <span>Supports ## Heading, ### Subheading, &gt; Quote, bullets, and blank lines</span>
                     </div>
                   </div>
 
@@ -1845,6 +1850,11 @@ export default function AdminPage() {
                       <span className="text-[11px] text-[var(--color-online)] font-semibold">
                         ● Real-time
                       </span>
+                    </div>
+
+                    {/* Toolbar spacer to align perfectly with left column */}
+                    <div className="h-[43px] mb-3 flex items-center px-3.5 rounded-xl bg-[var(--color-elevated)] border border-[var(--color-border)] text-[11px] text-[var(--color-text-muted)] font-mono">
+                      <span>WYSIWYG article display matched to public reader</span>
                     </div>
 
                     <ArticleSplitPreview
