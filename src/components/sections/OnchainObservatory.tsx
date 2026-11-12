@@ -62,13 +62,13 @@ export function OnchainObservatory() {
   };
 
   return (
-    <div className="relative flex flex-col w-full px-3.5 sm:px-6 md:px-8 lg:px-10 py-5 sm:py-8 max-w-[1720px] mx-auto min-h-screen overflow-x-clip">
+    <div className="relative flex flex-col w-full px-4 sm:px-6 md:px-8 lg:px-10 pt-8 sm:pt-10 md:pt-6 pb-6 sm:pb-8 max-w-[1720px] mx-auto min-h-screen overflow-x-clip">
       {/* ─────────────────────────────────────────────────────────
           MOBILE / TABLET HEADER (Displayed on < lg screens)
-          Fluid responsive typography guarantees 0 text truncation
+          Spacious clearance prevents overlapping with fixed TopBar
           ───────────────────────────────────────────────────────── */}
-      <header className="lg:hidden mb-5 sm:mb-6 w-full max-w-full overflow-visible">
-        <div className="flex items-center gap-1.5 sm:gap-2 mb-2 text-[var(--color-cyan)] text-[10.5px] sm:text-xs font-mono tracking-wider sm:tracking-widest uppercase font-bold">
+      <header className="lg:hidden mb-6 sm:mb-8 pt-2 sm:pt-4 w-full max-w-full overflow-visible">
+        <div className="flex items-center gap-1.5 sm:gap-2 mb-2.5 text-[var(--color-cyan)] text-[10.5px] sm:text-xs font-mono tracking-wider sm:tracking-widest uppercase font-bold">
           <span>&gt;</span>
           <span>05 / ON-CHAIN CONVICTION</span>
         </div>
@@ -103,13 +103,6 @@ export function OnchainObservatory() {
         aria-label="Web3 Solar System Canvas" 
         className="relative w-full rounded-2xl overflow-hidden border border-white/10 bg-[#030508] shadow-[0_0_60px_rgba(0,0,0,0.5)]"
       >
-        {/* MOBILE IN-CANVAS CONTEXT BADGE (Guarantees ON-CHAIN CONVICTION is visible even when scrolled) */}
-        <div className="lg:hidden absolute top-3 left-3 z-30 pointer-events-none flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-white/15 bg-black/75 backdrop-blur-md shadow-md text-[9px] font-mono font-bold">
-          <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-amber)] animate-pulse" />
-          <span className="text-white">ON-CHAIN</span>
-          <span className="text-[var(--color-amber)]">CONVICTION</span>
-        </div>
-
         {/* DESKTOP TOP-LEFT HEADER OVERLAY (Enlarged & Prominently Positioned) */}
         <header className="hidden lg:block absolute top-7 left-8 xl:top-9 xl:left-9 z-30 pointer-events-none max-w-md">
           <div className="flex items-center gap-2 mb-2.5 text-[var(--color-cyan)] text-xs font-mono tracking-widest uppercase font-bold">
