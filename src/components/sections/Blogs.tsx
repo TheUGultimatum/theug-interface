@@ -176,15 +176,29 @@ function DispatchCard({ post }: { post: XPost }) {
 /* ─── Main Blogs Component ───────────────────────────────────── */
 export function Blogs() {
   const { ref, inView } = useInView();
+  const [posts, setPosts] = useState<XPost[]>(BLOGS_DATA);
   const [activeCategory, setActiveCategory] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
+  useEffect(() => {
+    fetch("/api/admin/blogs")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.blogs)) {
+          setPosts(data.blogs);
+        }
+      })
+      .catch(() => {
+        // graceful offline / fallback
+      });
+  }, []);
+
   const categories = ["ALL", "Web3", "AI & Agents", "Build In Public", "CT Alpha"];
-  const hasPosts = BLOGS_DATA.length > 0;
+  const hasPosts = posts.length > 0;
 
   const filteredPosts = useMemo(() => {
     if (!hasPosts) return [];
-    return BLOGS_DATA.filter((post) => {
+    return posts.filter((post) => {
       const matchCategory =
         activeCategory === "ALL" || post.category === activeCategory;
       const q = searchQuery.toLowerCase().trim();
@@ -195,7 +209,7 @@ export function Blogs() {
         post.tags?.some((t) => t.toLowerCase().includes(q));
       return matchCategory && matchSearch;
     });
-  }, [hasPosts, activeCategory, searchQuery]);
+  }, [hasPosts, posts, activeCategory, searchQuery]);
 
   return (
     <section
