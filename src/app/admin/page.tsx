@@ -123,6 +123,8 @@ export default function AdminPage() {
   const [highlightsInput, setHighlightsInput] = useState<string>("");
   const [tagsInput, setTagsInput] = useState<string>("");
   const [contentInput, setContentInput] = useState<string>("");
+  const [isFetchingPreview, setIsFetchingPreview] = useState<boolean>(false);
+  const [previewingBlog, setPreviewingBlog] = useState<XPost | null>(null);
 
   // Filter & Search
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -398,6 +400,49 @@ export default function AdminPage() {
       setContentInput("");
     }
     setIsEditingBlog(true);
+  };
+
+  const handleAutoFetchLink = async (customUrl?: string) => {
+    const targetUrl = customUrl || currentBlog.url;
+    if (!targetUrl || !targetUrl.trim() || targetUrl.trim() === "https://x.com/Usmaangani252") {
+      notify("Please enter a specific post or article URL to preview", "error");
+      return;
+    }
+
+    setIsFetchingPreview(true);
+    try {
+      const res = await fetch("/api/admin/preview-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: targetUrl.trim() }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setCurrentBlog((prev) => ({
+          ...prev,
+          title: prev.title.trim() && prev.title !== "Dispatch Title" ? prev.title : (data.title || prev.title),
+          summary: prev.summary.trim() ? prev.summary : (data.summary || prev.summary),
+          content: data.content && data.content.length > 0 ? data.content : prev.content,
+        }));
+
+        if (data.tags && data.tags.length > 0 && (!tagsInput || tagsInput === "#Web3")) {
+          setTagsInput(data.tags.join(", "));
+        }
+
+        if (data.content && data.content.length > 1 && !highlightsInput) {
+          setHighlightsInput(data.content.slice(1, 4).join("\n"));
+        }
+
+        notify("⚡ Auto-preview fetched! Details populated.");
+      } else {
+        notify(data.error || "Could not fetch link metadata", "error");
+      }
+    } catch {
+      notify("Network error while fetching preview", "error");
+    } finally {
+      setIsFetchingPreview(false);
+    }
   };
 
   const handleSaveBlog = async () => {
@@ -1169,6 +1214,15 @@ export default function AdminPage() {
                     )}
 
                     <button
+                      onClick={() => setPreviewingBlog(blog)}
+                      className="px-2.5 py-1.5 rounded border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-cyan)] hover:text-[var(--color-cyan)] text-xs flex items-center gap-1 transition-colors cursor-pointer"
+                      title="Instant preview"
+                    >
+                      <Eye size={13} />
+                      <span>PREVIEW</span>
+                    </button>
+
+                    <button
                       onClick={() => handleOpenBlogEditor(blog)}
                       className="px-3 py-1.5 rounded border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-amber)] hover:text-[var(--color-amber)] text-xs flex items-center gap-1 transition-colors cursor-pointer"
                     >
@@ -1604,16 +1658,48 @@ export default function AdminPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] text-[var(--color-text-secondary)] mb-1 font-bold">
-                    LINK TO POST ON X (TWITTER) *
-                  </label>
-                  <input
-                    type="url"
-                    value={currentBlog.url}
-                    onChange={(e) => setCurrentBlog({ ...currentBlog, url: e.target.value })}
-                    placeholder="https://x.com/Usmaangani252/status/..."
-                    className="w-full px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
-                  />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[10px] text-[var(--color-text-secondary)] font-bold">
+                      LINK TO POST ON X OR ARTICLE *
+                    </label>
+                    <span className="text-[9px] text-[var(--color-amber)]">
+                      Paste URL & click Auto Preview
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      value={currentBlog.url}
+                      onChange={(e) => setCurrentBlog({ ...currentBlog, url: e.target.value })}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleAutoFetchLink();
+                        }
+                      }}
+                      placeholder="https://x.com/Usmaangani252/status/... or article URL"
+                      className="flex-1 px-3 py-2 bg-[var(--color-elevated)] border border-[var(--color-border)] rounded text-xs text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-amber)]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleAutoFetchLink()}
+                      disabled={isFetchingPreview}
+                      className="px-3.5 py-2 rounded bg-[rgba(255,94,58,0.15)] border border-[var(--color-amber)] text-[var(--color-amber)] hover:bg-[var(--color-amber)] hover:text-black font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap"
+                      title="Fetch title, summary, hashtags, and preview from the URL"
+                    >
+                      {isFetchingPreview ? (
+                        <>
+                          <RefreshCw size={13} className="animate-spin" />
+                          <span>FETCHING...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles size={13} />
+                          <span>AUTO PREVIEW</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -1775,6 +1861,72 @@ export default function AdminPage() {
                     </span>
                   </label>
                 </div>
+
+                {/* Real-Time Live Preview Card inside Editor */}
+                <div className="p-3.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-void)]">
+                  <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-[var(--color-border)]">
+                    <span className="text-[10px] uppercase font-bold text-[var(--color-amber)] flex items-center gap-1.5">
+                      <Eye size={12} />
+                      <span>LIVE DISPATCH PREVIEW</span>
+                    </span>
+                    <span className="text-[9px] text-[var(--color-text-muted)] font-mono">
+                      (Live look on /blogs)
+                    </span>
+                  </div>
+
+                  <article className="p-3.5 rounded border border-[var(--color-border)] bg-[var(--color-surface)]">
+                    <div className="flex items-center justify-between text-xs mb-1.5 font-mono">
+                      <div className="flex items-center gap-1.5">
+                        <span className="px-2 py-0.5 rounded text-[9px] uppercase font-semibold border border-[var(--color-border)] text-[var(--color-text-secondary)]">
+                          {currentBlog.category || "Web3"}
+                        </span>
+                        {currentBlog.isPinned && (
+                          <span className="text-[9px] text-[var(--color-amber)] flex items-center gap-1">
+                            <Pin size={9} className="fill-current" />
+                            Pinned
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-[var(--color-text-muted)]">
+                        {currentBlog.publishedAt || "Nov 2026"} · {currentBlog.readTime || "3 min read"}
+                      </span>
+                    </div>
+
+                    <h4 className="font-bold text-sm text-[var(--color-text-primary)] mb-1 leading-snug">
+                      {currentBlog.title || "Dispatch Title Will Appear Here"}
+                    </h4>
+
+                    <p className="text-xs text-[var(--color-text-secondary)] mb-2 line-clamp-2 leading-relaxed">
+                      {currentBlog.summary || "Summary or excerpt preview..."}
+                    </p>
+
+                    {highlightsInput && (
+                      <ul className="mb-2 space-y-1 border-l border-[var(--color-border)] pl-2">
+                        {highlightsInput
+                          .split("\n")
+                          .filter(Boolean)
+                          .slice(0, 2)
+                          .map((h, i) => (
+                            <li key={i} className="text-[10px] text-[var(--color-text-muted)] truncate">
+                              {h}
+                            </li>
+                          ))}
+                      </ul>
+                    )}
+
+                    <div className="pt-2 border-t border-[var(--color-border)] flex items-center justify-between mt-2">
+                      <div className="flex items-center gap-3 text-[10px] font-mono text-[var(--color-text-muted)]">
+                        {currentBlog.stats?.likes && <span>❤️ {currentBlog.stats.likes}</span>}
+                        {currentBlog.stats?.reposts && <span>🔁 {currentBlog.stats.reposts}</span>}
+                        {currentBlog.stats?.views && <span>👁️ {currentBlog.stats.views}</span>}
+                      </div>
+                      <span className="text-[10px] text-[var(--color-amber)] font-mono flex items-center gap-1">
+                        <span>Read on X</span>
+                        <ArrowUpRight size={11} />
+                      </span>
+                    </div>
+                  </article>
+                </div>
               </div>
             </div>
 
@@ -1795,6 +1947,114 @@ export default function AdminPage() {
                 <span>SAVE & PUBLISH DISPATCH</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────
+          QUICK DISPATCH PREVIEW MODAL
+          ───────────────────────────────────────────────────── */}
+      {previewingBlog && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div
+            className="panel max-w-lg w-full p-6 relative"
+            style={{
+              background: "var(--color-surface)",
+              border: "1px solid var(--color-border-bright)",
+              boxShadow: "0 16px 64px rgba(0,0,0,0.95), 0 0 32px rgba(0,217,255,0.15)",
+            }}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--color-border)] mb-4">
+              <div className="flex items-center gap-2">
+                <Eye size={16} className="text-[var(--color-cyan)]" />
+                <span className="font-bold text-xs uppercase tracking-wider text-[var(--color-text-primary)]">
+                  DISPATCH CARD LIVE PREVIEW
+                </span>
+              </div>
+              <button
+                onClick={() => setPreviewingBlog(null)}
+                className="text-[var(--color-text-muted)] hover:text-white text-xs px-2 py-1 cursor-pointer"
+              >
+                ✕ CLOSE
+              </button>
+            </div>
+
+            <article className="p-5 rounded-lg border border-[var(--color-border)] bg-[var(--color-void)]">
+              <div className="flex items-center justify-between text-xs mb-2 font-mono">
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded text-[10px] uppercase font-semibold border border-[var(--color-border)] text-[var(--color-text-secondary)]">
+                    {previewingBlog.category}
+                  </span>
+                  {previewingBlog.isPinned && (
+                    <span className="text-[10px] text-[var(--color-amber)] flex items-center gap-1 font-semibold">
+                      <Pin size={10} className="fill-current" />
+                      Pinned
+                    </span>
+                  )}
+                </div>
+                <span className="text-[11px] text-[var(--color-text-muted)]">
+                  {previewingBlog.publishedAt} · {previewingBlog.readTime}
+                </span>
+              </div>
+
+              <h3 className="font-bold text-base text-[var(--color-text-primary)] mb-2 leading-snug">
+                {previewingBlog.title}
+              </h3>
+
+              <p className="text-xs text-[var(--color-text-secondary)] mb-4 leading-relaxed">
+                {previewingBlog.summary}
+              </p>
+
+              {previewingBlog.highlights && previewingBlog.highlights.length > 0 && (
+                <ul className="mb-4 space-y-1.5 border-l border-[var(--color-border)] pl-3">
+                  {previewingBlog.highlights.map((h, i) => (
+                    <li key={i} className="text-xs text-[var(--color-text-muted)]">
+                      {h}
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {previewingBlog.tags && previewingBlog.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-4">
+                  {previewingBlog.tags.map((t, i) => (
+                    <span key={i} className="font-mono text-[10px] text-[var(--color-text-muted)]">
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <div className="pt-3 border-t border-[var(--color-border)] flex items-center justify-between mt-auto">
+                <div className="flex items-center gap-3 text-xs font-mono text-[var(--color-text-muted)]">
+                  {previewingBlog.stats?.likes && <span>❤️ {previewingBlog.stats.likes}</span>}
+                  {previewingBlog.stats?.reposts && <span>🔁 {previewingBlog.stats.reposts}</span>}
+                  {previewingBlog.stats?.views && <span>👁️ {previewingBlog.stats.views}</span>}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      const toEdit = previewingBlog;
+                      setPreviewingBlog(null);
+                      handleOpenBlogEditor(toEdit);
+                    }}
+                    className="px-3 py-1.5 rounded border border-[var(--color-border)] text-xs text-[var(--color-text-secondary)] hover:text-white cursor-pointer"
+                  >
+                    Edit
+                  </button>
+                  <a
+                    href={previewingBlog.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3.5 py-1.5 rounded bg-[var(--color-amber)] text-black font-bold text-xs flex items-center gap-1 hover:brightness-110"
+                  >
+                    <span>View on X</span>
+                    <ArrowUpRight size={12} />
+                  </a>
+                </div>
+              </div>
+            </article>
           </div>
         </div>
       )}

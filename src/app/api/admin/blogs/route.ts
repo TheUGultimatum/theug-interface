@@ -150,3 +150,4 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ success: false, error: "Server error deleting dispatch" }, { status: 500 });
   }
 }
+
