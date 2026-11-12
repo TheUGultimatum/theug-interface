@@ -17,14 +17,19 @@ export type PlanetPhysics = EcosystemData & {
   vx: number;
   vy: number;
   isHovered: boolean;
-  trail: { x: number; y: number; alpha: number }[];
+  trail: { x: number; y: number; alpha: number; size?: number }[];
 };
+
+type MemeCelestialKind = "comet" | "meteor";
 
 type MemeAsteroid = {
   active: boolean;
   id: string;
   name: string;
+  kind: MemeCelestialKind;
   color: string;
+  secondaryColor: string;
+  label: string;
   file: string;
   x: number;
   y: number;
@@ -32,7 +37,20 @@ type MemeAsteroid = {
   vy: number;
   alpha: number;
   size: number;
-  trail: { x: number; y: number; alpha: number }[];
+  trail: { x: number; y: number; alpha: number; size?: number }[];
+  age: number;
+  lifespan: number;
+};
+
+type MemeParticle = {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  alpha: number;
+  size: number;
+  color: string;
+  shape: "spark" | "frost" | "ember";
   age: number;
   lifespan: number;
 };
@@ -40,10 +58,13 @@ type MemeAsteroid = {
 type Star = {
   x: number;
   y: number;
+  z: number;
   size: number;
   baseAlpha: number;
   twinkleSpeed: number;
   twinkleOffset: number;
+  color: string;
+  hasFlare: boolean;
 };
 
 interface SolarSystemProps {
@@ -51,13 +72,63 @@ interface SolarSystemProps {
   onSelect: (ecosystem: EcosystemData) => void;
 }
 
-// 5 Iconic Meme Tokens as Falling Asteroids / Comets
+// 5 Iconic Meme Tokens as Falling Comets (Pengu cold comet, Pepe neon comet) & Meteors (Doge fire, Shiba blazing, Bonk kinetic)
 const MEME_ASTEROID_TYPES = [
-  { id: "bonk", name: "BONK", color: "#F47D20", file: "bonk.svg" },
-  { id: "pengu", name: "PENGU", color: "#38BDF8", file: "pengu.png" },
-  { id: "shiba", name: "SHIB", color: "#FFA409", file: "shiba.svg" },
-  { id: "doge", name: "DOGE", color: "#C3A634", file: "doge.svg" },
-  { id: "pepe", name: "PEPE", color: "#22C55E", file: "pepe.svg" },
+  {
+    id: "pengu",
+    name: "PENGU",
+    kind: "comet" as const,
+    color: "#38BDF8",
+    secondaryColor: "#E0F2FE",
+    label: "COLD COMET",
+    file: "pengu.png",
+    speedMin: 4.2,
+    speedMax: 6.2,
+  },
+  {
+    id: "pepe",
+    name: "PEPE",
+    kind: "comet" as const,
+    color: "#22C55E",
+    secondaryColor: "#86EFAC",
+    label: "NEON COMET",
+    file: "pepe.svg",
+    speedMin: 4.6,
+    speedMax: 6.8,
+  },
+  {
+    id: "doge",
+    name: "DOGE",
+    kind: "meteor" as const,
+    color: "#FFA409",
+    secondaryColor: "#FDE047",
+    label: "FIRE METEOR",
+    file: "doge.svg",
+    speedMin: 7.5,
+    speedMax: 11.0,
+  },
+  {
+    id: "shiba",
+    name: "SHIB",
+    kind: "meteor" as const,
+    color: "#FF4500",
+    secondaryColor: "#FFA07A",
+    label: "BLAZING METEOR",
+    file: "shiba.svg",
+    speedMin: 7.8,
+    speedMax: 11.5,
+  },
+  {
+    id: "bonk",
+    name: "BONK",
+    kind: "meteor" as const,
+    color: "#F47D20",
+    secondaryColor: "#FED7AA",
+    label: "KINETIC METEOR",
+    file: "bonk.svg",
+    speedMin: 6.5,
+    speedMax: 9.5,
+  },
 ];
 
 const lerp = (a: number, b: number, t: number) => a * (1 - t) + b * t;
@@ -118,14 +189,29 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
   const memeBitmaps = useRef<Record<string, HTMLImageElement>>({});
   const sunImgRef = useRef<HTMLImageElement | null>(null);
 
-  // Pool of falling meme asteroids (5 active concurrent slots)
-  const asteroidsRef = useRef<MemeAsteroid[]>([
-    { active: false, id: "bonk", name: "BONK", color: "#F47D20", file: "bonk.svg", x: 0, y: 0, vx: 0, vy: 0, alpha: 0, size: 24, trail: [], age: 0, lifespan: 0 },
-    { active: false, id: "pengu", name: "PENGU", color: "#38BDF8", file: "pengu.png", x: 0, y: 0, vx: 0, vy: 0, alpha: 0, size: 24, trail: [], age: 0, lifespan: 0 },
-    { active: false, id: "shiba", name: "SHIB", color: "#FFA409", file: "shiba.svg", x: 0, y: 0, vx: 0, vy: 0, alpha: 0, size: 24, trail: [], age: 0, lifespan: 0 },
-    { active: false, id: "doge", name: "DOGE", color: "#C3A634", file: "doge.svg", x: 0, y: 0, vx: 0, vy: 0, alpha: 0, size: 24, trail: [], age: 0, lifespan: 0 },
-    { active: false, id: "pepe", name: "PEPE", color: "#22C55E", file: "pepe.svg", x: 0, y: 0, vx: 0, vy: 0, alpha: 0, size: 24, trail: [], age: 0, lifespan: 0 },
-  ]);
+  // Pool of falling meme comets & meteors (16 active concurrent slots)
+  const asteroidsRef = useRef<MemeAsteroid[]>(
+    Array.from({ length: 16 }, () => ({
+      active: false,
+      id: "pengu",
+      name: "PENGU",
+      kind: "comet",
+      color: "#38BDF8",
+      secondaryColor: "#E0F2FE",
+      label: "COLD COMET",
+      file: "pengu.png",
+      x: 0,
+      y: 0,
+      vx: 0,
+      vy: 0,
+      alpha: 0,
+      size: 26,
+      trail: [],
+      age: 0,
+      lifespan: 0,
+    }))
+  );
+  const particlesRef = useRef<MemeParticle[]>([]);
 
   // 1. WATCH THEME & REDUCED MOTION
   useEffect(() => {
@@ -154,7 +240,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
     return () => observer.disconnect();
   }, []);
 
-  // 2. SPAWN FALLING MEME ASTEROIDS / COMETS NEAR PLANETS
+  // 2. SPAWN MEME COMETS & METEORS ACROSS THE 3D CELESTIAL STAGE
   const spawnMemeAsteroid = useCallback(() => {
     const slot = asteroidsRef.current.find(m => !m.active);
     if (!slot) return;
@@ -162,45 +248,85 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
     const w = containerRef.current?.clientWidth || 1000;
     const h = containerRef.current?.clientHeight || 750;
 
-    // Fall diagonally across the orbits (from upper-left or upper-right)
-    const fromLeft = Math.random() > 0.45;
-    const startX = fromLeft ? -40 - Math.random() * 80 : w + 40 + Math.random() * 80;
-    const startY = Math.random() * (h * 0.45);
+    // Pick a meme token: Pengu cold comet, Pepe neon comet, Doge fire meteor, Shiba blazing meteor, Bonk kinetic meteor
+    const meme = MEME_ASTEROID_TYPES[Math.floor(Math.random() * MEME_ASTEROID_TYPES.length)];
 
-    // Aim toward the middle-lower region near the orbiting planets
-    const targetX = w * (0.2 + Math.random() * 0.6);
-    const targetY = h * 0.6 + Math.random() * (h * 0.4);
+    // Diverse, dynamic trajectories across the celestial viewport
+    const trajectoryMode = Math.random();
+    let startX = 0;
+    let startY = 0;
+    let targetX = 0;
+    let targetY = 0;
+
+    if (trajectoryMode < 0.45) {
+      // Upper-left to bottom-right across the system
+      startX = -60 - Math.random() * 80;
+      startY = Math.random() * (h * 0.45);
+      targetX = w * 0.4 + Math.random() * (w * 0.65);
+      targetY = h * 0.7 + Math.random() * (h * 0.5);
+    } else if (trajectoryMode < 0.80) {
+      // Upper-right to bottom-left across the system
+      startX = w + 60 + Math.random() * 80;
+      startY = Math.random() * (h * 0.45);
+      targetX = -40 + Math.random() * (w * 0.55);
+      targetY = h * 0.7 + Math.random() * (h * 0.5);
+    } else {
+      // High steep overhead descent
+      startX = w * 0.15 + Math.random() * (w * 0.7);
+      startY = -50;
+      targetX = startX + (Math.random() > 0.5 ? 1 : -1) * (w * 0.35 + 100);
+      targetY = h + 80;
+    }
 
     const angle = Math.atan2(targetY - startY, targetX - startX);
-    const velocity = 5.5 + Math.random() * 3.5;
-    const meme = MEME_ASTEROID_TYPES[Math.floor(Math.random() * MEME_ASTEROID_TYPES.length)];
+    const velocity = meme.speedMin + Math.random() * (meme.speedMax - meme.speedMin);
 
     Object.assign(slot, {
       active: true,
       id: meme.id,
       name: meme.name,
+      kind: meme.kind,
       color: meme.color,
+      secondaryColor: meme.secondaryColor,
+      label: meme.label,
       file: meme.file,
       x: startX,
       y: startY,
       vx: Math.cos(angle) * velocity,
       vy: Math.sin(angle) * velocity,
       alpha: 1.0,
-      size: 22 + Math.random() * 6,
+      size: meme.kind === "comet" ? (26 + Math.random() * 6) : (24 + Math.random() * 5),
       trail: [],
       age: 0,
-      lifespan: 160 + Math.floor(Math.random() * 40)
+      lifespan: meme.kind === "comet" ? 180 + Math.floor(Math.random() * 60) : 140 + Math.floor(Math.random() * 40),
     });
   }, []);
 
-  // Natural continuous falling asteroids cadence (every 2.8 seconds)
+  // Natural high-frequency meme showers & meteor flurries
   useEffect(() => {
-    // Initial burst
+    // Initial burst of showers
     spawnMemeAsteroid();
-    const timer = setInterval(() => {
+    const t1 = setTimeout(spawnMemeAsteroid, 250);
+    const t2 = setTimeout(spawnMemeAsteroid, 500);
+
+    // Continuous shower cadence (every 750ms)
+    const cadenceTimer = setInterval(() => {
       spawnMemeAsteroid();
-    }, 2800);
-    return () => clearInterval(timer);
+    }, 750);
+
+    // Mini meteor/comet shower clusters every 6.5s
+    const showerTimer = setInterval(() => {
+      spawnMemeAsteroid();
+      setTimeout(spawnMemeAsteroid, 120);
+      setTimeout(spawnMemeAsteroid, 260);
+    }, 6500);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearInterval(cadenceTimer);
+      clearInterval(showerTimer);
+    };
   }, [spawnMemeAsteroid]);
 
   // 3. PRELOAD PLANET & MEME ASSETS
@@ -248,16 +374,31 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       };
     });
 
-    const starCount = isMobile ? 55 : 110;
+    // Deep 3D Starfield across 3 depth planes (z: 0.1 distant to 1.0 foreground hero stars)
+    const starCount = isMobile ? 140 : 280;
     const stars: Star[] = [];
+    const w = window.innerWidth || 1400;
+    const h = 1000;
+
     for (let i = 0; i < starCount; i++) {
+      const z = Math.random();
+      const isHero = z > 0.86;
+      let color = "#FFFFFF";
+      const roll = Math.random();
+      if (roll < 0.16) color = "#38BDF8"; // Icy cyan star
+      else if (roll < 0.32) color = "#FDE68A"; // Warm stellar amber
+      else if (roll < 0.42) color = "#C4B5FD"; // Cosmic lavender
+
       stars.push({
-        x: Math.random() * (window.innerWidth || 1200),
-        y: Math.random() * 900,
-        size: Math.random() * 1.3 + 0.3,
-        baseAlpha: Math.random() * 0.35 + 0.08,
-        twinkleSpeed: Math.random() * 0.0025 + 0.0006,
+        x: Math.random() * w,
+        y: Math.random() * h,
+        z,
+        size: isHero ? Math.random() * 1.3 + 1.8 : (z > 0.4 ? Math.random() * 0.9 + 0.9 : Math.random() * 0.5 + 0.35),
+        baseAlpha: isHero ? Math.random() * 0.3 + 0.65 : (z > 0.4 ? Math.random() * 0.3 + 0.32 : Math.random() * 0.2 + 0.10),
+        twinkleSpeed: Math.random() * 0.003 + 0.0008,
         twinkleOffset: Math.random() * Math.PI * 2,
+        color,
+        hasFlare: isHero && Math.random() > 0.35,
       });
     }
     starsRef.current = stars;
@@ -336,8 +477,6 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       const cx = w / 2;
       const cy = h / 2;
 
-      ctx.clearRect(0, 0, w, h);
-
       const cam = cameraRef.current;
       cam.zoom = lerp(cam.zoom, cam.targetZoom, 0.12);
       cam.panX = lerp(cam.panX, cam.targetPanX, 0.12);
@@ -348,29 +487,77 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
         cam.rotationVelocity *= 0.94;
       }
       cam.rotation = lerp(cam.rotation, cam.targetRotation, 0.15);
-
       const isDay = isDayMode;
       const tilt = isMobile ? 0.72 : 0.60;
 
-      // ─── A. STARFIELD (DELICATE, QUIET TWINKLE) ─────────────────
+      // ─── A. DEEP 3D COSMIC VOID & ATMOSPHERIC NEBULAE ──────────
+      // Authentic deep black space (#030508) in both dark and light modes
+      ctx.fillStyle = "#030508";
+      ctx.fillRect(0, 0, w, h);
+
+      // Deep space volumetric nebula clouds (subtle 3D depth)
+      const n1 = ctx.createRadialGradient(w * 0.22, h * 0.28, 0, w * 0.22, h * 0.28, w * 0.44);
+      n1.addColorStop(0, "rgba(99, 102, 241, 0.08)");
+      n1.addColorStop(0.5, "rgba(79, 70, 229, 0.03)");
+      n1.addColorStop(1, "transparent");
+      ctx.fillStyle = n1;
+      ctx.fillRect(0, 0, w, h);
+
+      const n2 = ctx.createRadialGradient(w * 0.78, h * 0.68, 0, w * 0.78, h * 0.68, w * 0.40);
+      n2.addColorStop(0, "rgba(6, 182, 212, 0.07)");
+      n2.addColorStop(0.5, "rgba(14, 165, 233, 0.02)");
+      n2.addColorStop(1, "transparent");
+      ctx.fillStyle = n2;
+      ctx.fillRect(0, 0, w, h);
+
+      const n3 = ctx.createRadialGradient(cx, cy, 0, cx, cy, w * 0.28);
+      n3.addColorStop(0, "rgba(245, 158, 11, 0.045)");
+      n3.addColorStop(0.6, "rgba(234, 88, 12, 0.015)");
+      n3.addColorStop(1, "transparent");
+      ctx.fillStyle = n3;
+      ctx.fillRect(0, 0, w, h);
+
+      // ─── B. MULTI-LAYER 3D PARALLAX STARFIELD ───────────────────
       const stars = starsRef.current;
       for (let i = 0; i < stars.length; i++) {
         const s = stars[i];
-        const alpha = Math.max(0.04, Math.min(s.baseAlpha + Math.sin(time * s.twinkleSpeed + s.twinkleOffset) * 0.15, 0.75));
-        ctx.fillStyle = isDay ? `rgba(71, 85, 105, ${alpha * 0.35})` : `rgba(255, 255, 255, ${alpha})`;
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
-        ctx.fill();
-      }
+        // 3D Parallax: deeper stars shift subtly with camera rotation
+        const parallaxX = Math.sin(cam.rotation * 0.35) * (s.z * 18);
+        const parallaxY = Math.cos(cam.rotation * 0.35) * (s.z * 10);
+        const sx = (s.x + parallaxX + w) % w;
+        const sy = (s.y + parallaxY + h) % h;
 
-      // ─── B. TRANSFORM CAMERA ────────────────────────────────────
+        const alpha = Math.max(0.06, Math.min(s.baseAlpha + Math.sin(time * s.twinkleSpeed + s.twinkleOffset) * 0.22, 1.0));
+
+        ctx.fillStyle = s.color;
+        ctx.globalAlpha = alpha;
+        ctx.beginPath();
+        ctx.arc(sx, sy, s.size, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 4-point cross diffraction spikes for foreground hero stars
+        if (s.hasFlare && alpha > 0.6) {
+          ctx.strokeStyle = s.color;
+          ctx.lineWidth = 0.65;
+          const flareLen = s.size * 3.2;
+          ctx.beginPath();
+          ctx.moveTo(sx - flareLen, sy);
+          ctx.lineTo(sx + flareLen, sy);
+          ctx.moveTo(sx, sy - flareLen);
+          ctx.lineTo(sx, sy + flareLen);
+          ctx.stroke();
+        }
+      }
+      ctx.globalAlpha = 1.0;
+
+      // ─── C. TRANSFORM CAMERA FOR ORBITS & PLANETS ───────────────
       ctx.save();
       ctx.translate(cx + cam.panX, cy + cam.panY);
       ctx.scale(cam.zoom, cam.zoom);
       ctx.rotate(cam.rotation);
 
       // Fine, quiet void guide rings
-      ctx.strokeStyle = isDay ? "rgba(100, 116, 139, 0.07)" : "rgba(255, 255, 255, 0.03)";
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
       ctx.lineWidth = 0.6;
       [140, 280, 440].forEach(r => {
         ctx.beginPath();
@@ -459,7 +646,11 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
         p.isHovered = hitDist < (isMobile ? 26 : 22);
       });
 
-      // ─── E. REDESIGNED CENTRAL SUN & INNER CELESTIAL ORBITS ───────────
+      // ─── E. CENTRAL SUN (LOCKED & FIXED UPRIGHT IN THE CENTER) ───────────
+      // The Central Sun never rotates with camera rotation — stays strictly upright and locked in the center
+      ctx.save();
+      ctx.rotate(-cam.rotation);
+
       coronaAngle.current += 0.012;
       const sunCoreR = isMobile ? 40 : 48;
       const breathe = Math.sin(time * 0.0025);
@@ -468,17 +659,10 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       // 1. Warm Solar Amber & Cyber Cyan Atmospheric Halo (Warm Cosmic Energy)
       const haloR = sunCoreR * (2.6 + breathe * 0.18);
       const halo = ctx.createRadialGradient(0, 0, sunCoreR * 0.35, 0, 0, haloR);
-      if (isDay) {
-        halo.addColorStop(0, "rgba(255, 123, 0, 0.45)");
-        halo.addColorStop(0.40, "rgba(255, 94, 58, 0.20)");
-        halo.addColorStop(0.75, "rgba(0, 217, 255, 0.10)");
-        halo.addColorStop(1, "transparent");
-      } else {
-        halo.addColorStop(0, "rgba(255, 123, 0, 0.65)");
-        halo.addColorStop(0.35, "rgba(255, 94, 58, 0.35)");
-        halo.addColorStop(0.70, "rgba(0, 217, 255, 0.16)");
-        halo.addColorStop(1, "transparent");
-      }
+      halo.addColorStop(0, "rgba(255, 123, 0, 0.65)");
+      halo.addColorStop(0.35, "rgba(255, 94, 58, 0.35)");
+      halo.addColorStop(0.70, "rgba(0, 217, 255, 0.16)");
+      halo.addColorStop(1, "transparent");
       ctx.fillStyle = halo;
       ctx.beginPath();
       ctx.arc(0, 0, haloR, 0, Math.PI * 2);
@@ -488,7 +672,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       const innerOrbitR = sunCoreR + 15 + breathe * 2;
       ctx.save();
       ctx.rotate(coronaAngle.current * 0.5);
-      ctx.strokeStyle = isDay ? "rgba(255, 123, 0, 0.4)" : "rgba(255, 123, 0, 0.55)";
+      ctx.strokeStyle = "rgba(255, 123, 0, 0.55)";
       ctx.lineWidth = 1.2;
       ctx.setLineDash([4, 6]);
       ctx.beginPath();
@@ -514,7 +698,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       const outerOrbitR = sunCoreR + 26;
       ctx.save();
       ctx.rotate(-coronaAngle.current * 0.35);
-      ctx.strokeStyle = isDay ? "rgba(0, 217, 255, 0.3)" : "rgba(0, 217, 255, 0.45)";
+      ctx.strokeStyle = "rgba(0, 217, 255, 0.45)";
       ctx.lineWidth = 1.0;
       ctx.setLineDash([2, 8]);
       ctx.beginPath();
@@ -531,8 +715,8 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
         const wave = Math.sin(time * 0.004 + f * 0.8);
         const flareLen = (f % 2 === 0 ? 16 + wave * 5 : 9 + wave * 3) * (isMobile ? 0.85 : 1.1);
         ctx.strokeStyle = f % 2 === 0
-          ? (isDay ? "rgba(216, 67, 21, 0.85)" : "rgba(255, 123, 0, 0.75)")
-          : (isDay ? "rgba(2, 132, 199, 0.75)" : "rgba(0, 217, 255, 0.65)");
+          ? "rgba(255, 123, 0, 0.75)"
+          : "rgba(0, 217, 255, 0.65)";
         ctx.lineWidth = 1.8;
         ctx.beginPath();
         ctx.moveTo(Math.cos(fAngle) * (pulseR + 1), Math.sin(fAngle) * (pulseR + 1));
@@ -541,7 +725,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       }
       ctx.restore();
 
-      // 4. Center Avatar Sun Portrait (Thug-Life Crown Avatar)
+      // 4. Center Avatar Sun Portrait (Thug-Life Crown Avatar - Stays Fixed Upright)
       const avatarImg = sunImgRef.current;
       if (avatarImg && avatarImg.complete) {
         ctx.save();
@@ -549,7 +733,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
         ctx.arc(0, 0, pulseR, 0, Math.PI * 2);
         ctx.clip();
 
-        ctx.fillStyle = isDay ? "#FFFFFF" : "#000000";
+        ctx.fillStyle = "#000000";
         ctx.fill();
 
         const imgScale = pulseR * 2.16;
@@ -557,42 +741,41 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
         ctx.restore();
 
         // Solar Amber Luminous Rim Border
-        ctx.shadowColor = isDay ? "#D84315" : "#FF7B00";
-        ctx.shadowBlur = isDay ? 14 : 28;
-        ctx.strokeStyle = isDay ? "#D84315" : "#FF7B00";
+        ctx.shadowColor = "#FF7B00";
+        ctx.shadowBlur = 28;
+        ctx.strokeStyle = "#FF7B00";
         ctx.lineWidth = 2.8;
         ctx.beginPath();
         ctx.arc(0, 0, pulseR, 0, Math.PI * 2);
         ctx.stroke();
 
         // Inner glowing Cyber Cyan accent ring
-        ctx.strokeStyle = isDay ? "rgba(2, 132, 199, 0.85)" : "rgba(0, 217, 255, 0.85)";
+        ctx.strokeStyle = "rgba(0, 217, 255, 0.85)";
         ctx.lineWidth = 1.1;
         ctx.beginPath();
         ctx.arc(0, 0, pulseR - 2.5, 0, Math.PI * 2);
         ctx.stroke();
         ctx.shadowBlur = 0;
       } else {
-        ctx.shadowColor = isDay ? "#D84315" : "#FF7B00";
+        ctx.shadowColor = "#FF7B00";
         ctx.shadowBlur = 24;
-        ctx.fillStyle = isDay ? "#D84315" : "#FF7B00";
+        ctx.fillStyle = "#FF7B00";
         ctx.beginPath();
         ctx.arc(0, 0, pulseR, 0, Math.PI * 2);
         ctx.fill();
         ctx.shadowBlur = 0;
       }
 
-      // 5. Docked theUG_ Pill Badge Anchored At The Bottom Rim Of Portrait
+      // 5. Docked theUG_ Pill Badge Anchored At The Bottom Rim Of Portrait (Upright)
       ctx.save();
-      ctx.rotate(-cam.rotation);
       const badgeW = isMobile ? 74 : 88;
       const badgeH = isMobile ? 22 : 26;
       const badgeY = pulseR - (badgeH * 0.45); // Docked overlapping bottom edge
 
-      ctx.shadowColor = isDay ? "rgba(0, 0, 0, 0.15)" : "rgba(255, 123, 0, 0.6)";
-      ctx.shadowBlur = isDay ? 8 : 12;
-      ctx.fillStyle = isDay ? "#FFFFFF" : "#07090E";
-      ctx.strokeStyle = isDay ? "#D84315" : "#FF7B00";
+      ctx.shadowColor = "rgba(255, 123, 0, 0.6)";
+      ctx.shadowBlur = 12;
+      ctx.fillStyle = "#07090E";
+      ctx.strokeStyle = "#FF7B00";
       ctx.lineWidth = 1.6;
       ctx.beginPath();
       ctx.roundRect(-badgeW / 2, badgeY, badgeW, badgeH, badgeH / 2);
@@ -601,8 +784,8 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       ctx.shadowBlur = 0;
 
       // Small cyan live telemetry dot inside pill
-      ctx.fillStyle = isDay ? "#0284C7" : "#00D9FF";
-      ctx.shadowColor = isDay ? "#0284C7" : "#00D9FF";
+      ctx.fillStyle = "#00D9FF";
+      ctx.shadowColor = "#00D9FF";
       ctx.shadowBlur = 6;
       ctx.beginPath();
       ctx.arc(-badgeW / 2 + 12, badgeY + badgeH / 2, 2.5, 0, Math.PI * 2);
@@ -610,12 +793,14 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       ctx.shadowBlur = 0;
 
       // theUG_ Text
-      ctx.fillStyle = isDay ? "#1A1A1E" : "#FFFFFF";
+      ctx.fillStyle = "#FFFFFF";
       ctx.font = `bold ${isMobile ? 11 : 12.5}px "IBM Plex Mono", monospace`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText("theUG_", 4, badgeY + badgeH / 2);
       ctx.restore();
+
+      ctx.restore(); // End Section E (Restores camera transform)
 
       // ─── CONSTELLATION CROSS-CHAIN BRIDGES & LINK THREADS ────────
       const CONSTELLATIONS = [
@@ -821,8 +1006,8 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
         const badgeW = textMetrics.width + padX * 2;
         const badgeH = 14 * depthScale;
 
-        ctx.fillStyle = isDay ? "rgba(255, 255, 255, 0.98)" : "rgba(8, 10, 15, 0.90)";
-        ctx.strokeStyle = isSelected ? p.color : (p.isHovered ? p.color : (isDay ? "rgba(100, 116, 139, 0.35)" : "rgba(255, 255, 255, 0.22)"));
+        ctx.fillStyle = "rgba(8, 10, 15, 0.92)";
+        ctx.strokeStyle = isSelected ? p.color : (p.isHovered ? p.color : "rgba(255, 255, 255, 0.22)");
         ctx.lineWidth = isSelected ? 1.6 : 1;
         if (isSelected || p.isHovered) {
           ctx.shadowColor = p.color;
@@ -835,7 +1020,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
         ctx.stroke();
         ctx.shadowBlur = 0;
 
-        ctx.fillStyle = isSelected ? p.color : (isDay ? "#1A1A1E" : "#FFFFFF");
+        ctx.fillStyle = isSelected ? p.color : "#FFFFFF";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(badgeLabel, 0, bgY + (badgeH / 2));
@@ -844,63 +1029,233 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
         ctx.restore();
       });
 
-      // ─── G. ANIMATED FALLING MEME ASTEROIDS / COMETS ─────────────
-      // Bonk, Pengu, Shiba, Doge, Pepe gliding across the space near planets
+      // Restore camera space so Meme Showers render across the celestial screen viewport
+      ctx.restore();
+
+      // ─── G. MEME SHOWERS: COMETS & METEORS ─────────────────────────
+      // Pengu (Cold Comet), Pepe (Neon Comet), Doge (Fire Meteor), Shiba (Blazing Meteor), Bonk (Kinetic Meteor)
       asteroidsRef.current.forEach(m => {
         if (!m.active) return;
         m.age++;
         m.x += m.vx;
         m.y += m.vy;
 
-        m.trail.push({ x: m.x, y: m.y, alpha: m.alpha });
-        if (m.trail.length > 10) m.trail.shift();
+        m.trail.push({ x: m.x, y: m.y, alpha: m.alpha, size: m.size });
+        const maxTrail = m.kind === "comet" ? 22 : 16;
+        if (m.trail.length > maxTrail) m.trail.shift();
 
-        // Soft, elegant comet tail
-        if (m.trail.length > 1) {
+        // High-frequency particle emission based on token type
+        if (particlesRef.current.length < 130) {
+          if (m.id === "pengu") {
+            // Cold Frost Crystals (Cyan & Ice-White)
+            particlesRef.current.push({
+              x: m.x - m.vx * 0.4 + (Math.random() - 0.5) * 6,
+              y: m.y - m.vy * 0.4 + (Math.random() - 0.5) * 6,
+              vx: -m.vx * 0.14 + (Math.random() - 0.5) * 0.6,
+              vy: -m.vy * 0.14 + (Math.random() - 0.5) * 0.6,
+              alpha: 0.9,
+              size: Math.random() * 2.2 + 1.2,
+              color: Math.random() > 0.4 ? "#38BDF8" : "#E0F2FE",
+              shape: "frost",
+              age: 0,
+              lifespan: 26 + Math.floor(Math.random() * 12),
+            });
+          } else if (m.id === "pepe") {
+            // Neon Emerald Plasma Sparks
+            particlesRef.current.push({
+              x: m.x - m.vx * 0.4 + (Math.random() - 0.5) * 6,
+              y: m.y - m.vy * 0.4 + (Math.random() - 0.5) * 6,
+              vx: -m.vx * 0.12 + (Math.random() - 0.5) * 0.6,
+              vy: -m.vy * 0.12 + (Math.random() - 0.5) * 0.6,
+              alpha: 0.85,
+              size: Math.random() * 2.0 + 0.8,
+              color: Math.random() > 0.35 ? "#22C55E" : "#86EFAC",
+              shape: "spark",
+              age: 0,
+              lifespan: 24 + Math.floor(Math.random() * 10),
+            });
+          } else if (m.id === "doge") {
+            // Blazing Golden Fire Embers
+            for (let k = 0; k < 2; k++) {
+              particlesRef.current.push({
+                x: m.x - m.vx * 0.4 + (Math.random() - 0.5) * 8,
+                y: m.y - m.vy * 0.4 + (Math.random() - 0.5) * 8,
+                vx: -m.vx * 0.18 + (Math.random() - 0.5) * 1.0,
+                vy: -m.vy * 0.18 + (Math.random() - 0.5) * 1.0,
+                alpha: 0.95,
+                size: Math.random() * 2.4 + 1.0,
+                color: Math.random() > 0.5 ? "#FFA409" : (Math.random() > 0.5 ? "#FDE047" : "#FFFFFF"),
+                shape: "ember",
+                age: 0,
+                lifespan: 22 + Math.floor(Math.random() * 10),
+              });
+            }
+          } else if (m.id === "shiba") {
+            // Crackling Crimson Fire Sparks
+            for (let k = 0; k < 2; k++) {
+              particlesRef.current.push({
+                x: m.x - m.vx * 0.4 + (Math.random() - 0.5) * 8,
+                y: m.y - m.vy * 0.4 + (Math.random() - 0.5) * 8,
+                vx: -m.vx * 0.18 + (Math.random() - 0.5) * 1.0,
+                vy: -m.vy * 0.18 + (Math.random() - 0.5) * 1.0,
+                alpha: 0.95,
+                size: Math.random() * 2.5 + 1.0,
+                color: Math.random() > 0.5 ? "#FF4500" : (Math.random() > 0.5 ? "#EF4444" : "#FDE047"),
+                shape: "ember",
+                age: 0,
+                lifespan: 22 + Math.floor(Math.random() * 10),
+              });
+            }
+          } else {
+            // Heavy Kinetic Orange Particles
+            particlesRef.current.push({
+              x: m.x - m.vx * 0.4 + (Math.random() - 0.5) * 6,
+              y: m.y - m.vy * 0.4 + (Math.random() - 0.5) * 6,
+              vx: -m.vx * 0.12 + (Math.random() - 0.5) * 0.6,
+              vy: -m.vy * 0.12 + (Math.random() - 0.5) * 0.6,
+              alpha: 0.85,
+              size: Math.random() * 2.2 + 1.0,
+              color: "#F47D20",
+              shape: "spark",
+              age: 0,
+              lifespan: 20 + Math.floor(Math.random() * 10),
+            });
+          }
+        }
+
+        // 1. Draw glowing tapered comet / meteor tail
+        const trailLen = m.trail.length;
+        if (trailLen > 1) {
           ctx.save();
-          const tailGrad = ctx.createLinearGradient(m.trail[0].x, m.trail[0].y, m.x, m.y);
-          tailGrad.addColorStop(0, "transparent");
-          tailGrad.addColorStop(0.6, `${m.color}35`);
-          tailGrad.addColorStop(1, `${m.color}cc`);
-
-          ctx.strokeStyle = tailGrad;
-          ctx.lineWidth = 2.0;
           ctx.shadowColor = m.color;
-          ctx.shadowBlur = 8;
+          ctx.shadowBlur = 10;
 
+          for (let i = 0; i < trailLen - 1; i++) {
+            const progress = (i + 1) / trailLen;
+            const p1 = m.trail[i];
+            const p2 = m.trail[i + 1];
+
+            ctx.strokeStyle = m.kind === "comet"
+              ? (m.id === "pengu" ? `rgba(56, 189, 248, ${progress * 0.85})` : `rgba(34, 197, 94, ${progress * 0.85})`)
+              : (m.id === "shiba" ? `rgba(255, 69, 0, ${progress * 0.9})` : `rgba(255, 164, 9, ${progress * 0.9})`);
+
+            ctx.lineWidth = Math.max(0.8, progress * (m.kind === "comet" ? 3.6 : 4.8));
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+          }
+
+          // Inner incandescent core streak
+          ctx.strokeStyle = m.secondaryColor;
+          ctx.lineWidth = 1.0;
           ctx.beginPath();
-          ctx.moveTo(m.trail[0].x, m.trail[0].y);
-          for (let i = 1; i < m.trail.length; i++) {
+          const startIdx = Math.floor(trailLen * 0.45);
+          ctx.moveTo(m.trail[startIdx].x, m.trail[startIdx].y);
+          for (let i = startIdx + 1; i < trailLen; i++) {
             ctx.lineTo(m.trail[i].x, m.trail[i].y);
           }
+          ctx.lineTo(m.x, m.y);
           ctx.stroke();
+
           ctx.shadowBlur = 0;
           ctx.restore();
         }
 
-        // Asteroid Meme Token Head
-        const mImg = memeBitmaps.current[m.id];
+        // 2. Draw Meme Token Head with Custom Shockwave
         ctx.save();
+        ctx.translate(m.x, m.y);
+
+        const auraR = m.size * 0.75;
+        const aura = ctx.createRadialGradient(0, 0, m.size * 0.15, 0, 0, auraR);
+        if (m.kind === "comet") {
+          aura.addColorStop(0, `${m.secondaryColor}bb`);
+          aura.addColorStop(0.5, `${m.color}66`);
+          aura.addColorStop(1, "transparent");
+        } else {
+          aura.addColorStop(0, "rgba(255, 255, 255, 0.95)");
+          aura.addColorStop(0.4, `${m.secondaryColor}cc`);
+          aura.addColorStop(0.75, `${m.color}77`);
+          aura.addColorStop(1, "transparent");
+        }
+        ctx.fillStyle = aura;
+        ctx.beginPath();
+        ctx.arc(0, 0, auraR, 0, Math.PI * 2);
+        ctx.fill();
+
+        const mImg = memeBitmaps.current[m.id];
         ctx.shadowColor = m.color;
         ctx.shadowBlur = 12;
 
         if (mImg && mImg.complete) {
           const mSize = m.size;
-          ctx.drawImage(mImg, m.x - mSize / 2, m.y - mSize / 2, mSize, mSize);
+          ctx.drawImage(mImg, -mSize / 2, -mSize / 2, mSize, mSize);
         } else {
           ctx.fillStyle = m.color;
           ctx.beginPath();
-          ctx.arc(m.x, m.y, 8, 0, Math.PI * 2);
+          ctx.arc(0, 0, m.size * 0.45, 0, Math.PI * 2);
           ctx.fill();
         }
+        ctx.shadowBlur = 0;
+
+        // Micro telemetry label pill
+        const tag = `${m.name} // ${m.label}`;
+        ctx.font = 'bold 7.5px "IBM Plex Mono", monospace';
+        const tw = ctx.measureText(tag).width;
+        const tagY = -m.size * 0.55 - 11;
+        ctx.fillStyle = "rgba(3, 5, 8, 0.88)";
+        ctx.strokeStyle = m.color;
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.roundRect(-tw / 2 - 4, tagY, tw + 8, 11, 2.5);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = m.secondaryColor;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(tag, 0, tagY + 5.5);
+
         ctx.restore();
 
-        if (m.age >= m.lifespan || m.x < -100 || m.x > w + 100 || m.y > h + 100) {
+        if (m.age >= m.lifespan || m.x < -120 || m.x > w + 120 || m.y > h + 120) {
           m.active = false;
         }
       });
 
-      ctx.restore();
+      // 3. Draw and update particle system (frost crystals, sparks, embers)
+      for (let i = particlesRef.current.length - 1; i >= 0; i--) {
+        const p = particlesRef.current[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.alpha *= 0.93;
+        p.age++;
+
+        if (p.age >= p.lifespan || p.alpha <= 0.03) {
+          particlesRef.current.splice(i, 1);
+          continue;
+        }
+
+        ctx.save();
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.alpha;
+        if (p.shape === "frost") {
+          // 4-point crystalline frost diamond
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y - p.size);
+          ctx.lineTo(p.x + p.size * 0.6, p.y);
+          ctx.lineTo(p.x, p.y + p.size);
+          ctx.lineTo(p.x - p.size * 0.6, p.y);
+          ctx.closePath();
+          ctx.fill();
+        } else {
+          // Incandescent spark / ember point
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
 
       rafRef.current = requestAnimationFrame(render);
     };
@@ -1056,7 +1411,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
       ref={containerRef}
       tabIndex={0}
       onKeyDown={handleContainerKeyDown}
-      className="relative w-full h-[580px] sm:h-[660px] md:h-[720px] lg:h-[780px] xl:h-[840px] 2xl:h-[880px] overflow-hidden select-none bg-[var(--color-void)] focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-cyan)]"
+      className="relative w-full h-[580px] sm:h-[660px] md:h-[720px] lg:h-[780px] xl:h-[840px] 2xl:h-[880px] overflow-hidden select-none bg-[#030508] focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-cyan)]"
       role="region"
       aria-label="On-Chain Conviction: Web3 Solar System with Usmaan Gani"
     >
@@ -1067,7 +1422,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
         <button
           onClick={handleResetCamera}
           aria-label="Reset Camera View to Default"
-          className="px-2.5 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/85 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-bright)] transition-colors cursor-pointer min-h-[32px] flex items-center gap-1.5 text-[10px] font-mono font-bold focus-visible:ring-2 focus-visible:ring-[var(--color-cyan)] focus-visible:outline-none backdrop-blur-md"
+          className="px-2.5 py-1.5 rounded-lg border border-white/15 bg-black/70 text-zinc-300 hover:text-white hover:border-white/35 transition-colors cursor-pointer min-h-[32px] flex items-center gap-1.5 text-[10px] font-mono font-bold focus-visible:ring-2 focus-visible:ring-[var(--color-cyan)] focus-visible:outline-none backdrop-blur-md"
           title="Reset Camera View"
         >
           <RotateCcw size={12} />
@@ -1099,7 +1454,7 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
           <button
             onClick={handleResetCamera}
             aria-label="Reset Camera View"
-            className="px-2 py-1 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]/85 text-[var(--color-text-secondary)] cursor-pointer text-[9px] font-mono flex items-center gap-1 min-h-[28px]"
+            className="px-2 py-1 rounded-md border border-white/15 bg-black/75 text-zinc-300 cursor-pointer text-[9px] font-mono flex items-center gap-1 min-h-[28px]"
             title="Reset Camera View"
           >
             <RotateCcw size={11} />
@@ -1124,12 +1479,12 @@ export function SolarSystem({ selectedId, onSelect }: SolarSystemProps) {
                 onClick={() => onSelect(eco)}
                 className={`px-3 py-1.5 rounded-full font-mono text-[9.5px] tracking-wider transition-all cursor-pointer shrink-0 flex items-center gap-1.5 min-h-[36px] ${
                   isSelected
-                    ? "bg-[var(--color-surface)] border-2 font-bold shadow-md"
-                    : "bg-[var(--color-surface)]/80 border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+                    ? "bg-zinc-900 border-2 font-bold shadow-md text-white"
+                    : "bg-black/75 border border-white/15 text-zinc-400 hover:text-white"
                 }`}
                 style={{
                   borderColor: isSelected ? eco.color : undefined,
-                  color: isSelected ? (isDayMode ? "#000000" : "#ffffff") : undefined,
+                  color: isSelected ? "#ffffff" : undefined,
                 }}
               >
                 <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: eco.color }} />

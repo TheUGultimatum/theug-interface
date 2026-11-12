@@ -100,7 +100,7 @@ export function OnchainObservatory() {
       <section 
         ref={stageRef}
         aria-label="Web3 Solar System Canvas" 
-        className="relative w-full rounded-2xl overflow-hidden border border-[var(--color-border)] bg-[var(--color-void)] shadow-[0_0_60px_rgba(0,0,0,0.35)]"
+        className="relative w-full rounded-2xl overflow-hidden border border-white/10 bg-[#030508] shadow-[0_0_60px_rgba(0,0,0,0.5)]"
       >
         {/* DESKTOP TOP-LEFT HEADER OVERLAY (Enlarged & Prominently Positioned) */}
         <header className="hidden lg:block absolute top-7 left-8 xl:top-9 xl:left-9 z-30 pointer-events-none max-w-md">
@@ -108,14 +108,14 @@ export function OnchainObservatory() {
             <span>&gt;</span>
             <span>05 / ON-CHAIN CONVICTION</span>
           </div>
-          <h2 className="text-4xl xl:text-5xl 2xl:text-6xl font-black tracking-tight font-display text-[var(--color-text-primary)] leading-[0.98]">
+          <h2 className="text-4xl xl:text-5xl 2xl:text-6xl font-black tracking-tight font-display text-white leading-[0.98]">
             <span>ON-CHAIN</span>
             <br />
             <span className="text-[var(--color-amber)] drop-shadow-[0_0_28px_rgba(255,123,0,0.45)]">
               CONVICTION
             </span>
           </h2>
-          <p className="text-sm xl:text-base text-[var(--color-text-secondary)] font-sans mt-3 leading-relaxed">
+          <p className="text-sm xl:text-base text-zinc-300 font-sans mt-3 leading-relaxed">
             The ecosystems, chains and networks
             <br />
             I explore, build on and believe in.
