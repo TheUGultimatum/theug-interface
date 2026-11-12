@@ -552,7 +552,7 @@ function HeroIdentity() {
   }, [phase]);
 
   return (
-    <div style={{ lineHeight: 0.88, position: "relative", minHeight: "120px" }}>
+    <div style={{ lineHeight: 0.88, position: "relative", minHeight: "clamp(170px, 20vw, 290px)" }}>
       {phase === "init" && (
         <div className="font-mono text-[11px] text-[var(--color-text-secondary)] mt-4 animate-pulse">
           $ {initText}<span className="cursor-blink" />
@@ -560,16 +560,18 @@ function HeroIdentity() {
       )}
 
       {(phase === "reveal" || phase === "stable") && (
-        <div className="animate-fade-in" style={{ animationDuration: "1s" }}>
+        <div className="animate-fade-in" style={{ animationDuration: "0.8s" }}>
           <h1 
             className="text-hero" 
             style={{ 
               margin: 0, 
               display: "flex", 
               flexDirection: "column",
+              justifyContent: "flex-start",
               fontSize: titleIdx === 0 ? undefined : "clamp(42px, 8vw, 76px)",
               lineHeight: titleIdx === 0 ? 0.88 : 0.95,
-              wordBreak: "break-word"
+              wordBreak: "break-word",
+              minHeight: "clamp(120px, 16vw, 245px)",
             }}
           >
             <span><ScrambleText key={`l1-${titleIdx}`} text={HERO_TITLES[titleIdx].line1} trigger={phase === "reveal" || phase === "stable"} /></span>
