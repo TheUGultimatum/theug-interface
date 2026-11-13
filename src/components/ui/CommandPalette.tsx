@@ -41,8 +41,8 @@ export function CommandPalette() {
     
     // System
     { id: "sys-admin", label: "sudo sys.admin // console", category: "System", action: () => navigateTo("/admin") },
-    { id: "sys-source", label: "git clone source-code", category: "System", action: () => window.open("https://github.com/TheUGultimatum", "_blank") },
-    { id: "sys-resume", label: "curl -O resume.pdf", category: "System", action: () => alert("Resume download initiated...") },
+    { id: "sys-source", label: "git clone source-code", category: "System", action: () => window.open("https://github.com/TheUGultimatum", "_blank", "noopener,noreferrer") },
+    { id: "sys-resume", label: "curl -O resume.pdf", category: "System", action: () => window.open("https://drive.google.com", "_blank", "noopener,noreferrer") },
   ];
 
   const filtered = commands.filter(c => 
@@ -80,6 +80,11 @@ export function CommandPalette() {
   useEffect(() => {
     const handleNavigation = (e: KeyboardEvent) => {
       if (!open) return;
+      if (e.key === "Tab") {
+        e.preventDefault();
+        inputRef.current?.focus();
+        return;
+      }
       if (e.key === "ArrowDown") {
         e.preventDefault();
         setSelectedIndex(i => (i + 1) % Math.max(filtered.length, 1));
@@ -102,6 +107,9 @@ export function CommandPalette() {
 
   return (
     <div 
+      role="dialog"
+      aria-modal="true"
+      aria-label="Command Palette"
       className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] px-4 animate-fade-in"
       style={{
         background: "color-mix(in srgb, var(--color-void) 60%, transparent)",
@@ -124,6 +132,7 @@ export function CommandPalette() {
           <input
             ref={inputRef}
             type="text"
+            aria-label="Search terminal commands"
             placeholder="Type a command or search..."
             value={query}
             onChange={e => { setQuery(e.target.value); setSelectedIndex(0); }}

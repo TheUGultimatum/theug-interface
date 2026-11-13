@@ -579,12 +579,19 @@ export function Projects() {
           }`}
         >
           {/* Categories */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 scrollbar-none">
+          <div 
+            role="tablist"
+            aria-label="Filter projects by category"
+            className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 scrollbar-none"
+          >
             {categories.map((cat) => {
               const active = activeCategory === cat;
               return (
                 <button
                   key={cat}
+                  role="tab"
+                  aria-selected={active}
+                  aria-label={`Show ${cat} projects`}
                   onClick={() => setActiveCategory(cat)}
                   className={`px-3 py-1.5 rounded text-[10px] font-mono tracking-wider transition-all cursor-pointer whitespace-nowrap ${
                     active
@@ -606,6 +613,7 @@ export function Projects() {
             />
             <input
               type="text"
+              aria-label="Search projects by keyword or tech stack"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search stack, keywords..."
@@ -614,6 +622,7 @@ export function Projects() {
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
+                aria-label="Clear project search"
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] cursor-pointer"
               >
                 ✕

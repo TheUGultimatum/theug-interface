@@ -133,7 +133,7 @@ function ArticleSplitPreview({
       </h3>
 
       {blog.summary && (
-        <div className="p-4 rounded-xl border-l-2 border-[var(--color-amber)] bg-[var(--color-elevated)] border border-[var(--color-border)] text-xs md:text-sm text-[var(--color-text-secondary)] italic leading-relaxed">
+        <div className="p-4 rounded-xl bg-[var(--color-elevated)] border border-[var(--color-border)] text-xs md:text-sm text-[var(--color-text-secondary)] italic leading-relaxed">
           &ldquo;{blog.summary}&rdquo;
         </div>
       )}

@@ -12,11 +12,11 @@
   --color-border: #1a1a1a;
   --color-border-bright: #2a2a2a;
 
-  /* Text Layer â€” neutral off-white */
+  /* Text Layer — neutral off-white (WCAG AA Compliant) */
   --color-text-primary: #ededed;
-  --color-text-secondary: #888888;
-  --color-text-muted: #555555;
-  --color-text-ghost: #2a2a2a;
+  --color-text-secondary: #b0b0b0;
+  --color-text-muted: #7c7c82;
+  --color-text-ghost: #444444;
   /* Accent â€” bright orange/red primary, cyan only for active */
   --color-amber: #ff5e3a;
   --color-amber-bright: #ff7b00;
@@ -177,6 +177,10 @@ html {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.has-custom-cursor,
+.has-custom-cursor body {
   cursor: none;
 }
 
@@ -939,11 +943,15 @@ h1, h2, h3, h4, .text-balance {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  * {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+  
+  /* Preserve non-vestibular opacity & color feedback for essential state awareness */
+  *, *::before, *::after {
+    transition-duration: 0.12s !important;
   }
 }
 

@@ -325,6 +325,10 @@ export function Contact() {
             className={`panel ${inView ? "animate-fade-in-up delay-100" : "anim-hidden"}`}
             style={{ cursor: "none" }}
             onClick={handleTerminalClick}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { handleTerminalClick(); } }}
+            tabIndex={0}
+            role="region"
+            aria-label="Direct transmission terminal"
           >
             <div className="panel-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -567,6 +571,7 @@ export function Contact() {
                     <input
                       ref={inputRef}
                       type="text"
+                      aria-label={`Transmission input: ${step}`}
                       value={inputValue}
                       onChange={handleInputChange}
                       onKeyDown={handleKeyDown}

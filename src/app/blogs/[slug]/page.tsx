@@ -107,7 +107,7 @@ export default async function BlogPostPage({
 
       {/* Summary Lead */}
       {post.summary && (
-        <div className="p-4 rounded-lg border-l-2 border-[var(--color-amber)] bg-[var(--color-surface)] border border-[var(--color-border)] mb-8">
+        <div className="p-4 md:p-5 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] mb-8 shadow-xs">
           <p className="text-sm md:text-base text-[var(--color-text-secondary)] leading-relaxed italic">
             &ldquo;{post.summary}&rdquo;
           </p>

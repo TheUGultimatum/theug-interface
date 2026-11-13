@@ -87,14 +87,14 @@ export function TopBar() {
       {/* Right side / Bottom Row on mobile */}
       <div className="flex md:hidden items-center justify-between w-full" style={{ height: "42px", borderTop: "1px solid var(--color-border)" }}>
         <LiveClock align="left" />
-        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <button
             onClick={toggleTheme}
-            className="p-1.5 rounded-md border border-[var(--color-border)] flex items-center justify-center cursor-pointer"
+            className="min-w-[44px] min-h-[38px] p-2 rounded-md border border-[var(--color-border)] flex items-center justify-center cursor-pointer transition-colors active:scale-95"
             style={{ color: "var(--color-text-secondary)", background: "transparent" }}
-            aria-label="Toggle Theme"
+            aria-label={dayMode ? "Switch to Night Mode" : "Switch to Day Mode"}
           >
-            {dayMode ? <Sun size={12} className="text-[var(--color-amber-bright)]" /> : <Moon size={12} />}
+            {dayMode ? <Sun size={13} className="text-[var(--color-amber-bright)]" /> : <Moon size={13} />}
           </button>
           <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
             <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "var(--color-online)", animation: "pulse-dot 2.4s ease-in-out infinite", flexShrink: 0 }} />
@@ -108,9 +108,10 @@ export function TopBar() {
         <LiveClock />
         <button
           onClick={toggleTheme}
-          className="p-1.5 rounded-md border border-[var(--color-border)] hover:border-[var(--color-amber)] transition-colors flex items-center justify-center cursor-pointer"
+          className="p-2 min-w-[36px] min-h-[36px] rounded-md border border-[var(--color-border)] hover:border-[var(--color-amber)] transition-colors flex items-center justify-center cursor-pointer"
           style={{ color: "var(--color-text-secondary)", background: "transparent" }}
           title={dayMode ? "Switch to Night Mode" : "Switch to Day Mode"}
+          aria-label={dayMode ? "Switch to Night Mode" : "Switch to Day Mode"}
         >
           {dayMode ? <Sun size={14} className="text-[var(--color-amber-bright)]" /> : <Moon size={14} />}
         </button>

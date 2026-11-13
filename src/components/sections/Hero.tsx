@@ -379,6 +379,7 @@ function Terminal() {
               <input
                 ref={inputRef}
                 type="text"
+                aria-label="Terminal interactive command prompt"
                 value={input}
                 onChange={e => {
                   setHasInteracted(true);
@@ -800,7 +801,7 @@ function HeroIdentity() {
             }}>
               <div 
                 style={{ 
-                  transition: "transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                  transition: "transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
                   transform: `translateY(-${roleIdx * 16}px)` 
                 }}
               >

@@ -14,6 +14,7 @@ export function IdentityPortrait() {
 
   const [dots, setDots] = useState("");
   const [isHovered, setIsHovered] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
   const frameRef = useRef(0);
 
   // Parallax / Spring Dynamics Refs
@@ -41,7 +42,9 @@ export function IdentityPortrait() {
     if (!container) return;
 
     // media query check for reduced motion
-    reducedMotionRef.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const isReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    setReducedMotion(isReduced);
+    reducedMotionRef.current = isReduced;
 
     // Viewport observer to pause loops when scrolled offscreen
     const observer = new IntersectionObserver(
@@ -162,7 +165,7 @@ export function IdentityPortrait() {
         className="relative aspect-[3/4] h-[92%] max-h-[92%] w-auto overflow-hidden transition-all duration-700 ease-out"
         style={{
           transformStyle: "preserve-3d",
-          willChange: isHovered && !reducedMotionRef.current ? "transform" : "auto",
+          willChange: isHovered && !reducedMotion ? "transform" : "auto",
           transition: "box-shadow 0.6s ease",
           maskImage: "linear-gradient(to bottom, black 62%, rgba(0,0,0,0.8) 72%, rgba(0,0,0,0.1) 90%, transparent 100%)",
           WebkitMaskImage: "linear-gradient(to bottom, black 62%, rgba(0,0,0,0.8) 72%, rgba(0,0,0,0.1) 90%, transparent 100%)",
@@ -217,7 +220,7 @@ export function IdentityPortrait() {
           className="absolute inset-0 pointer-events-none z-10 transition-opacity duration-500 opacity-[0.12] group-hover:opacity-[0.24]"
           style={{
             background: "linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.06) 45%, transparent 45%, transparent 100%)",
-            willChange: isHovered && !reducedMotionRef.current ? "transform" : "auto",
+            willChange: isHovered && !reducedMotion ? "transform" : "auto",
           }}
         />
       </div>
@@ -284,7 +287,12 @@ export function IdentityPortrait() {
           100% { top: 102%; }
         }
         .animate-scan-sweep {
-          animation: ${reducedMotionRef.current ? "none" : "scan-sweep 15s infinite cubic-bezier(0.25, 0.46, 0.45, 0.94)"};
+          animation: scan-sweep 15s infinite cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .animate-scan-sweep {
+            animation: none;
+          }
         }
         
         @keyframes grain-shift {
@@ -301,7 +309,12 @@ export function IdentityPortrait() {
           top: -15%;
           left: -15%;
           background-size: 110px;
-          animation: ${reducedMotionRef.current ? "none" : "grain-shift 10s steps(8) infinite"};
+          animation: grain-shift 10s steps(8) infinite;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .animate-grain {
+            animation: none;
+          }
         }
 
         /* Particle drifts */

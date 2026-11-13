@@ -219,6 +219,8 @@ function MobileNav() {
               key={href}
               href={href}
               prefetch={true}
+              aria-label={label}
+              aria-current={isActive ? "page" : undefined}
               className="relative flex flex-col items-center justify-center w-[48px] h-[48px] group transition-all duration-300"
             >
               <span
