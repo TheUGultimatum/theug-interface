@@ -279,6 +279,14 @@ export function Blogs() {
   ];
   const hasPosts = posts.length > 0;
 
+  // Upgrade Twitter low-res avatar (_normal.jpg, 48x48) to high-res 400x400 HD photo
+  const avatarSrc = useMemo(() => {
+    if (!xStats.avatar_url) return "/images/avatar-sun.png";
+    return xStats.avatar_url
+      .replace(/_normal\.(jpg|jpeg|png|webp)/i, "_400x400.$1")
+      .replace("_normal.", "_400x400.");
+  }, [xStats.avatar_url]);
+
   const filteredPosts = useMemo(() => {
     if (!hasPosts) return [];
     return posts.filter((post) => {
@@ -342,10 +350,12 @@ export function Blogs() {
         >
           <div className="flex flex-col sm:flex-row sm:items-center gap-6">
             <div className="relative w-20 h-20 md:w-22 md:h-22 rounded-2xl overflow-hidden border border-[var(--color-border-bright)] shrink-0 bg-black shadow-md">
-              {/* Fallback to avatar-sun, dynamically upgrades to live X avatar photo when synced */}
+              {/* High-resolution X profile avatar (upgraded from 48x48 thumbnail to 400x400 HD) */}
               <img
-                src={xStats.avatar_url || "/images/avatar-sun.png"}
-                alt="TheUG"
+                src={avatarSrc}
+                alt={xStats.name || "TheUG"}
+                width={88}
+                height={88}
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   (e.currentTarget as HTMLImageElement).src = "/images/avatar-sun.png";

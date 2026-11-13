@@ -35,6 +35,10 @@ export async function GET() {
       return NextResponse.json({ success: true, stats: fallbackStats, cached: true });
     }
 
+    const highResAvatar = user.avatar_url
+      ? user.avatar_url.replace(/_normal\.(jpg|jpeg|png|webp)/i, "_400x400.$1").replace("_normal.", "_400x400.")
+      : undefined;
+
     return NextResponse.json({
       success: true,
       stats: {
@@ -45,7 +49,7 @@ export async function GET() {
         tweets: user.tweets ?? fallbackStats.tweets,
         likes: user.likes ?? fallbackStats.likes,
         description: user.description || fallbackStats.description,
-        avatar_url: user.avatar_url,
+        avatar_url: highResAvatar,
         banner_url: user.banner_url,
         joined: "April 2022",
         updatedAt: new Date().toISOString(),
