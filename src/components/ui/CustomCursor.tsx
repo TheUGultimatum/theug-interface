@@ -1,379 +1,428 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-
-const NUM_PARTICLES = 6; 
+import { useEffect, useRef, useState, useCallback } from "react";
 
 export function CustomCursor() {
   const dotRef = useRef<HTMLDivElement>(null);
-  const ringRef = useRef<HTMLDivElement>(null);
-  const textRef = useRef<HTMLDivElement>(null);
-  const particlesRef = useRef<(HTMLDivElement | null)[]>([]);
-  const rippleRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const nextRippleIdx = useRef(0);
-  
-  const [visible, setVisible] = useState(false);
-  const [cursorState, setCursorState] = useState<"default" | "link" | "crosshair" | "text" | "terminal">("default");
-  const [cursorText, setCursorText] = useState("");
+  const reticleRef = useRef<HTMLDivElement>(null);
+  const hudBadgeRef = useRef<HTMLDivElement>(null);
+  const shockwaveRef = useRef<HTMLDivElement>(null);
+
   const [mounted, setMounted] = useState(false);
   const [isTouch, setIsTouch] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const [cursorMode, setCursorMode] = useState<"default" | "pointer" | "action" | "text" | "crosshair">("default");
+  const [actionText, setActionText] = useState("");
+  const [coords, setCoords] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [reducedMotion, setReducedMotion] = useState(false);
 
-  const stateRef = useRef<"default" | "link" | "crosshair" | "text" | "terminal">("default");
-  const textValRef = useRef("");
+  // References for high-FPS animation loop (0 React re-renders during motion)
+  const modeRef = useRef<"default" | "pointer" | "action" | "text" | "crosshair">("default");
+  const textRef = useRef("");
+  const posRef = useRef({ x: -100, y: -100 });
+  const smoothRef = useRef({ x: -100, y: -100 });
+  const scaleRef = useRef(1);
+  const targetScaleRef = useRef(1);
 
   useEffect(() => {
     setMounted(true);
     if (window.matchMedia("(hover: none) and (pointer: coarse)").matches) {
       setIsTouch(true);
-    } else {
-      document.body.classList.add("has-custom-cursor");
+      return;
     }
-    
-    // prefers-reduced-motion check
+
+    document.body.classList.add("has-custom-cursor");
+
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     setReducedMotion(mediaQuery.matches);
-    const listener = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
-    mediaQuery.addEventListener("change", listener);
-    return () => mediaQuery.removeEventListener("change", listener);
+    const motionListener = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
+    mediaQuery.addEventListener("change", motionListener);
+
+    return () => {
+      document.body.classList.remove("has-custom-cursor");
+      mediaQuery.removeEventListener("change", motionListener);
+    };
   }, []);
+
+  const handlePointerDown = useCallback(() => {
+    if (reducedMotion) return;
+    const shockwave = shockwaveRef.current;
+    if (shockwave) {
+      const { x, y } = posRef.current;
+      shockwave.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+      shockwave.classList.remove("animate-pulse-shockwave");
+      void shockwave.offsetWidth; // Force CSS reflow
+      shockwave.classList.add("animate-pulse-shockwave");
+    }
+
+    // Micro-recoil on center dot
+    const dot = dotRef.current;
+    if (dot) {
+      dot.style.transform = `translate3d(${posRef.current.x - 3}px, ${posRef.current.y - 3}px, 0) scale(1.8)`;
+      setTimeout(() => {
+        if (dot) {
+          dot.style.transform = `translate3d(${posRef.current.x - 3}px, ${posRef.current.y - 3}px, 0) scale(1)`;
+        }
+      }, 120);
+    }
+  }, [reducedMotion]);
 
   useEffect(() => {
     if (!mounted || isTouch) return;
 
-    const dot = dotRef.current;
-    const ring = ringRef.current;
-    const txt = textRef.current;
-    if (!dot || !ring || !txt) return;
+    let rafId = 0;
+    let lastScanTime = 0;
 
-    let mx = 0, my = 0;
-    
-    const history: {x: number, y: number}[] = [];
-    const HISTORY_SIZE = 16; 
-    
-    let raf = 0;
-    let targetX = 0;
-    let targetY = 0;
-    let ringX = 0;
-    let ringY = 0;
-    let ringRotation = 0;
-    let magneticRadius = 0;
-    let isMagnetic = false;
+    const onMouseMove = (e: MouseEvent) => {
+      posRef.current = { x: e.clientX, y: e.clientY };
+      if (!visible) setVisible(true);
 
-    // ── GPU-ACCELERATED RAF LOOP with Inactive Tab Freeze ──
-    const animate = () => {
-      // Pause completely if tab is inactive
+      // Throttled element scanner (30fps) for target classification
+      const now = performance.now();
+      if (now - lastScanTime > 32) {
+        lastScanTime = now;
+        scanElementUnderPointer(e);
+      }
+    };
+
+    const scanElementUnderPointer = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+
+      const dataNode = target.closest("[data-cursor]");
+      const isInput = target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.closest(".terminal-prompt") || target.isContentEditable;
+      const interactiveNode = target.closest("a, button, [role='button'], .cursor-pointer, .panel, summary");
+
+      let nextMode: typeof cursorMode = "default";
+      let nextText = "";
+
+      if (isInput) {
+        nextMode = "text";
+        nextText = "INPUT //";
+      } else if (dataNode) {
+        const val = dataNode.getAttribute("data-cursor") || "";
+        if (val === "crosshair") {
+          nextMode = "crosshair";
+          nextText = "";
+        } else if (val === "text") {
+          nextMode = "text";
+          nextText = "TERMINAL";
+        } else if (val) {
+          nextMode = "action";
+          nextText = `${val.toUpperCase()} ↗`;
+        }
+      } else if (interactiveNode) {
+        nextMode = "pointer";
+        // Check if link goes outside
+        const isExternal = interactiveNode.tagName === "A" && (interactiveNode as HTMLAnchorElement).target === "_blank";
+        nextText = isExternal ? "EXT_LINK ↗" : "TARGET //";
+      }
+
+      // Update telemetry coordinates when in crosshair / observatory mode
+      if (nextMode === "crosshair") {
+        setCoords({ x: Math.round(e.clientX), y: Math.round(e.clientY) });
+      }
+
+      if (nextMode !== modeRef.current) {
+        modeRef.current = nextMode;
+        setCursorMode(nextMode);
+
+        // Adjust target reticle scale based on mode
+        if (nextMode === "action") targetScaleRef.current = 1.45;
+        else if (nextMode === "pointer") targetScaleRef.current = 1.25;
+        else if (nextMode === "crosshair") targetScaleRef.current = 1.6;
+        else if (nextMode === "text") targetScaleRef.current = 0.8;
+        else targetScaleRef.current = 1.0;
+      }
+
+      if (nextText !== textRef.current) {
+        textRef.current = nextText;
+        setActionText(nextText);
+      }
+    };
+
+    const onMouseEnter = () => setVisible(true);
+    const onMouseLeave = () => setVisible(false);
+
+    // ── GPU-Accelerated 60/120fps Animation Loop ──
+    const render = () => {
       if (document.hidden) {
-        raf = requestAnimationFrame(animate);
+        rafId = requestAnimationFrame(render);
         return;
       }
 
-      const tx = isMagnetic && !reducedMotion ? targetX : mx;
-      const ty = isMagnetic && !reducedMotion ? targetY : my;
+      const { x: tx, y: ty } = posRef.current;
+      const dot = dotRef.current;
+      const reticle = reticleRef.current;
+      const badge = hudBadgeRef.current;
 
-      // 1. Center dot translate3d position
-      dot.style.transform = `translate3d(${tx - 3}px, ${ty - 3}px, 0)`;
-      
-      // 2. Smooth Ring spring follow (skip if reduced motion)
-      if (!reducedMotion) {
-        ringX += (tx - ringX) * (isMagnetic ? 0.32 : 0.18);
-        ringY += (ty - ringY) * (isMagnetic ? 0.32 : 0.18);
-        
-        ringRotation = (ringRotation + 1.0) % 360;
-
-        const ringSize = isMagnetic ? (magneticRadius + 14) : 34;
-        const ringOffset = ringSize / 2;
-        
-        ring.style.transform = `translate3d(${ringX - ringOffset}px, ${ringY - ringOffset}px, 0) rotate(${ringRotation}deg)`;
-        
-        if (isMagnetic) {
-          ring.style.width = `${ringSize}px`;
-          ring.style.height = `${ringSize}px`;
-          ring.style.borderRadius = "4px";
-        } else {
-          ring.style.width = "34px";
-          ring.style.height = "34px";
-          ring.style.borderRadius = "50%";
-        }
-      }
-      
-      // 3. Update Trail History
-      history.unshift({ x: tx, y: ty });
-      if (history.length > HISTORY_SIZE) {
-        history.pop();
-      }
-
-      // 4. Floating label translate3d position
-      if (history.length > 0) {
-        txt.style.transform = `translate3d(${history[0].x}px, ${history[0].y - 28}px, 0) translate3d(-50%, -100%, 0)`;
-      }
-
-      // 5. Trailing particle coordinate shifts (disabled under reducedMotion)
-      if (!reducedMotion) {
-        for (let i = 0; i < NUM_PARTICLES; i++) {
-          const particle = particlesRef.current[i];
-          if (!particle) continue;
-
-          const historyIdx = Math.min((i + 1) * 2, history.length - 1);
-          const pos = history[historyIdx] || history[history.length - 1] || { x: tx, y: ty };
-          
-          const offset = isMagnetic ? (i * magneticRadius * 0.08) : 0;
-          particle.style.transform = `translate3d(${pos.x - 2}px, ${pos.y - 2 + offset}px, 0)`;
-        }
-      }
-
-      raf = requestAnimationFrame(animate);
-    };
-
-    const onMove = (e: MouseEvent) => {
-      mx = e.clientX;
-      my = e.clientY;
-      if (!visible) setVisible(true);
-    };
-
-    let lastCheck = 0;
-    const onMoveThrottled = (e: MouseEvent) => {
-      onMove(e);
-      
-      const now = performance.now();
-      // Throttle interactive hover scanners to max ~25fps (once every 40ms)
-      if (now - lastCheck > 40) {
-        checkHoverState(e);
-        lastCheck = now;
-      }
-    };
-
-    const onEnter = () => setVisible(true);
-    const onLeave = () => setVisible(false);
-    
-    // Mousedown click ripple trigger (0% React re-render, native DOM class toggling)
-    const onDown = (e: MouseEvent) => {
-      if (reducedMotion) return;
+      // 1. Hardware Instant Center Dot
       if (dot) {
-        dot.style.boxShadow = "0 0 24px var(--color-amber-bright), 0 0 48px var(--color-amber)";
-        dot.style.transform = `translate3d(${mx - 3}px, ${my - 3}px, 0) scale(2.2)`;
-        setTimeout(() => {
-          if (dot) {
-            dot.style.boxShadow = "none";
-            dot.style.transform = `translate3d(${mx - 3}px, ${my - 3}px, 0) scale(1)`;
-          }
-        }, 180);
+        dot.style.transform = `translate3d(${tx - 3}px, ${ty - 3}px, 0)`;
       }
 
-      const idx = nextRippleIdx.current;
-      const ripple = rippleRefs.current[idx];
-      if (ripple) {
-        ripple.style.left = `${e.clientX}px`;
-        ripple.style.top = `${e.clientY}px`;
-        ripple.classList.remove("run-ripple");
-        void ripple.offsetWidth; // Force reflow
-        ripple.classList.add("run-ripple");
-      }
-      nextRippleIdx.current = (idx + 1) % 3; 
-    };
+      // 2. Smooth Inertia Reticle (Spring physics)
+      if (reticle && !reducedMotion) {
+        const ease = modeRef.current === "pointer" ? 0.28 : 0.22;
+        smoothRef.current.x += (tx - smoothRef.current.x) * ease;
+        smoothRef.current.y += (ty - smoothRef.current.y) * ease;
 
-    const checkHoverState = (e: MouseEvent) => {
-      const el = e.target as HTMLElement;
-      if (!el) return;
+        scaleRef.current += (targetScaleRef.current - scaleRef.current) * 0.2;
 
-      const dataNode = el.closest("[data-cursor]");
-      const interactiveNode = el.closest("a, button, [role='button'], input, textarea, .panel");
+        const rx = smoothRef.current.x;
+        const ry = smoothRef.current.y;
+        reticle.style.transform = `translate3d(${rx - 16}px, ${ry - 16}px, 0) scale(${scaleRef.current})`;
 
-      let nextState: typeof cursorState = "default";
-      let nextText = "";
-
-      if (interactiveNode && !reducedMotion) {
-        const rect = interactiveNode.getBoundingClientRect();
-        targetX = rect.left + rect.width / 2;
-        targetY = rect.top + rect.height / 2;
-        
-        if (rect.width < 120 && rect.height < 120) {
-          isMagnetic = true;
-          magneticRadius = Math.max(rect.width, rect.height);
-        } else {
-          isMagnetic = false;
+        // 3. Floating HUD Badge (Offset cleanly top-right)
+        if (badge) {
+          badge.style.transform = `translate3d(${rx + 20}px, ${ry - 24}px, 0)`;
         }
-      } else {
-        isMagnetic = false;
-      }
-
-      if (dataNode) {
-        const state = dataNode.getAttribute("data-cursor");
-        if (state === "crosshair") {
-          nextState = "crosshair";
-        } else if (state === "terminal") {
-          nextState = "terminal";
-        } else if (state && state.length > 0) {
-          nextState = "text";
-          nextText = state.toUpperCase();
+      } else if (reticle && reducedMotion) {
+        reticle.style.transform = `translate3d(${tx - 16}px, ${ty - 16}px, 0)`;
+        if (badge) {
+          badge.style.transform = `translate3d(${tx + 20}px, ${ty - 24}px, 0)`;
         }
       }
 
-      const isInput = el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.closest(".terminal-prompt") || el.closest("form");
-      if (isInput && nextState === "default") {
-        nextState = "terminal";
-      }
-
-      if (interactiveNode && nextState === "default") {
-        nextState = "link";
-      }
-
-      if (nextState !== stateRef.current) {
-        stateRef.current = nextState;
-        setCursorState(nextState);
-      }
-      if (nextText !== textValRef.current) {
-        textValRef.current = nextText;
-        setCursorText(nextText);
-      }
+      rafId = requestAnimationFrame(render);
     };
 
-    document.addEventListener("mousemove", onMoveThrottled);
-    document.addEventListener("mouseenter", onEnter);
-    document.addEventListener("mouseleave", onLeave);
-    document.addEventListener("mousedown", onDown);
-    
-    for (let i = 0; i < HISTORY_SIZE; i++) {
-      history.push({ x: mx, y: my });
-    }
-    
-    raf = requestAnimationFrame(animate);
+    window.addEventListener("mousemove", onMouseMove, { passive: true });
+    window.addEventListener("mouseenter", onMouseEnter);
+    window.addEventListener("mouseleave", onMouseLeave);
+    window.addEventListener("mousedown", handlePointerDown);
+
+    rafId = requestAnimationFrame(render);
 
     return () => {
-      document.removeEventListener("mousemove", onMoveThrottled);
-      document.removeEventListener("mouseenter", onEnter);
-      document.removeEventListener("mouseleave", onLeave);
-      document.removeEventListener("mousedown", onDown);
-      cancelAnimationFrame(raf);
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseenter", onMouseEnter);
+      window.removeEventListener("mouseleave", onMouseLeave);
+      window.removeEventListener("mousedown", handlePointerDown);
+      cancelAnimationFrame(rafId);
     };
-  }, [visible, mounted, isTouch, reducedMotion]);
+  }, [mounted, isTouch, visible, reducedMotion, handlePointerDown]);
 
-  const isCrosshair = cursorState === "crosshair";
-  const isTerminal = cursorState === "terminal";
-  const isLink = cursorState === "link" || cursorState === "text";
-  
   if (!mounted || isTouch) return null;
+
+  const isCrosshair = cursorMode === "crosshair";
+  const isText = cursorMode === "text";
+  const isPointer = cursorMode === "pointer";
+  const isAction = cursorMode === "action";
+
+  // Accent color mapping based on cyber state
+  const reticleColor = isCrosshair
+    ? "var(--color-cyan)"
+    : isPointer || isAction
+    ? "var(--color-amber-bright)"
+    : isText
+    ? "var(--color-cyan)"
+    : "rgba(255, 255, 255, 0.4)";
+
+  const glowShadow = isPointer || isAction
+    ? "drop-shadow(0 0 6px rgba(255, 94, 58, 0.6))"
+    : isCrosshair || isText
+    ? "drop-shadow(0 0 6px rgba(0, 217, 255, 0.6))"
+    : "none";
 
   return (
     <>
       <style>{`
-        body { cursor: none; }
-        a, button, [role="button"], input, textarea, [data-cursor], .panel { cursor: none !important; }
-        
-        .cursor-ripple {
+        /* Hide native default cursor across desktop */
+        html, body {
+          cursor: none !important;
+        }
+        a, button, [role="button"], input, textarea, [data-cursor], .panel, select, summary {
+          cursor: none !important;
+        }
+
+        /* Kinetic Laser Shockwave Pulse */
+        .cursor-shockwave {
           position: fixed;
-          width: 10px;
-          height: 10px;
+          top: 0;
+          left: 0;
+          width: 32px;
+          height: 32px;
+          margin-left: -16px;
+          margin-top: -16px;
           border-radius: 50%;
           border: 1.5px solid var(--color-amber-bright);
-          transform: translate3d(-50%, -50%, 0);
           pointer-events: none;
-          z-index: 9997;
-          box-shadow: 0 0 10px var(--color-amber-glow);
+          z-index: 99996;
           opacity: 0;
+          box-shadow: 0 0 16px var(--color-amber);
         }
-        .cursor-ripple.run-ripple {
-          animation: cursor-ripple-anim 0.65s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+        .animate-pulse-shockwave {
+          animation: shockwave-expand 0.4s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
         }
-        @keyframes cursor-ripple-anim {
-          0% { width: 10px; height: 10px; opacity: 0.95; }
-          100% { width: 90px; height: 90px; opacity: 0; }
+        @keyframes shockwave-expand {
+          0% {
+            transform: translate3d(var(--tx, 0), var(--ty, 0), 0) scale(0.4);
+            opacity: 1;
+            border-color: var(--color-amber-bright);
+          }
+          100% {
+            transform: translate3d(var(--tx, 0), var(--ty, 0), 0) scale(2.6);
+            opacity: 0;
+            border-color: var(--color-cyan);
+          }
         }
-        @keyframes caret-blink {
-          0%, 100% { opacity: 0.9; }
-          50% { opacity: 0.15; }
+
+        /* Terminal Caret Pulse */
+        @keyframes cyber-caret-pulse {
+          0%, 100% { opacity: 1; transform: scaleY(1); }
+          50% { opacity: 0.2; transform: scaleY(0.85); }
+        }
+        .cyber-caret {
+          animation: cyber-caret-pulse 0.9s ease-in-out infinite;
         }
       `}</style>
-      
-      {/* Contextual Text Overlay */}
+
+      {/* 1. Kinetic Laser Click Shockwave */}
+      <div ref={shockwaveRef} className="cursor-shockwave" />
+
+      {/* 2. Precision 4-Corner Reticle Targeting Frame */}
       <div
-        ref={textRef}
+        ref={reticleRef}
         style={{
-          position: "fixed", top: 0, left: 0,
-          fontFamily: "var(--font-mono)", fontSize: "9px",
-          color: "var(--color-amber-bright)",
-          letterSpacing: "0.15em",
-          pointerEvents: "none", zIndex: 9999,
-          opacity: cursorState === "text" ? 1 : 0,
-          transition: "opacity 0.2s",
-          textShadow: "0 0 8px rgba(255, 94, 58, 0.4)",
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "32px",
+          height: "32px",
+          pointerEvents: "none",
+          zIndex: 99997,
+          opacity: visible && !isText ? 1 : 0,
+          transition: "opacity 0.2s ease",
+          filter: glowShadow,
         }}
       >
-        {cursorText}
+        <svg
+          viewBox="0 0 32 32"
+          width="32"
+          height="32"
+          fill="none"
+          stroke={reticleColor}
+          strokeWidth="1.5"
+          className="transition-colors duration-200"
+        >
+          {/* Top-Left Bracket */}
+          <path d="M 3 10 L 3 3 L 10 3" strokeLinecap="square" />
+          {/* Top-Right Bracket */}
+          <path d="M 22 3 L 29 3 L 29 10" strokeLinecap="square" />
+          {/* Bottom-Left Bracket */}
+          <path d="M 3 22 L 3 29 L 10 29" strokeLinecap="square" />
+          {/* Bottom-Right Bracket */}
+          <path d="M 22 29 L 29 29 L 29 22" strokeLinecap="square" />
+
+          {/* Micro Telemetry Ticks (Expand on hover/crosshair) */}
+          {(isPointer || isAction || isCrosshair) && (
+            <>
+              <line x1="16" y1="1" x2="16" y2="4" strokeWidth="1" />
+              <line x1="16" y1="28" x2="16" y2="31" strokeWidth="1" />
+              <line x1="1" y1="16" x2="4" y2="16" strokeWidth="1" />
+              <line x1="28" y1="16" x2="31" y2="16" strokeWidth="1" />
+            </>
+          )}
+
+          {/* Crosshair Diagonal Vectors (Observatory mode) */}
+          {isCrosshair && (
+            <>
+              <circle cx="16" cy="16" r="6" stroke="var(--color-cyan)" strokeWidth="0.75" strokeDasharray="2 2" />
+              <line x1="16" y1="7" x2="16" y2="25" stroke="var(--color-cyan)" strokeWidth="0.5" />
+              <line x1="7" y1="16" x2="25" y2="16" stroke="var(--color-cyan)" strokeWidth="0.5" />
+            </>
+          )}
+        </svg>
       </div>
 
-      {/* ripples pool */}
-      {!reducedMotion && [...Array(3)].map((_, i) => (
-        <div
-          key={`ripple-slot-${i}`}
-          ref={el => { rippleRefs.current[i] = el; }}
-          className="cursor-ripple"
-        />
-      ))}
-
-      {/* Trailing particles */}
-      {!reducedMotion && [...Array(NUM_PARTICLES)].map((_, i) => (
-        <div
-          key={i}
-          ref={el => { particlesRef.current[i] = el; }}
-          style={{
-            position: "fixed", top: 0, left: 0,
-            width: `${Math.max(1.5, 5 - (i * 0.55))}px`, 
-            height: `${Math.max(1.5, 5 - (i * 0.55))}px`,
-            borderRadius: "50%",
-            background: isLink ? "var(--color-amber)" : (isTerminal ? "var(--color-cyan)" : "var(--color-text-secondary)"),
-            zIndex: 9998, pointerEvents: "none",
-            opacity: visible && !isCrosshair && !isTerminal ? (1 - i * (1/NUM_PARTICLES)) * 0.65 : 0,
-            transition: "background 0.2s, opacity 0.2s",
-            mixBlendMode: "difference",
-          }}
-        />
-      ))}
-
-      {/* Rotating Orbit Ring */}
-      {!reducedMotion && (
-        <div
-          ref={ringRef}
-          style={{
-            position: "fixed", top: 0, left: 0,
-            border: isCrosshair || isTerminal ? "none" : (isLink ? "1.5px dashed var(--color-amber-bright)" : "1px solid var(--color-border)"),
-            borderRadius: "50%",
-            zIndex: 9998, pointerEvents: "none",
-            opacity: visible && !isCrosshair && !isTerminal ? (isLink ? 1 : 0.4) : 0,
-            boxShadow: isLink ? "0 0 8px var(--color-amber-glow)" : "none",
-            transition: "opacity 0.2s, border-color 0.2s, border-style 0.2s, box-shadow 0.2s",
-          }}
-        />
-      )}
-
-      {/* Center dot caret */}
+      {/* 3. Center Precision Core (Zero Latency) */}
       <div
         ref={dotRef}
         style={{
-          position: "fixed", top: 0, left: 0,
-          width: isCrosshair ? "14px" : (isTerminal ? "8px" : "6px"),
-          height: isCrosshair ? "14px" : (isTerminal ? "14px" : "6px"),
-          borderRadius: isCrosshair ? "0" : (isTerminal ? "1px" : "50%"),
-          background: isCrosshair ? "transparent" : (isTerminal ? "var(--color-cyan)" : (isLink ? "var(--color-amber-bright)" : "var(--color-text-primary)")),
-          border: isCrosshair ? "1px solid var(--color-amber)" : "none",
-          zIndex: 9999, pointerEvents: "none",
-          opacity: visible ? (isTerminal ? 0.9 : 1) : 0,
-          transition: "background 0.15s, opacity 0.2s, width 0.2s, height 0.2s, border-radius 0.2s",
-          mixBlendMode: isCrosshair ? "normal" : "difference",
-          marginLeft: isCrosshair ? "-4px" : (isTerminal ? "-4px" : "0"),
-          marginTop: isCrosshair ? "-4px" : (isTerminal ? "-7px" : "0"),
-          animation: isTerminal ? "caret-blink 1s step-end infinite" : "none",
-          boxShadow: isTerminal ? "0 0 10px var(--color-cyan-glow)" : "none"
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: isText ? "3px" : "6px",
+          height: isText ? "16px" : "6px",
+          borderRadius: isText ? "1px" : "50%",
+          backgroundColor: isCrosshair
+            ? "var(--color-cyan)"
+            : isPointer || isAction
+            ? "var(--color-amber-bright)"
+            : isText
+            ? "var(--color-amber)"
+            : "#FFFFFF",
+          boxShadow: isPointer || isAction
+            ? "0 0 8px var(--color-amber-bright), 0 0 16px var(--color-amber)"
+            : isCrosshair
+            ? "0 0 8px var(--color-cyan), 0 0 16px var(--color-cyan)"
+            : "0 0 4px rgba(255, 255, 255, 0.8)",
+          pointerEvents: "none",
+          zIndex: 99999,
+          opacity: visible ? 1 : 0,
+          marginTop: isText ? "-8px" : "0",
+          marginLeft: isText ? "-1.5px" : "0",
+          transition: "background-color 0.15s, box-shadow 0.15s, width 0.15s, height 0.15s, border-radius 0.15s, opacity 0.2s",
+        }}
+        className={isText ? "cyber-caret" : ""}
+      />
+
+      {/* 4. Contextual Telemetry HUD Badge */}
+      <div
+        ref={hudBadgeRef}
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          pointerEvents: "none",
+          zIndex: 99998,
+          opacity: visible && (actionText || isCrosshair) ? 1 : 0,
+          transition: "opacity 0.15s ease",
         }}
       >
-        {isCrosshair && (
-          <>
-            <div style={{ position: "absolute", top: "6px", left: "-5px", width: "4px", height: "1px", background: "var(--color-amber)" }} />
-            <div style={{ position: "absolute", top: "6px", right: "-5px", width: "4px", height: "1px", background: "var(--color-amber)" }} />
-            <div style={{ position: "absolute", top: "-5px", left: "6px", width: "1px", height: "4px", background: "var(--color-amber)" }} />
-            <div style={{ position: "absolute", bottom: "-5px", left: "6px", width: "1px", height: "4px", background: "var(--color-amber)" }} />
-          </>
-        )}
+        <div
+          className="flex items-center gap-1.5 px-2 py-0.5 rounded-md font-mono text-[9px] font-bold tracking-widest backdrop-blur-md shadow-lg select-none"
+          style={{
+            backgroundColor: "rgba(10, 10, 12, 0.88)",
+            border: `1px solid ${
+              isCrosshair
+                ? "rgba(0, 217, 255, 0.4)"
+                : isPointer || isAction
+                ? "rgba(255, 94, 58, 0.5)"
+                : "rgba(255, 255, 255, 0.15)"
+            }`,
+            color: isCrosshair
+              ? "var(--color-cyan)"
+              : isPointer || isAction
+              ? "var(--color-amber-bright)"
+              : "var(--color-text-secondary)",
+            boxShadow: isAction
+              ? "0 0 12px rgba(255, 94, 58, 0.25)"
+              : isCrosshair
+              ? "0 0 12px rgba(0, 217, 255, 0.25)"
+              : "none",
+          }}
+        >
+          {isCrosshair ? (
+            <>
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-cyan)] animate-pulse" />
+              <span>
+                X:{coords.x} Y:{coords.y}
+              </span>
+            </>
+          ) : (
+            <>
+              <span
+                className="w-1.5 h-1.5 rounded-full"
+                style={{
+                  backgroundColor: isAction || isPointer ? "var(--color-amber)" : "var(--color-cyan)",
+                }}
+              />
+              <span>{actionText}</span>
+            </>
+          )}
+        </div>
       </div>
     </>
   );
