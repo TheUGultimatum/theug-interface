@@ -1,14 +1,14 @@
-import { BlogsClient } from "@/components/sections/BlogsClient";
+import { Blogs } from "@/components/sections/Blogs";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Blogs & Dispatches — theUG // Usmaan Gani",
+  title: "Top contents — Curated Alpha & Dispatches | theUG",
   description:
-    "Curated technical threads, on-chain breakdowns, and multi-agent AI blueprints from Usmaan Gani (@Usmaangani252).",
+    "Curated Web3 alpha, on-chain proof of reserves, airdrop strategies, and technical guides from Usmaan Gani and top crypto researchers.",
   openGraph: {
-    title: "Blogs & Dispatches — theUG // Usmaan Gani",
+    title: "Top contents — Curated Alpha & Dispatches | theUG",
     description:
-      "Curated technical threads, on-chain breakdowns, and multi-agent AI blueprints from Usmaan Gani (@Usmaangani252).",
+      "Curated Web3 alpha, on-chain proof of reserves, airdrop strategies, and technical guides from Usmaan Gani and top crypto researchers.",
     url: "https://theug.in/blogs",
     siteName: "theUG_",
     type: "website",
@@ -17,13 +17,12 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     site: "@Usmaangani252",
     creator: "@Usmaangani252",
-    title: "Blogs & Dispatches — theUG // Usmaan Gani",
+    title: "Top contents — Curated Alpha & Dispatches | theUG",
     description:
-      "Curated technical threads, on-chain breakdowns, and multi-agent AI blueprints from Usmaan Gani (@Usmaangani252).",
+      "Curated Web3 alpha, on-chain proof of reserves, airdrop strategies, and technical guides from Usmaan Gani and top crypto researchers.",
   },
 };
 
 export default function BlogsPage() {
-  return <BlogsClient />;
+  return <Blogs />;
 }
-
