@@ -51,11 +51,44 @@ interface XLiveStats {
   joined?: string;
 }
 
+interface LinkedInStats {
+  name: string;
+  vanity_name: string;
+  headline: string;
+  profile_url: string;
+  followers: number;
+  connections: number;
+  display_connections: string;
+  company: string;
+  location: string;
+  updatedAt: string;
+}
+
+function XIcon({ className = "w-4 h-4 fill-current" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
+  );
+}
+
+function LinkedInIcon({ className = "w-4 h-4 fill-current" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
+      <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 10.9h2.79v8.37H6.46v-8.37M7.86 6.33a1.62 1.62 0 1 0 0 3.24 1.62 1.62 0 0 0 0-3.24" />
+    </svg>
+  );
+}
+
 /* ─── Editorial Dispatch / Article Card ──────────────────────── */
 function DispatchCard({ post }: { post: XPost }) {
   const [copied, setCopied] = useState(false);
   const isArticle = post.type === "article" || Boolean(post.body);
+  const isLinkedIn = Boolean(post.url && post.url.includes("linkedin.com"));
   const articleHref = `/blogs/${post.slug || post.id}`;
+  const defaultExternalUrl = isLinkedIn
+    ? "https://www.linkedin.com/in/usmaan-gani/"
+    : "https://x.com/Usmaangani252";
 
   const handleShare = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -84,7 +117,17 @@ function DispatchCard({ post }: { post: XPost }) {
                 <FileText size={13} />
                 Article
               </span>
-            ) : null}
+            ) : isLinkedIn ? (
+              <span className="inline-flex items-center gap-1.5 text-xs text-[#0a66c2] font-mono font-medium">
+                <LinkedInIcon className="w-3.5 h-3.5 fill-[#0a66c2]" />
+                LinkedIn Dispatch
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-amber)] font-mono font-medium">
+                <XIcon className="w-3 h-3 fill-current" />
+                X Dispatch
+              </span>
+            )}
             {post.isPinned && (
               <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-amber)] font-mono font-medium">
                 <Pin size={12} className="fill-current" />
@@ -112,7 +155,7 @@ function DispatchCard({ post }: { post: XPost }) {
             </Link>
           ) : (
             <a
-              href={post.url || "https://x.com/Usmaangani252"}
+              href={post.url || defaultExternalUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 focus:outline-none"
@@ -200,11 +243,22 @@ function DispatchCard({ post }: { post: XPost }) {
           {isArticle ? (
             <Link
               href={articleHref}
-              className="font-mono text-xs md:text-sm font-semibold text-[var(--color-amber)] hover:underline inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[rgba(255,94,58,0.08)] hover:bg-[rgba(255,94,58,0.15)] transition-colors"
+              className="font-mono text-xs md:text-sm font-semibold text-[var(--color-cyan)] hover:underline inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[rgba(0,240,255,0.08)] hover:bg-[rgba(0,240,255,0.15)] transition-colors"
             >
               <span>Read Article</span>
               <ArrowUpRight size={14} />
             </Link>
+          ) : isLinkedIn ? (
+            <a
+              href={post.url || "https://www.linkedin.com/in/usmaan-gani/"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-mono text-xs md:text-sm font-semibold text-[#0a66c2] hover:underline inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[rgba(10,102,194,0.1)] hover:bg-[rgba(10,102,194,0.18)] transition-colors"
+            >
+              <LinkedInIcon className="w-3.5 h-3.5 fill-[#0a66c2]" />
+              <span>Read on LinkedIn</span>
+              <ExternalLink size={13} />
+            </a>
           ) : (
             <a
               href={post.url || "https://x.com/Usmaangani252"}
@@ -212,6 +266,7 @@ function DispatchCard({ post }: { post: XPost }) {
               rel="noopener noreferrer"
               className="font-mono text-xs md:text-sm font-semibold text-[var(--color-amber)] hover:underline inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[rgba(255,94,58,0.08)] hover:bg-[rgba(255,94,58,0.15)] transition-colors"
             >
+              <XIcon className="w-3 h-3 fill-current" />
               <span>View on X</span>
               <ExternalLink size={13} />
             </a>
@@ -228,6 +283,7 @@ export function Blogs() {
   const [posts, setPosts] = useState<XPost[]>(BLOGS_DATA);
   const [activeCategory, setActiveCategory] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [activeNetwork, setActiveNetwork] = useState<"all" | "x" | "linkedin">("all");
 
   // Live real-time stats from X API
   const [xStats, setXStats] = useState<XLiveStats>({
@@ -236,6 +292,20 @@ export function Blogs() {
     tweets: 7283,
   });
   const [isLiveSync, setIsLiveSync] = useState<boolean>(false);
+
+  // Live LinkedIn profile stats
+  const [linkedinStats, setLinkedinStats] = useState<LinkedInStats>({
+    name: "Usmaan Gani",
+    vanity_name: "usmaan-gani",
+    headline: "Web3 Builder & Operator · AI Engineer · Founder @theugultimatum",
+    profile_url: "https://www.linkedin.com/in/usmaan-gani/",
+    followers: 850,
+    connections: 500,
+    display_connections: "500+",
+    company: "theUG Ultimatum",
+    location: "Jharkhand, India",
+    updatedAt: new Date().toISOString(),
+  });
 
   useEffect(() => {
     // 1. Fetch live articles from admin store
@@ -264,6 +334,16 @@ export function Blogs() {
             joined: data.stats.joined,
           });
           setIsLiveSync(true);
+        }
+      })
+      .catch(() => {});
+
+    // 3. Fetch LinkedIn stats
+    fetch("/api/linkedin-stats")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.stats) {
+          setLinkedinStats(data.stats);
         }
       })
       .catch(() => {});
@@ -323,101 +403,254 @@ export function Blogs() {
               Writing & Dispatches
             </h1>
             <p className="text-base md:text-lg text-[var(--color-text-secondary)] max-w-2xl leading-relaxed">
-              Authentic essays, system architectures, and technical notes curated directly from my development log and live X feed.
+              Authentic essays, system architectures, and technical notes curated directly from my development log, live X feed, and LinkedIn network.
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <a
               href="https://x.com/Usmaangani252"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2.5 font-mono text-xs md:text-sm px-4 py-2.5 rounded-xl border border-[var(--color-border)] hover:border-[var(--color-text-primary)] text-[var(--color-text-primary)] transition-all bg-[var(--color-surface)] shadow-sm hover:shadow"
+              className="inline-flex items-center gap-2 font-mono text-xs md:text-sm px-4 py-2.5 rounded-xl border border-[var(--color-border)] hover:border-[var(--color-amber)] text-[var(--color-text-primary)] transition-all bg-[var(--color-surface)] shadow-sm hover:shadow"
             >
-              <svg viewBox="0 0 24 24" aria-hidden="true" className="w-4 h-4 fill-current">
-                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-              </svg>
+              <XIcon className="w-3.5 h-3.5 fill-current" />
               <span>Follow @Usmaangani252 ↗</span>
+            </a>
+            <a
+              href="https://www.linkedin.com/in/usmaan-gani/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 font-mono text-xs md:text-sm px-4 py-2.5 rounded-xl border border-[#0a66c2]/40 hover:border-[#0a66c2] text-[#0a66c2] hover:text-white hover:bg-[#0a66c2]/15 transition-all bg-[var(--color-surface)] shadow-sm hover:shadow"
+            >
+              <LinkedInIcon className="w-3.5 h-3.5 fill-current" />
+              <span>Connect on LinkedIn ↗</span>
             </a>
           </div>
         </div>
 
-        {/* Real-Time Live Profile Masthead */}
+        {/* Real-Time Live Profile Masthead (Dual X + LinkedIn Support) */}
         <div
-          className={`p-8 md:p-10 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col lg:flex-row lg:items-center justify-between gap-8 shadow-sm ${
+          className={`p-6 sm:p-8 md:p-10 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm ${
             inView ? "animate-fade-in-up delay-100" : "anim-hidden"
           }`}
         >
-          <div className="flex flex-col sm:flex-row sm:items-center gap-6">
-            <div className="relative w-20 h-20 md:w-22 md:h-22 rounded-2xl overflow-hidden border border-[var(--color-border-bright)] shrink-0 bg-black shadow-md">
-              {/* High-resolution X profile avatar (upgraded from 48x48 thumbnail to 400x400 HD) */}
-              <img
-                src={avatarSrc}
-                alt={xStats.name || "TheUG"}
-                width={88}
-                height={88}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src = "/images/avatar-sun.png";
-                }}
-              />
+          {/* Header Bar with Network Switcher */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 mb-6 border-b border-[var(--color-border)]">
+            <div className="flex items-center gap-2.5">
+              <span className="w-2 h-2 rounded-full bg-[var(--color-online)] animate-pulse" />
+              <span className="font-mono text-xs uppercase tracking-wider text-[var(--color-text-muted)] font-semibold">
+                Real-Time Community & Social Sync
+              </span>
             </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-3">
-                <h2 className="font-bold text-xl md:text-2xl text-[var(--color-text-primary)] tracking-tight">
-                  TheUG
-                </h2>
-                <span className="font-mono text-xs md:text-sm text-[var(--color-text-muted)]">
-                  @Usmaangani252
-                </span>
-                <span className="font-mono text-xs px-2.5 py-1 rounded-md border border-[var(--color-border)] text-[var(--color-amber)] bg-[rgba(255,94,58,0.08)] font-semibold">
-                  Founder @theugultimatum
-                </span>
-              </div>
-              <p className="text-sm text-[var(--color-text-secondary)] mt-2 font-medium">
-                CONTENT CREATOR · Web3 Builder & Operator
-              </p>
-              <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-[var(--color-text-muted)] font-mono">
-                <span>Products • Communities • Growth • Content</span>
-                <span className="text-[var(--color-border-bright)]">•</span>
-                <span>Building & shipping across ecosystems</span>
-                {isLiveSync && (
-                  <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-online)] font-medium">
-                    <span className="w-2 h-2 rounded-full bg-[var(--color-online)] animate-pulse" />
-                    Live X sync
-                  </span>
-                )}
-              </div>
+
+            {/* Network Selector Tabs */}
+            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[var(--color-elevated)] border border-[var(--color-border)] self-start sm:self-auto font-mono text-xs">
+              <button
+                type="button"
+                onClick={() => setActiveNetwork("all")}
+                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                  activeNetwork === "all"
+                    ? "bg-[var(--color-surface)] text-[var(--color-text-primary)] font-bold shadow-xs border border-[var(--color-border)]"
+                    : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+                }`}
+              >
+                ALL NETWORKS
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveNetwork("x")}
+                className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
+                  activeNetwork === "x"
+                    ? "bg-[var(--color-surface)] text-[var(--color-amber)] font-bold shadow-xs border border-[var(--color-border)]"
+                    : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+                }`}
+              >
+                <XIcon className="w-3 h-3 fill-current" />
+                <span>𝕏 TWITTER</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveNetwork("linkedin")}
+                className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
+                  activeNetwork === "linkedin"
+                    ? "bg-[var(--color-surface)] text-[#0a66c2] font-bold shadow-xs border border-[var(--color-border)]"
+                    : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+                }`}
+              >
+                <LinkedInIcon className="w-3.5 h-3.5 fill-current" />
+                <span>LINKEDIN</span>
+              </button>
             </div>
           </div>
 
-          {/* Real-Time Metrics Strip from X API */}
-          <div className="flex items-center gap-8 md:gap-12 border-t lg:border-t-0 pt-6 lg:pt-0 border-[var(--color-border)] justify-between lg:justify-end font-mono">
-            <div>
-              <div className="font-bold text-2xl md:text-3xl text-[var(--color-text-primary)]">
-                {xStats.tweets.toLocaleString()}
+          {/* Profile Identity & Metrics Content */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+              <div className="relative w-20 h-20 md:w-22 md:h-22 rounded-2xl overflow-hidden border border-[var(--color-border-bright)] shrink-0 bg-black shadow-md">
+                {/* High-resolution X / profile avatar */}
+                <img
+                  src={avatarSrc}
+                  alt={xStats.name || "Usmaan Gani"}
+                  width={88}
+                  height={88}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = "/images/avatar-sun.png";
+                  }}
+                />
               </div>
-              <div className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mt-1">
-                Posts on X
+              <div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <h2 className="font-bold text-xl md:text-2xl text-[var(--color-text-primary)] tracking-tight">
+                    Usmaan Gani
+                  </h2>
+                  <span className="font-mono text-xs md:text-sm text-[var(--color-text-muted)]">
+                    (theUG)
+                  </span>
+                  <span className="font-mono text-xs px-2.5 py-1 rounded-md border border-[var(--color-border)] text-[var(--color-amber)] bg-[rgba(255,94,58,0.08)] font-semibold">
+                    Founder @theugultimatum
+                  </span>
+                </div>
+
+                <p className="text-sm text-[var(--color-text-secondary)] mt-2 font-medium">
+                  {activeNetwork === "linkedin"
+                    ? linkedinStats.headline
+                    : "CONTENT CREATOR · Web3 Builder & Operator"}
+                </p>
+
+                <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-[var(--color-text-muted)] font-mono">
+                  <a
+                    href="https://x.com/Usmaangani252"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-[var(--color-amber)] transition-colors inline-flex items-center gap-1.5"
+                  >
+                    <XIcon className="w-3 h-3 fill-current" />
+                    <span>@Usmaangani252</span>
+                  </a>
+                  <span className="text-[var(--color-border-bright)]">•</span>
+                  <a
+                    href="https://www.linkedin.com/in/usmaan-gani/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-[#0a66c2] transition-colors inline-flex items-center gap-1.5 text-[#0a66c2]"
+                  >
+                    <LinkedInIcon className="w-3.5 h-3.5 fill-[#0a66c2]" />
+                    <span>in/usmaan-gani</span>
+                  </a>
+                  {isLiveSync && (
+                    <>
+                      <span className="text-[var(--color-border-bright)]">•</span>
+                      <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-online)] font-medium">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-online)] animate-pulse" />
+                        Live X sync
+                      </span>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
-            <div className="h-8 w-[1px] bg-[var(--color-border)]" />
-            <div>
-              <div className="font-bold text-2xl md:text-3xl text-[var(--color-cyan)]">
-                {xStats.followers.toLocaleString()}
-              </div>
-              <div className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mt-1">
-                Followers
-              </div>
-            </div>
-            <div className="h-8 w-[1px] bg-[var(--color-border)]" />
-            <div>
-              <div className="font-bold text-2xl md:text-3xl text-[var(--color-text-primary)]">
-                {xStats.following.toLocaleString()}
-              </div>
-              <div className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mt-1">
-                Following
-              </div>
+
+            {/* Real-Time Metrics Strip */}
+            <div className="flex flex-wrap items-center gap-6 sm:gap-8 md:gap-10 border-t lg:border-t-0 pt-6 lg:pt-0 border-[var(--color-border)] justify-between lg:justify-end font-mono">
+              {activeNetwork === "all" ? (
+                <>
+                  <div>
+                    <div className="font-bold text-xl md:text-2xl text-[var(--color-text-primary)]">
+                      {xStats.tweets.toLocaleString()}
+                    </div>
+                    <div className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wider mt-0.5 flex items-center gap-1">
+                      <XIcon className="w-2.5 h-2.5 fill-current" /> 𝕏 Posts
+                    </div>
+                  </div>
+                  <div className="h-8 w-[1px] bg-[var(--color-border)] hidden sm:block" />
+                  <div>
+                    <div className="font-bold text-xl md:text-2xl text-[var(--color-cyan)]">
+                      {xStats.followers.toLocaleString()}
+                    </div>
+                    <div className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wider mt-0.5 flex items-center gap-1">
+                      <XIcon className="w-2.5 h-2.5 fill-current" /> 𝕏 Followers
+                    </div>
+                  </div>
+                  <div className="h-8 w-[1px] bg-[var(--color-border)] hidden sm:block" />
+                  <div>
+                    <div className="font-bold text-xl md:text-2xl text-[#0a66c2]">
+                      {linkedinStats.display_connections}
+                    </div>
+                    <div className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wider mt-0.5 flex items-center gap-1">
+                      <LinkedInIcon className="w-2.5 h-2.5 fill-[#0a66c2]" /> in Connections
+                    </div>
+                  </div>
+                  <div className="h-8 w-[1px] bg-[var(--color-border)] hidden sm:block" />
+                  <div>
+                    <div className="font-bold text-xl md:text-2xl text-[var(--color-text-primary)]">
+                      {linkedinStats.followers.toLocaleString()}
+                    </div>
+                    <div className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wider mt-0.5 flex items-center gap-1">
+                      <LinkedInIcon className="w-2.5 h-2.5 fill-[#0a66c2]" /> in Followers
+                    </div>
+                  </div>
+                </>
+              ) : activeNetwork === "x" ? (
+                <>
+                  <div>
+                    <div className="font-bold text-2xl md:text-3xl text-[var(--color-text-primary)]">
+                      {xStats.tweets.toLocaleString()}
+                    </div>
+                    <div className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mt-1">
+                      Posts on 𝕏
+                    </div>
+                  </div>
+                  <div className="h-8 w-[1px] bg-[var(--color-border)]" />
+                  <div>
+                    <div className="font-bold text-2xl md:text-3xl text-[var(--color-cyan)]">
+                      {xStats.followers.toLocaleString()}
+                    </div>
+                    <div className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mt-1">
+                      𝕏 Followers
+                    </div>
+                  </div>
+                  <div className="h-8 w-[1px] bg-[var(--color-border)]" />
+                  <div>
+                    <div className="font-bold text-2xl md:text-3xl text-[var(--color-text-primary)]">
+                      {xStats.following.toLocaleString()}
+                    </div>
+                    <div className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mt-1">
+                      𝕏 Following
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <div className="font-bold text-2xl md:text-3xl text-[#0a66c2]">
+                      {linkedinStats.display_connections}
+                    </div>
+                    <div className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mt-1">
+                      Connections
+                    </div>
+                  </div>
+                  <div className="h-8 w-[1px] bg-[var(--color-border)]" />
+                  <div>
+                    <div className="font-bold text-2xl md:text-3xl text-[var(--color-cyan)]">
+                      {linkedinStats.followers.toLocaleString()}
+                    </div>
+                    <div className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mt-1">
+                      Followers
+                    </div>
+                  </div>
+                  <div className="h-8 w-[1px] bg-[var(--color-border)]" />
+                  <div>
+                    <div className="font-bold text-2xl md:text-3xl text-emerald-400">
+                      Verified
+                    </div>
+                    <div className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mt-1">
+                      Public Profile
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -449,10 +682,17 @@ export function Blogs() {
                   rel="noopener noreferrer"
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 font-mono text-xs md:text-sm px-6 py-3 rounded-xl font-medium bg-[var(--color-amber)] text-black hover:opacity-90 transition-opacity shadow-sm"
                 >
-                  <svg viewBox="0 0 24 24" aria-hidden="true" className="w-4 h-4 fill-current">
-                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                  </svg>
+                  <XIcon className="w-4 h-4 fill-current" />
                   <span>Read {xStats.tweets.toLocaleString()} posts on X ↗</span>
+                </a>
+                <a
+                  href="https://www.linkedin.com/in/usmaan-gani/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 font-mono text-xs md:text-sm px-5 py-3 rounded-xl border border-[#0a66c2]/40 text-[#0a66c2] hover:text-white hover:bg-[#0a66c2]/15 transition-all bg-[var(--color-surface)]"
+                >
+                  <LinkedInIcon className="w-4 h-4 fill-current" />
+                  <span>Connect on LinkedIn ↗</span>
                 </a>
                 <a
                   href="https://x.com/theugultimatum"

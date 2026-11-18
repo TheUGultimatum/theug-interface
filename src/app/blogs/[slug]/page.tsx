@@ -208,10 +208,10 @@ export default async function BlogPostPage({
               href={post.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn btn-primary text-xs font-mono tracking-wider flex items-center gap-1.5"
+              className="btn btn-primary text-xs font-mono tracking-wider flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-amber)] text-black hover:opacity-90 font-medium transition-opacity"
             >
-              <span>DISCUSS ON X</span>
-              <ExternalLink size={12} />
+              <span>{post.url.includes("linkedin.com") ? "DISCUSS ON LINKEDIN" : "DISCUSS ON X"}</span>
+              <ExternalLink size={13} />
             </a>
           )}
         </div>

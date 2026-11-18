@@ -9,9 +9,29 @@ const DATABASE_URL =
   process.env.POSTGRES_PRISMA_URL ||
   "";
 
-function getSql() {
+export function getSql() {
   if (!DATABASE_URL) return null;
   return neon(DATABASE_URL);
+}
+
+export async function neonGetMeta(keys: string[]): Promise<Record<string, string>> {
+  const sql = getSql();
+  if (!sql) return {};
+  try {
+    await ensureDatabaseTables();
+    const rows = await sql.query(
+      `SELECT key, value FROM _system_meta WHERE key = ANY($1)`,
+      [keys]
+    );
+    const result: Record<string, string> = {};
+    for (const r of rows as { key: string; value: string }[]) {
+      result[r.key] = r.value;
+    }
+    return result;
+  } catch (err) {
+    console.warn("[Neon] getMeta error:", err);
+    return {};
+  }
 }
 
 let isInitialized = false;
