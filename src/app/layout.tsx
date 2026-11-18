@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Space_Grotesk, IBM_Plex_Mono, Bebas_Neue } from "next/font/google";
+import { Space_Grotesk, IBM_Plex_Mono, Bebas_Neue, Caveat } from "next/font/google";
 import { GlobalLoader } from "@/components/ui/GlobalLoader";
 import { Background } from "@/components/layout/Background";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -26,6 +26,13 @@ const bebasNeue = Bebas_Neue({
   subsets: ["latin"],
   weight: ["400"],
   variable: "--font-bebas",
+  display: "swap",
+});
+
+const caveat = Caveat({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  variable: "--font-caveat",
   display: "swap",
 });
 
@@ -109,7 +116,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${spaceGrotesk.variable} ${ibmPlexMono.variable} ${bebasNeue.variable}`}
+      className={`${spaceGrotesk.variable} ${ibmPlexMono.variable} ${bebasNeue.variable} ${caveat.variable}`}
       suppressHydrationWarning
     >
       <head>

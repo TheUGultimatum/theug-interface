@@ -208,6 +208,10 @@ body {
   font-family: var(--font-space-grotesk), system-ui, sans-serif;
 }
 
+.font-caveat {
+  font-family: var(--font-caveat), "Caveat", cursive, sans-serif;
+}
+
 .text-hero {
   font-family: var(--font-bebas), sans-serif;
   font-size: clamp(64px, 9vw, 140px);
