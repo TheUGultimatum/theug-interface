@@ -1,20 +1,17 @@
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import fs from "fs/promises";
-import path from "path";
 import type { Metadata } from "next";
 import { ArrowLeft, ExternalLink, Calendar, Clock, Share2, Sparkles } from "lucide-react";
 import { XPost } from "@/config/blogsData";
-
-const DATA_FILE_PATH = path.join(process.cwd(), "src", "data", "blogs.json");
+import { getStoredBlogs } from "@/lib/serverStore";
 
 async function getBlogPost(slug: string): Promise<XPost | null> {
   try {
-    const fileContent = await fs.readFile(DATA_FILE_PATH, "utf-8");
-    const blogs: XPost[] = JSON.parse(fileContent);
+    const blogs = await getStoredBlogs();
+    const cleanSlug = slug.toLowerCase();
     const post = blogs.find(
-      (b) => (b.slug && b.slug === slug) || b.id === slug
+      (b) => (b.slug && b.slug.toLowerCase() === cleanSlug) || b.id.toLowerCase() === cleanSlug
     );
     return post || null;
   } catch {

@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
 import { XPost } from "@/config/blogsData";
 import { verifySessionToken } from "@/lib/adminAuth";
-
-const DATA_FILE_PATH = path.join(process.cwd(), "src", "data", "blogs.json");
+import {
+  getStoredBlogs,
+  saveStoredBlogs,
+  getStorageDiagnostics,
+} from "@/lib/serverStore";
 
 function verifyAdminRequest(request: Request): boolean {
   const authHeader = request.headers.get("authorization");
@@ -17,30 +18,11 @@ function verifyAdminRequest(request: Request): boolean {
   return Boolean(rawSecret && legacyKey && legacyKey === rawSecret);
 }
 
-async function getStoredBlogs(): Promise<XPost[]> {
-  try {
-    const fileContent = await fs.readFile(DATA_FILE_PATH, "utf-8");
-    return JSON.parse(fileContent);
-  } catch (error) {
-    console.warn("Could not read blogs.json from disk, returning empty list:", error);
-    return [];
-  }
-}
-
-async function saveStoredBlogs(blogs: XPost[]): Promise<boolean> {
-  try {
-    await fs.writeFile(DATA_FILE_PATH, JSON.stringify(blogs, null, 2), "utf-8");
-    return true;
-  } catch (error) {
-    console.error("Failed writing to blogs.json:", error);
-    return false;
-  }
-}
-
 // GET all blogs
 export async function GET() {
   const blogs = await getStoredBlogs();
-  return NextResponse.json({ success: true, blogs });
+  const storage = getStorageDiagnostics();
+  return NextResponse.json({ success: true, blogs, storage });
 }
 
 // POST: Add new blog or replace entire list
@@ -57,12 +39,12 @@ export async function POST(request: Request) {
 
     // Mode 1: Bulk replace (e.g. reordering)
     if (Array.isArray(body.blogs)) {
-      const saved = await saveStoredBlogs(body.blogs);
+      const saveRes = await saveStoredBlogs(body.blogs);
       return NextResponse.json({
         success: true,
-        savedToDisk: saved,
+        saved: saveRes,
         blogs: body.blogs,
-        message: saved ? "All dispatches saved to disk" : "Saved in memory",
+        message: "Dispatches updated successfully",
       });
     }
 
@@ -95,7 +77,9 @@ export async function POST(request: Request) {
     }
 
     const currentList = await getStoredBlogs();
-    const existingIndex = currentList.findIndex((p) => p.id === post.id);
+    const existingIndex = currentList.findIndex(
+      (p) => p.id === post.id || (p.slug && p.slug === post.slug)
+    );
 
     let updatedList: XPost[];
     if (existingIndex >= 0) {
@@ -105,10 +89,10 @@ export async function POST(request: Request) {
       updatedList = [post, ...currentList];
     }
 
-    const saved = await saveStoredBlogs(updatedList);
+    const saveRes = await saveStoredBlogs(updatedList);
     return NextResponse.json({
       success: true,
-      savedToDisk: saved,
+      saved: saveRes,
       post,
       blogs: updatedList,
       message: `Dispatch "${post.title}" published successfully`,
@@ -122,7 +106,7 @@ export async function POST(request: Request) {
   }
 }
 
-// DELETE: Remove a dispatch by ID
+// DELETE: Remove a dispatch by ID or slug
 export async function DELETE(request: Request) {
   if (!verifyAdminRequest(request)) {
     return NextResponse.json(
@@ -139,17 +123,22 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ success: false, error: "Dispatch ID is required" }, { status: 400 });
     }
 
+    const targetId = id.trim().toLowerCase();
     const currentList = await getStoredBlogs();
-    const updatedList = currentList.filter((p) => p.id !== id);
+    const updatedList = currentList.filter(
+      (p) =>
+        p.id.toLowerCase() !== targetId &&
+        (!p.slug || p.slug.toLowerCase() !== targetId)
+    );
 
     if (updatedList.length === currentList.length) {
       return NextResponse.json({ success: false, error: "Dispatch not found" }, { status: 404 });
     }
 
-    const saved = await saveStoredBlogs(updatedList);
+    const saveRes = await saveStoredBlogs(updatedList);
     return NextResponse.json({
       success: true,
-      savedToDisk: saved,
+      saved: saveRes,
       blogs: updatedList,
       message: `Dispatch ${id} deleted successfully`,
     });
@@ -158,4 +147,3 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ success: false, error: "Server error deleting dispatch" }, { status: 500 });
   }
 }
-

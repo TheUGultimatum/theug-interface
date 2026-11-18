@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
 import { Project } from "@/types/project";
-import defaultProjects from "@/data/projects.json";
 import { verifySessionToken } from "@/lib/adminAuth";
-
-const DATA_FILE_PATH = path.join(process.cwd(), "src", "data", "projects.json");
+import {
+  getStoredProjects,
+  saveStoredProjects,
+  getStorageDiagnostics,
+} from "@/lib/serverStore";
 
 function verifyAdminRequest(request: Request): boolean {
   const authHeader = request.headers.get("authorization");
@@ -19,30 +19,11 @@ function verifyAdminRequest(request: Request): boolean {
   return Boolean(rawSecret && legacyKey && legacyKey === rawSecret);
 }
 
-async function getStoredProjects(): Promise<Project[]> {
-  try {
-    const fileContent = await fs.readFile(DATA_FILE_PATH, "utf-8");
-    return JSON.parse(fileContent);
-  } catch (error) {
-    console.warn("Could not read projects.json from disk, falling back to bundled data:", error);
-    return defaultProjects as Project[];
-  }
-}
-
-async function saveStoredProjects(projects: Project[]): Promise<boolean> {
-  try {
-    await fs.writeFile(DATA_FILE_PATH, JSON.stringify(projects, null, 2), "utf-8");
-    return true;
-  } catch (error) {
-    console.error("Failed writing to projects.json:", error);
-    return false;
-  }
-}
-
 // GET all projects (public or authenticated)
 export async function GET() {
   const projects = await getStoredProjects();
-  return NextResponse.json({ success: true, projects });
+  const storage = getStorageDiagnostics();
+  return NextResponse.json({ success: true, projects, storage });
 }
 
 // POST: Add new project or replace entire list
@@ -56,12 +37,12 @@ export async function POST(request: Request) {
 
     // Mode 1: Bulk replace (e.g. reorder / batch update)
     if (Array.isArray(body.projects)) {
-      const saved = await saveStoredProjects(body.projects);
+      const saveRes = await saveStoredProjects(body.projects);
       return NextResponse.json({
         success: true,
-        savedToDisk: saved,
+        saved: saveRes,
         projects: body.projects,
-        message: saved ? "All projects saved to disk" : "Saved in memory",
+        message: "Projects list updated successfully",
       });
     }
 
@@ -80,7 +61,9 @@ export async function POST(request: Request) {
     }
 
     const currentList = await getStoredProjects();
-    const existingIndex = currentList.findIndex((p) => p.id === project.id);
+    const existingIndex = currentList.findIndex(
+      (p) => p.id.toLowerCase() === project.id.toLowerCase()
+    );
 
     let updatedList: Project[];
     if (existingIndex >= 0) {
@@ -92,13 +75,13 @@ export async function POST(request: Request) {
       updatedList = [project, ...currentList];
     }
 
-    const saved = await saveStoredProjects(updatedList);
+    const saveRes = await saveStoredProjects(updatedList);
     return NextResponse.json({
       success: true,
-      savedToDisk: saved,
+      saved: saveRes,
       project,
       projects: updatedList,
-      message: saved ? "Project saved to disk" : "Project updated in memory",
+      message: `Project "${project.name}" saved successfully`,
     });
   } catch (err) {
     console.error("Error saving project:", err);
@@ -120,15 +103,22 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ success: false, error: "Project ID is required" }, { status: 400 });
     }
 
+    const targetId = id.trim().toLowerCase();
     const currentList = await getStoredProjects();
-    const updatedList = currentList.filter((p) => p.id !== id);
+    const updatedList = currentList.filter(
+      (p) => p.id.toLowerCase() !== targetId
+    );
 
-    const saved = await saveStoredProjects(updatedList);
+    if (updatedList.length === currentList.length) {
+      return NextResponse.json({ success: false, error: "Project not found" }, { status: 404 });
+    }
+
+    const saveRes = await saveStoredProjects(updatedList);
     return NextResponse.json({
       success: true,
-      savedToDisk: saved,
+      saved: saveRes,
       projects: updatedList,
-      message: "Project removed",
+      message: `Project ${id} removed successfully`,
     });
   } catch (err) {
     console.error("Error deleting project:", err);

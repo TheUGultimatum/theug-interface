@@ -506,7 +506,7 @@ export function Projects() {
     fetch("/api/admin/projects")
       .then((res) => res.json())
       .then((data) => {
-        if (data.success && Array.isArray(data.projects) && data.projects.length > 0) {
+        if (data.success && Array.isArray(data.projects)) {
           setProjectList(data.projects);
         }
       })

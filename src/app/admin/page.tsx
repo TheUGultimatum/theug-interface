@@ -227,6 +227,16 @@ export default function AdminPage() {
   // Notifications & Uploads
   const [statusMessage, setStatusMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState<boolean>(false);
+  const [storageInfo, setStorageInfo] = useState<{
+    mode: "github" | "kv" | "local" | "tmp";
+    isPersistent: boolean;
+    hasGitHub: boolean;
+    hasKv: boolean;
+    isVercel: boolean;
+    owner?: string;
+    repo?: string;
+    branch?: string;
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Check saved session token on load
@@ -356,6 +366,9 @@ export default function AdminPage() {
       if (data.success && Array.isArray(data.projects)) {
         setProjects(data.projects);
       }
+      if (data.storage) {
+        setStorageInfo(data.storage);
+      }
     } catch (err) {
       console.warn("Using bundled projects as fallback", err);
     }
@@ -372,9 +385,27 @@ export default function AdminPage() {
       if (data.success && Array.isArray(data.blogs)) {
         setBlogs(data.blogs);
       }
+      if (data.storage) {
+        setStorageInfo(data.storage);
+      }
     } catch (err) {
       console.warn("Failed loading blogs", err);
     }
+  };
+
+  const handleExportData = () => {
+    const dataToExport = activeTab === "projects" ? projects : blogs;
+    const filename = activeTab === "projects" ? "projects.json" : "blogs.json";
+    const blob = new Blob([JSON.stringify(dataToExport, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    notify(`Downloaded ${filename} (${dataToExport.length} items)`);
   };
 
   const notify = (text: string, type: "success" | "error" = "success") => {
@@ -469,9 +500,11 @@ export default function AdminPage() {
         headers: { Authorization: `Bearer ${sessionToken}` },
       });
       const data = await res.json();
-      if (data.success) {
+      if (data.success && Array.isArray(data.projects)) {
         setProjects(data.projects);
-        notify(`Project "${name}" removed`);
+        notify(`Project "${name}" removed successfully`);
+      } else {
+        notify(data.error || "Failed to remove project", "error");
       }
     } catch {
       notify("Error deleting project", "error");
@@ -633,9 +666,11 @@ export default function AdminPage() {
         headers: { Authorization: `Bearer ${sessionToken}` },
       });
       const data = await res.json();
-      if (data.success) {
+      if (data.success && Array.isArray(data.blogs)) {
         setBlogs(data.blogs);
-        notify(`Deleted "${title}"`);
+        notify(`Deleted "${title}" successfully`);
+      } else {
+        notify(data.error || "Failed to delete dispatch", "error");
       }
     } catch {
       notify("Error deleting dispatch", "error");
@@ -834,9 +869,45 @@ export default function AdminPage() {
           <p className="text-sm text-[var(--color-text-secondary)] mt-1 max-w-xl leading-relaxed">
             Manage your live Web3 projects, essays, and X thread dispatches with instant sync.
           </p>
+
+          {/* Storage Connection Indicator */}
+          <div className="flex flex-wrap items-center gap-2 mt-3 text-[11px] font-mono">
+            {storageInfo?.hasGitHub ? (
+              <span className="px-2.5 py-1 rounded-md bg-[rgba(0,255,136,0.08)] border border-[rgba(0,255,136,0.3)] text-[var(--color-online)] flex items-center gap-1.5">
+                <CheckCircle2 size={12} />
+                <span>GitOps Connected ({storageInfo.repo}:{storageInfo.branch})</span>
+              </span>
+            ) : storageInfo?.hasKv ? (
+              <span className="px-2.5 py-1 rounded-md bg-[rgba(0,255,136,0.08)] border border-[rgba(0,255,136,0.3)] text-[var(--color-online)] flex items-center gap-1.5">
+                <CheckCircle2 size={12} />
+                <span>KV Database Connected</span>
+              </span>
+            ) : storageInfo?.isVercel ? (
+              <span
+                className="px-2.5 py-1 rounded-md bg-[rgba(255,184,0,0.08)] border border-[rgba(255,184,0,0.3)] text-[var(--color-amber)] flex items-center gap-1.5"
+                title="Serverless memory & /tmp active. Add GITHUB_TOKEN to Vercel Environment Variables for permanent Git auto-commits."
+              >
+                <AlertCircle size={12} />
+                <span>Serverless Storage (Add GITHUB_TOKEN to Vercel for auto Git commits)</span>
+              </span>
+            ) : (
+              <span className="px-2.5 py-1 rounded-md bg-[var(--color-elevated)] border border-[var(--color-border)] text-[var(--color-text-muted)] flex items-center gap-1.5">
+                <span>Local Disk Mode</span>
+              </span>
+            )}
+          </div>
         </div>
 
-        <div className="flex items-center gap-3 font-mono text-xs md:text-sm">
+        <div className="flex flex-wrap items-center gap-3 font-mono text-xs md:text-sm">
+          <button
+            onClick={handleExportData}
+            title={`Download current ${activeTab} as JSON`}
+            className="px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:text-[var(--color-amber)] hover:border-[var(--color-amber)] flex items-center gap-2 transition-all shadow-sm cursor-pointer"
+          >
+            <Download size={15} />
+            <span>Export JSON</span>
+          </button>
+
           <Link
             href={activeTab === "projects" ? "/projects" : "/blogs"}
             target="_blank"
