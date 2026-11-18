@@ -135,39 +135,123 @@ function PostMediaPreview({
   liveMedia?: { type: string; mediaUrl?: string; thumbnailUrl?: string };
 }) {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [videoError, setVideoError] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (isPlaying && videoRef.current) {
+      videoRef.current.play().catch((err) => {
+        console.warn("Autoplay with audio restricted, playing muted fallback:", err);
+        if (videoRef.current) {
+          videoRef.current.muted = true;
+          videoRef.current.play().catch(() => setVideoError(true));
+        }
+      });
+    }
+  }, [isPlaying]);
 
   if (liveMedia && liveMedia.type === "video" && liveMedia.mediaUrl) {
     return (
-      <div className="my-3.5 rounded-xl overflow-hidden border border-zinc-800 bg-black relative group shadow-md">
-        {isPlaying ? (
-          <video
-            src={liveMedia.mediaUrl}
-            controls
-            autoPlay
-            className="w-full max-h-80 object-contain rounded-xl bg-black"
-          />
+      <div className="my-3.5 rounded-xl overflow-hidden border border-zinc-800 bg-black relative group shadow-lg">
+        {isPlaying && !videoError ? (
+          <div className="relative w-full aspect-video bg-black flex items-center justify-center">
+            <video
+              ref={videoRef}
+              src={liveMedia.mediaUrl}
+              controls
+              playsInline
+              preload="auto"
+              {...({ referrerPolicy: "no-referrer" } as any)}
+              onError={() => setVideoError(true)}
+              className="w-full h-full object-contain rounded-xl bg-black"
+            />
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsPlaying(false);
+              }}
+              className="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full bg-black/80 hover:bg-black text-[11px] font-mono text-white flex items-center gap-1 backdrop-blur-md border border-white/20 transition-all z-20 cursor-pointer"
+              title="Close video"
+            >
+              <span>Close ✕</span>
+            </button>
+          </div>
         ) : (
           <div
-            onClick={() => setIsPlaying(true)}
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              setIsPlaying(true);
+              setVideoError(false);
+            }}
             className="relative cursor-pointer w-full h-56 sm:h-64 bg-zinc-950 overflow-hidden flex items-center justify-center group"
           >
-            {liveMedia.thumbnailUrl && (
+            {liveMedia.thumbnailUrl ? (
               <img
                 src={liveMedia.thumbnailUrl}
                 alt="Video thumbnail"
-                className="w-full h-full object-cover opacity-85 group-hover:scale-105 transition-transform duration-300"
+                referrerPolicy="no-referrer"
+                className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-300"
               />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-zinc-900 to-zinc-950 flex items-center justify-center text-zinc-500 font-mono text-xs">
+                Video Broadcast
+              </div>
             )}
             <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors" />
-            <div className="w-14 h-14 rounded-full bg-blue-600/90 hover:bg-blue-500 text-white flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
+
+            {/* Play Button */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsPlaying(true);
+                setVideoError(false);
+              }}
+              className="w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center shadow-xl shadow-blue-600/40 transform group-hover:scale-110 transition-transform cursor-pointer z-10"
+              title="Play Video"
+            >
               <svg className="w-6 h-6 fill-current ml-1" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z" />
               </svg>
-            </div>
-            <div className="absolute bottom-2.5 right-3 px-2 py-0.5 rounded bg-black/75 text-[11px] font-mono text-white flex items-center gap-1.5 backdrop-blur-sm">
+            </button>
+
+            {/* Action pill */}
+            <div className="absolute bottom-2.5 left-3 px-2.5 py-1 rounded-full bg-black/85 text-[11px] font-mono text-white flex items-center gap-1.5 backdrop-blur-md border border-white/10 z-10">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               <span>▶ Play Video Preview</span>
             </div>
+
+            {post.url && (
+              <a
+                href={post.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full bg-black/75 hover:bg-black text-[11px] font-mono text-zinc-300 hover:text-white flex items-center gap-1 backdrop-blur-md border border-white/15 z-10 transition-colors"
+              >
+                <span>Watch on 𝕏 ↗</span>
+              </a>
+            )}
+          </div>
+        )}
+
+        {videoError && (
+          <div className="p-4 bg-zinc-900 text-center">
+            <p className="text-xs text-zinc-400 mb-2 font-mono">
+              Direct video stream restricted by origin.
+            </p>
+            {post.url && (
+              <a
+                href={post.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold"
+              >
+                <span>Watch Video on 𝕏 ↗</span>
+              </a>
+            )}
           </div>
         )}
       </div>
@@ -180,6 +264,7 @@ function PostMediaPreview({
         <img
           src={liveMedia.mediaUrl}
           alt="Post attachment"
+          referrerPolicy="no-referrer"
           className="w-full max-h-80 object-cover"
         />
       </div>
@@ -189,7 +274,7 @@ function PostMediaPreview({
   return null;
 }
 
-/* ─── Editorial Dispatch / Authentic Social Card ──────────────────────── */
+/* ─── Unified Editorial Dispatch & Article Card ──────────────────────── */
 function DispatchCard({ post, avatarSrc }: { post: XPost; avatarSrc?: string }) {
   const [copied, setCopied] = useState(false);
   const [liked, setLiked] = useState(false);
@@ -241,94 +326,113 @@ function DispatchCard({ post, avatarSrc }: { post: XPost; avatarSrc?: string }) 
     }
   };
 
-  if (isXPost) {
-    return (
-      <article className="group relative flex flex-col justify-between p-6 sm:p-7 rounded-2xl border border-zinc-800/90 bg-[#101218] hover:bg-[#131520] hover:border-zinc-700 transition-all duration-300 shadow-sm hover:shadow-xl">
-        <div>
-          {/* Author Header */}
-          <div className="flex items-center justify-between gap-3 mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full overflow-hidden border border-zinc-700 bg-black shrink-0">
-                <img
-                  src={authorAvatar}
-                  alt={authorName}
-                  width={40}
-                  height={40}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = "/images/avatar-sun.png";
-                  }}
-                />
-              </div>
-              <div>
-                <div className="flex items-center gap-1.5 leading-tight">
-                  <span className="font-bold text-sm sm:text-base text-white hover:underline cursor-pointer">
-                    {authorName}
-                  </span>
-                  {isVerified && (
-                    <svg className="w-4 h-4 text-[#38bdf8] fill-current" viewBox="0 0 24 24">
-                      <path d="m8.6 22.5-1.9-3.2-3.6-.8.4-3.7L1 12l2.5-2.8-.4-3.7 3.6-.8 1.9-3.2L12 2.9l3.4-1.4 1.9 3.2 3.6.8-.4 3.7L23 12l-2.5 2.8.4 3.7-3.6.8-1.9 3.2-3.4-1.4-3.4 1.4zm4.4-6.4 5.3-5.3-1.4-1.4-3.9 3.9-1.8-1.8-1.4 1.4 3.2 3.2z"/>
-                    </svg>
-                  )}
-                  <XIcon className="w-3 h-3 fill-zinc-500 ml-0.5" />
-                </div>
-                <span className="text-xs text-zinc-500 font-mono">
-                  {authorHandle}
-                </span>
-              </div>
+  return (
+    <article className="group relative flex flex-col justify-between p-6 sm:p-7 rounded-2xl border border-zinc-800/90 bg-[#0f1118] hover:bg-[#12141f] hover:border-zinc-700 transition-all duration-300 shadow-sm hover:shadow-xl">
+      <div>
+        {/* Header: Author + Channel/Format */}
+        <div className="flex items-center justify-between gap-3 mb-3.5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full overflow-hidden border border-zinc-700 bg-black shrink-0">
+              <img
+                src={authorAvatar}
+                alt={authorName}
+                width={40}
+                height={40}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = "/images/avatar-sun.png";
+                }}
+              />
             </div>
-
-            <a
-              href={`https://x.com/${authorHandle.replace("@", "")}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3.5 py-1 rounded-full border border-zinc-700 text-xs font-semibold text-white hover:bg-white/10 transition-colors"
-            >
-              Follow
-            </a>
+            <div>
+              <div className="flex items-center gap-1.5 leading-tight">
+                <span className="font-bold text-sm sm:text-base text-white hover:underline cursor-pointer">
+                  {authorName}
+                </span>
+                {isVerified && (
+                  <svg className="w-4 h-4 text-[#38bdf8] fill-current" viewBox="0 0 24 24">
+                    <path d="m8.6 22.5-1.9-3.2-3.6-.8.4-3.7L1 12l2.5-2.8-.4-3.7 3.6-.8 1.9-3.2L12 2.9l3.4-1.4 1.9 3.2 3.6.8-.4 3.7L23 12l-2.5 2.8.4 3.7-3.6.8-1.9 3.2-3.4-1.4-3.4 1.4zm4.4-6.4 5.3-5.3-1.4-1.4-3.9 3.9-1.8-1.8-1.4 1.4 3.2 3.2z" />
+                  </svg>
+                )}
+                {isXPost && <XIcon className="w-3 h-3 fill-zinc-500 ml-0.5" />}
+                {isLinkedIn && <LinkedInIcon className="w-3.5 h-3.5 fill-[#0a66c2] ml-0.5" />}
+              </div>
+              <span className="text-xs text-zinc-500 font-mono">
+                {authorHandle}
+              </span>
+            </div>
           </div>
 
-          {/* Title */}
-          {isArticle && (
-            <h3 className="font-bold text-base sm:text-lg text-white mb-2 leading-snug">
-              <Link href={articleHref} className="hover:text-[var(--color-amber)] transition-colors inline-flex items-center gap-1.5">
-                <span>{post.title}</span>
-                <ArrowUpRight size={15} />
-              </Link>
-            </h3>
-          )}
-
-          {/* Formatted Post Text with Real Content */}
-          <FormattedPostText text={liveTweet?.text || post.summary || post.body || ""} />
-
-          {/* Real Live Media Preview (Playable Video or Photo Attachment) */}
-          <PostMediaPreview post={post} liveMedia={liveTweet?.media} />
-
-          {/* Timestamp */}
-          <div className="text-xs text-zinc-500 font-mono mt-3.5 flex items-center justify-between">
-            <span>{post.publishedAt} · Dispatched on 𝕏</span>
-            <span className="text-zinc-500">{displayViews} views</span>
+          <div className="flex items-center gap-1.5">
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider bg-zinc-900 border border-zinc-800 text-zinc-400">
+              {post.category}
+            </span>
+            {post.url && (
+              <a
+                href={post.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-1 text-zinc-500 hover:text-white transition-colors"
+                title="View original discussion"
+              >
+                <ExternalLink size={13} />
+              </a>
+            )}
           </div>
         </div>
 
-        {/* Footer Actions */}
-        <div className="mt-5 pt-4 border-t border-zinc-800/80 flex flex-col gap-3">
-          <div className="flex items-center justify-between text-xs font-mono text-zinc-400">
-            <div className="flex items-center gap-5">
-              <button
-                type="button"
-                onClick={() => setLiked(!liked)}
-                className="flex items-center gap-1.5 hover:text-pink-400 transition-colors cursor-pointer"
-              >
-                <Heart size={14} className={liked ? "fill-pink-500 text-pink-500" : ""} />
-                <span>{displayLikes}</span>
-              </button>
-              <span className="flex items-center gap-1.5 hover:text-blue-400 cursor-pointer">
-                <Repeat2 size={15} />
-                <span>{displayReposts}</span>
-              </span>
-            </div>
+        {/* Article Title */}
+        {isArticle ? (
+          <h3 className="font-bold text-base sm:text-lg text-white mb-2 leading-snug group-hover:text-[var(--color-amber)] transition-colors">
+            <Link href={articleHref} className="inline-flex items-center gap-1.5 focus:outline-none">
+              <span>{post.title}</span>
+              <ArrowUpRight size={15} className="text-zinc-500 group-hover:text-[var(--color-amber)] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+            </Link>
+          </h3>
+        ) : (
+          post.title && (
+            <h4 className="font-semibold text-sm text-zinc-200 mb-1.5">
+              {post.title}
+            </h4>
+          )
+        )}
 
+        {/* Summary / Body Preview with Ergonomic Margins */}
+        {isArticle ? (
+          <p className="text-sm leading-relaxed text-zinc-300 font-normal line-clamp-3 mb-3">
+            {post.summary || liveTweet?.text || ""}
+          </p>
+        ) : (
+          <div className="mb-3">
+            <FormattedPostText text={liveTweet?.text || post.summary || post.body || ""} />
+          </div>
+        )}
+
+        {/* Real Live Media Preview (Playable Video or Photo Attachment) */}
+        <PostMediaPreview post={post} liveMedia={liveTweet?.media} />
+
+        {/* Highlights if present */}
+        {post.highlights && post.highlights.length > 0 && isArticle && (
+          <ul className="my-3 space-y-1 pl-3 border-l border-zinc-800 text-xs text-zinc-400">
+            {post.highlights.slice(0, 2).map((h, i) => (
+              <li key={i} className="line-clamp-1">
+                • {h}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {/* Timestamp & Views */}
+        <div className="text-xs text-zinc-500 font-mono mt-3 flex items-center justify-between">
+          <span>{post.publishedAt} · {isArticle ? post.readTime || "Read Dispatch" : "𝕏 Broadcast"}</span>
+          <span className="text-zinc-500">{displayViews} views</span>
+        </div>
+      </div>
+
+      {/* Footer Actions */}
+      <div className="mt-4 pt-3.5 border-t border-zinc-800/80 flex flex-col gap-2.5">
+        <div className="flex items-center justify-between text-xs font-mono text-zinc-400">
+          <div className="flex items-center gap-4">
             <button
               type="button"
               onClick={handleShare}
@@ -344,180 +448,57 @@ function DispatchCard({ post, avatarSrc }: { post: XPost; avatarSrc?: string }) 
                 </span>
               )}
             </button>
+            <span className="flex items-center gap-1.5 hover:text-blue-400">
+              <Repeat2 size={14} />
+              <span>{displayReposts}</span>
+            </span>
           </div>
 
-          <div className="flex items-center gap-2 pt-1">
-            {post.url && (
-              <a
-                href={post.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 py-2.5 rounded-full border border-zinc-800 bg-[#161822] hover:bg-[#1e2232] text-zinc-300 hover:text-white text-xs font-semibold text-center transition-all inline-flex items-center justify-center gap-1.5"
-              >
-                <XIcon className="w-3 h-3 fill-current" />
-                <span>Read on 𝕏 ↗</span>
-              </a>
-            )}
-            {isArticle && (
-              <Link
-                href={articleHref}
-                className="flex-1 py-2.5 rounded-full border border-cyan-800/40 bg-cyan-950/30 hover:bg-cyan-900/40 text-cyan-300 text-xs font-semibold text-center transition-all inline-flex items-center justify-center gap-1.5"
-              >
-                <FileText size={13} />
-                <span>Read Article ↗</span>
-              </Link>
-            )}
-          </div>
-        </div>
-      </article>
-    );
-  }
-
-  return (
-    <article className="group relative flex flex-col justify-between p-8 md:p-9 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-border-bright)] transition-all duration-300 shadow-sm hover:shadow-lg hover:-translate-y-1">
-      <div>
-        {/* Meta row: category, format, date, read time */}
-        <div className="flex items-center justify-between gap-3 text-xs mb-5 font-mono">
-          <div className="flex items-center gap-2.5">
-            <span className="px-2.5 py-1 rounded-md text-[11px] tracking-wider uppercase font-semibold bg-[var(--color-elevated)] border border-[var(--color-border)] text-[var(--color-text-secondary)]">
-              {post.category}
-            </span>
-            {isArticle ? (
-              <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-cyan)] font-mono font-medium">
-                <FileText size={13} />
-                Article
-              </span>
-            ) : isLinkedIn ? (
-              <span className="inline-flex items-center gap-1.5 text-xs text-[#0a66c2] font-mono font-medium">
-                <LinkedInIcon className="w-3.5 h-3.5 fill-[#0a66c2]" />
-                LinkedIn Dispatch
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-amber)] font-mono font-medium">
-                <XIcon className="w-3 h-3 fill-current" />
-                X Dispatch
-              </span>
-            )}
-            {post.isPinned && (
-              <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-amber)] font-mono font-medium">
-                <Pin size={12} className="fill-current" />
-                Featured
-              </span>
-            )}
-          </div>
-          <span className="text-[var(--color-text-muted)] text-xs">
-            {post.publishedAt} · {post.readTime}
-          </span>
-        </div>
-
-        {/* Title */}
-        <h3 className="font-sans font-bold text-xl md:text-2xl text-[var(--color-text-primary)] group-hover:text-[var(--color-amber)] transition-colors leading-snug mb-3.5">
-          <Link
-            href={articleHref}
-            className="inline-flex items-center gap-2 focus:outline-none"
-          >
-            <span>{post.title}</span>
-            <ArrowUpRight
-              size={16}
-              className="opacity-0 -translate-y-0.5 translate-x-0.5 group-hover:opacity-100 transition-all text-[var(--color-amber)]"
-            />
-          </Link>
-        </h3>
-
-        {/* Summary */}
-        <p className="text-sm md:text-base text-[var(--color-text-secondary)] leading-relaxed mb-6 font-normal">
-          {post.summary}
-        </p>
-
-        {/* Takeaway Points */}
-        {post.highlights && post.highlights.length > 0 && (
-          <ul className="mb-6 space-y-2 border-l-2 border-[var(--color-border-bright)] pl-4">
-            {post.highlights.map((h, i) => (
-              <li
-                key={i}
-                className="text-xs md:text-sm text-[var(--color-text-muted)] leading-relaxed"
-              >
-                {h}
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {/* Tags */}
-        {post.tags && post.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-6">
-            {post.tags.map((tag, i) => (
-              <span
-                key={i}
-                className="font-mono text-xs px-2.5 py-1 rounded-md bg-[var(--color-elevated)] border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Footer Metrics & Actions */}
-      <div className="pt-5 border-t border-[var(--color-border)] flex items-center justify-between mt-auto">
-        <div className="flex items-center gap-5 text-xs font-mono text-[var(--color-text-muted)]">
-          {post.stats?.likes && (
-            <span className="flex items-center gap-1.5" title="Likes">
-              <Heart size={14} />
-              <span>{post.stats.likes}</span>
-            </span>
-          )}
-          {post.stats?.reposts && (
-            <span className="flex items-center gap-1.5" title="Reposts">
-              <Repeat2 size={15} />
-              <span>{post.stats.reposts}</span>
-            </span>
-          )}
-          {post.stats?.views && (
-            <span className="flex items-center gap-1.5" title="Views">
-              <Eye size={14} />
-              <span>{post.stats.views}</span>
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2.5">
           <button
-            onClick={handleShare}
-            className="p-2 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-elevated)] transition-colors cursor-pointer"
-            title="Copy dispatch link"
             type="button"
+            onClick={() => setLiked(!liked)}
+            className="flex items-center gap-1.5 hover:text-pink-400 transition-colors cursor-pointer"
           >
-            {copied ? (
-              <Check size={15} className="text-[var(--color-green)]" />
-            ) : (
-              <Share2 size={15} />
-            )}
+            <Heart size={14} className={liked ? "fill-pink-500 text-pink-500" : ""} />
+            <span>{displayLikes}</span>
           </button>
+        </div>
 
+        {/* Bottom CTA Buttons */}
+        <div className="flex items-center gap-2 pt-1">
+          {isArticle && (
+            <Link
+              href={articleHref}
+              className="flex-1 py-2.5 rounded-full border border-[var(--color-amber)]/40 bg-[rgba(255,94,58,0.08)] hover:bg-[rgba(255,94,58,0.18)] text-[var(--color-amber)] hover:text-white text-xs font-semibold text-center transition-all inline-flex items-center justify-center gap-1.5"
+            >
+              <FileText size={13} />
+              <span>Read Full Article ↗</span>
+            </Link>
+          )}
           {post.url && (
             <a
               href={post.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="p-2 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-elevated)] transition-colors"
-              title={isLinkedIn ? "View original on LinkedIn" : "View original on X"}
+              className={`py-2.5 px-4 rounded-full border text-xs font-semibold text-center transition-all inline-flex items-center justify-center gap-1.5 ${
+                isArticle
+                  ? "border-zinc-800 bg-[#141620] hover:bg-[#1a1d2c] text-zinc-300 hover:text-white"
+                  : "flex-1 border-zinc-800 bg-[#161822] hover:bg-[#1e2232] text-zinc-300 hover:text-white"
+              }`}
             >
               {isLinkedIn ? (
-                <LinkedInIcon className="w-3.5 h-3.5 fill-[#0a66c2]" />
+                <>
+                  <LinkedInIcon className="w-3.5 h-3.5 fill-[#0a66c2]" />
+                  <span>LinkedIn ↗</span>
+                </>
               ) : (
-                <XIcon className="w-3 h-3 fill-current text-[var(--color-amber)]" />
+                <>
+                  <XIcon className="w-3 h-3 fill-current" />
+                  <span>Discuss on 𝕏 ↗</span>
+                </>
               )}
             </a>
           )}
-
-          <Link
-            href={articleHref}
-            className="font-mono text-xs md:text-sm font-semibold text-[var(--color-cyan)] hover:underline inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[rgba(0,240,255,0.08)] hover:bg-[rgba(0,240,255,0.15)] transition-colors"
-          >
-            <span>Read Dispatch</span>
-            <ArrowUpRight size={14} />
-          </Link>
         </div>
       </div>
     </article>
@@ -555,12 +536,14 @@ export function Blogs() {
   });
 
   useEffect(() => {
-    // 1. Fetch live articles from admin store
+    // 1. Fetch live articles from admin store and merge with defaults
     fetch("/api/admin/blogs")
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.blogs)) {
-          setPosts(data.blogs);
+          const existingIds = new Set(data.blogs.map((b: XPost) => b.id.toLowerCase()));
+          const extra = BLOGS_DATA.filter((b) => !existingIds.has(b.id.toLowerCase()));
+          setPosts([...data.blogs, ...extra]);
         }
       })
       .catch(() => {});
@@ -649,19 +632,11 @@ export function Blogs() {
                   <span className="w-2 h-2 rounded-full bg-[var(--color-cyan)] animate-pulse" />
                   <span>04 // DISPATCHES & ARTICLES</span>
                 </div>
-                <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-white flex items-center gap-3">
-                  <span>Top</span>
-                  <span className="font-caveat text-4xl sm:text-5xl md:text-6xl text-[#38bdf8] font-semibold italic tracking-wide lowercase inline-flex items-center gap-2">
-                    contents
-                    <svg className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-[var(--color-amber)] rotate-[15deg] drop-shadow-[0_0_6px_rgba(255,94,58,0.4)] transition-transform duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/>
-                      <line x1="16" y1="8" x2="2" y2="22"/>
-                      <line x1="17.5" y1="15" x2="9" y2="15"/>
-                    </svg>
-                  </span>
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white font-sans">
+                  Blogs &amp; Dispatches
                 </h1>
                 <p className="text-sm md:text-base text-zinc-400 mt-2 font-normal max-w-xl">
-                  Curated Web3 dispatches, live ecosystem updates, and technical breakdowns.
+                  Technical deep dives, multi-agent AI blueprints, and on-chain architecture breakdowns from Usmaan Gani.
                 </p>
               </div>
 

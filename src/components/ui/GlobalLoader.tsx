@@ -3,35 +3,38 @@
 import { useEffect, useState } from "react";
 
 export function GlobalLoader() {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Force manual scroll restoration to block browser jump on reload
+    // Check if session has already initialized
+    try {
+      if (sessionStorage.getItem("theug_init")) {
+        return;
+      }
+    } catch {}
+
+    setLoading(true);
+
     if ("scrollRestoration" in history) {
       history.scrollRestoration = "manual";
     }
-    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
 
-    let isDone = false;
-    const hideLoader = () => {
-      if (isDone) return;
-      isDone = true;
-      setTimeout(() => {
-        window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-        setLoading(false);
-      }, 300);
+    const dismiss = () => {
+      try {
+        sessionStorage.setItem("theug_init", "1");
+      } catch {}
+      setLoading(false);
     };
 
-    // Absolute safety timeout: NEVER stall for more than 800ms
-    const safetyTimer = setTimeout(hideLoader, 800);
-
     if (document.readyState === "complete") {
-      hideLoader();
+      const t = setTimeout(dismiss, 120);
+      return () => clearTimeout(t);
     } else {
-      window.addEventListener("load", hideLoader);
+      window.addEventListener("load", dismiss, { once: true });
+      const safety = setTimeout(dismiss, 400);
       return () => {
-        clearTimeout(safetyTimer);
-        window.removeEventListener("load", hideLoader);
+        clearTimeout(safety);
+        window.removeEventListener("load", dismiss);
       };
     }
   }, []);
@@ -40,21 +43,15 @@ export function GlobalLoader() {
 
   return (
     <div 
-      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#050810]"
-      style={{
-        transition: "opacity 0.4s ease-out, visibility 0.4s",
-        opacity: loading ? 1 : 0,
-        visibility: loading ? "visible" : "hidden",
-      }}
+      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#050810] pointer-events-none transition-opacity duration-300"
+      style={{ opacity: loading ? 1 : 0 }}
+      aria-hidden="true"
     >
       <div className="flex flex-col items-center gap-4">
-        {/* Loader Animation */}
-        <div className="relative w-12 h-12">
-          <div className="absolute inset-0 border-2 border-[var(--color-cyan)] border-t-transparent rounded-full animate-spin"></div>
-          <div className="absolute inset-2 border-2 border-[var(--color-amber)] border-b-transparent rounded-full animate-spin" style={{ animationDirection: "reverse", animationDuration: "1.5s" }}></div>
+        <div className="relative w-10 h-10">
+          <div className="absolute inset-0 border-2 border-[var(--color-cyan)] border-t-transparent rounded-full animate-spin" />
+          <div className="absolute inset-1.5 border-2 border-[var(--color-amber)] border-b-transparent rounded-full animate-spin" style={{ animationDirection: "reverse", animationDuration: "1.2s" }} />
         </div>
-        
-        {/* Loading Text */}
         <div className="font-mono text-[10px] tracking-[0.2em] text-[var(--color-text-muted)] animate-pulse">
           INITIALIZING_WORKSPACE...
         </div>

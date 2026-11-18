@@ -30,13 +30,23 @@ const TMP_PROJECTS_PATH = path.join(os.tmpdir(), "theug_projects_store.json");
    BLOGS STORAGE (NEON -> MEMORY -> TMP -> LOCAL FILE)
    ───────────────────────────────────────────────────────────────────────────── */
 export async function getStoredBlogs(): Promise<XPost[]> {
+  const { BLOGS_DATA } = await import("@/config/blogsData");
+
+  // Helper to merge stored blogs with defaults
+  const mergeWithDefaults = (stored: XPost[]): XPost[] => {
+    const existingIds = new Set(stored.map((b) => b.id.toLowerCase()));
+    const missingDefaults = BLOGS_DATA.filter((b) => !existingIds.has(b.id.toLowerCase()));
+    return [...stored, ...missingDefaults];
+  };
+
   // 1. Neon Serverless Postgres (Primary Database)
   if (isNeonConfigured()) {
     try {
       const fromNeon = await neonGetBlogs();
-      if (fromNeon !== null) {
-        globalThis.__theug_blogs_cache = fromNeon;
-        return fromNeon;
+      if (fromNeon !== null && Array.isArray(fromNeon)) {
+        const merged = mergeWithDefaults(fromNeon);
+        globalThis.__theug_blogs_cache = merged;
+        return merged;
       }
     } catch (err) {
       console.warn("[Store] Neon getBlogs error, falling back to memory/file:", err);
@@ -44,7 +54,7 @@ export async function getStoredBlogs(): Promise<XPost[]> {
   }
 
   // 2. Return in-memory cache if available
-  if (globalThis.__theug_blogs_cache) {
+  if (globalThis.__theug_blogs_cache && globalThis.__theug_blogs_cache.length > 0) {
     return globalThis.__theug_blogs_cache;
   }
 
@@ -52,9 +62,10 @@ export async function getStoredBlogs(): Promise<XPost[]> {
   try {
     const tmpData = await fs.readFile(TMP_BLOGS_PATH, "utf-8");
     const parsed = JSON.parse(tmpData);
-    if (Array.isArray(parsed)) {
-      globalThis.__theug_blogs_cache = parsed;
-      return parsed;
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      const merged = mergeWithDefaults(parsed);
+      globalThis.__theug_blogs_cache = merged;
+      return merged;
     }
   } catch {
     // continue
@@ -64,16 +75,17 @@ export async function getStoredBlogs(): Promise<XPost[]> {
   try {
     const localData = await fs.readFile(LOCAL_BLOGS_PATH, "utf-8");
     const parsed = JSON.parse(localData);
-    if (Array.isArray(parsed)) {
-      globalThis.__theug_blogs_cache = parsed;
-      return parsed;
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      const merged = mergeWithDefaults(parsed);
+      globalThis.__theug_blogs_cache = merged;
+      return merged;
     }
   } catch {
     // continue
   }
 
-  globalThis.__theug_blogs_cache = [];
-  return [];
+  globalThis.__theug_blogs_cache = BLOGS_DATA;
+  return BLOGS_DATA;
 }
 
 export async function saveStoredBlogs(blogs: XPost[]): Promise<{
