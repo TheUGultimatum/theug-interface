@@ -96,17 +96,19 @@ function DesktopSidebar() {
       <div className="px-7 py-4 flex items-center justify-between border-b border-[var(--color-border)]">
         <span className="font-mono text-[9px] text-[var(--color-text-muted)] tracking-wider">INTERFACE THEME</span>
         <button
+          type="button"
           onClick={toggleTheme}
-          className="p-1.5 rounded-md border border-[var(--color-border)] hover:border-[var(--color-amber)] transition-colors flex items-center justify-center cursor-pointer"
+          aria-label={dayMode ? "Switch to Night Mode" : "Switch to Day Mode"}
+          className="w-12 h-12 min-w-[48px] min-h-[48px] rounded-lg border border-[var(--color-border)] hover:border-[var(--color-amber)] transition-colors flex items-center justify-center cursor-pointer"
           style={{ color: "var(--color-text-secondary)", background: "transparent" }}
           title={dayMode ? "Switch to Night Mode" : "Switch to Day Mode"}
         >
-          {dayMode ? <Sun size={14} className="text-[var(--color-amber-bright)]" /> : <Moon size={14} />}
+          {dayMode ? <Sun size={16} className="text-[var(--color-amber-bright)]" /> : <Moon size={16} />}
         </button>
       </div>
 
       {/* Navigation */}
-      <nav className="flex flex-col gap-2 px-5 py-8 flex-1 overflow-y-auto">
+      <nav className="flex flex-col gap-2.5 px-5 py-8 flex-1 overflow-y-auto">
         {NAV_ITEMS.map(({ href, label, icon: Icon }, idx) => {
           const isActive = pathname === href;
           return (
@@ -115,7 +117,7 @@ function DesktopSidebar() {
               href={href}
               prefetch={true}
               className={cn(
-                "flex items-center gap-3.5 px-3.5 py-3 rounded-lg transition-all duration-200 group relative border",
+                "flex items-center gap-3.5 px-3.5 py-3 min-h-[48px] rounded-lg transition-all duration-200 group relative border",
                 isActive
                   ? "border-[var(--color-amber)] text-[var(--color-amber)] bg-[linear-gradient(90deg,rgba(255,123,0,0.12)_0%,rgba(0,217,255,0.04)_100%)] shadow-[0_0_16px_rgba(255,123,0,0.15)]"
                   : "border-transparent text-[var(--color-text-muted)] hover:border-[var(--color-border)] hover:bg-[rgba(255,255,255,0.02)]"
@@ -149,7 +151,7 @@ function DesktopSidebar() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label={label}
-              className="transition-colors hover:-translate-y-0.5 transform duration-200"
+              className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg border border-transparent hover:border-[var(--color-border)] transition-colors hover:-translate-y-0.5 transform duration-200"
               style={{ color: "var(--color-text-muted)" }}
               onMouseOver={(e) => (e.currentTarget.style.color = "var(--color-amber)")}
               onMouseOut={(e) => (e.currentTarget.style.color = "var(--color-text-muted)")}
@@ -168,7 +170,7 @@ function DesktopSidebar() {
         </p>
         <Link
           href="/admin"
-          className="font-mono text-[9px] text-[var(--color-text-muted)] hover:text-[var(--color-amber)] transition-colors mt-2.5 block tracking-wider"
+          className="font-mono text-[9px] text-[var(--color-text-muted)] hover:text-[var(--color-amber)] transition-colors mt-2.5 inline-flex items-center py-2 min-h-[44px] tracking-wider"
         >
           [ SYS.ADMIN // CONSOLE ]
         </Link>

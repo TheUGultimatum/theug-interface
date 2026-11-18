@@ -613,391 +613,391 @@ export function Blogs() {
   }, [hasPosts, posts, activeCategory, searchQuery]);
 
   return (
-    <section
-      id="blogs"
-      ref={ref}
-      style={{
-        padding: "clamp(84px, 10vh, 150px) clamp(24px, 5vw, 64px)",
-      }}
-    >
-      <div style={{ maxWidth: "1360px", margin: "0 auto" }}>
-        {/* Section Header */}
-        <div
-              className={`flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8 mb-10 border-b border-zinc-800/80 ${
-                inView ? "animate-fade-in-up" : "anim-hidden"
+        <section
+          id="blogs"
+          ref={ref}
+          style={{
+            padding: "clamp(84px, 10vh, 150px) clamp(24px, 5vw, 64px)",
+          }}
+        >
+          <div style={{ maxWidth: "1360px", margin: "0 auto" }}>
+            {/* Section Header */}
+            <div
+                  className={`flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8 mb-10 border-b border-[var(--color-border)] ${
+                    inView ? "animate-fade-in-up" : "anim-hidden"
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center gap-2.5 text-xs font-mono text-[var(--color-text-muted)] uppercase tracking-widest mb-2">
+                      <span className="w-2 h-2 rounded-full bg-[var(--color-cyan)] animate-pulse" />
+                      <span>04 // DISPATCHES & ARTICLES</span>
+                    </div>
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-[var(--color-text-primary)] font-sans">
+                      Blogs &amp; Dispatches
+                    </h1>
+                    <p className="text-sm md:text-base text-[var(--color-text-secondary)] mt-2 font-normal max-w-xl">
+                      Technical deep dives, multi-agent AI blueprints, and on-chain architecture breakdowns from Usmaan Gani.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    <a
+                      href="https://x.com/Usmaangani252"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 font-mono text-xs md:text-sm px-4 py-2 rounded-full border border-[var(--color-border)] hover:border-[var(--color-border-bright)] text-[var(--color-text-primary)] transition-all bg-[var(--color-surface)] shadow-sm hover:bg-[var(--color-elevated)]"
+                    >
+                      <XIcon className="w-3.5 h-3.5 fill-current" />
+                      <span>@Usmaangani252 ↗</span>
+                    </a>
+                    <a
+                      href="https://www.linkedin.com/in/usmaan-gani/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 font-mono text-xs md:text-sm px-4 py-2 rounded-full border border-[var(--color-border)] hover:border-[#0a66c2] text-[#0a66c2] hover:text-[#0a66c2] transition-all bg-[var(--color-surface)] shadow-sm hover:bg-[var(--color-elevated)]"
+                    >
+                      <LinkedInIcon className="w-3.5 h-3.5 fill-current" />
+                      <span>LinkedIn ↗</span>
+                    </a>
+              </div>
+            </div>
+
+            {/* Real-Time Live Profile Masthead (Dual X + LinkedIn Support) */}
+            <div
+              className={`p-6 sm:p-8 md:p-10 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm ${
+                inView ? "animate-fade-in-up delay-100" : "anim-hidden"
               }`}
             >
-              <div>
-                <div className="flex items-center gap-2.5 text-xs font-mono text-zinc-500 uppercase tracking-widest mb-2">
-                  <span className="w-2 h-2 rounded-full bg-[var(--color-cyan)] animate-pulse" />
-                  <span>04 // DISPATCHES & ARTICLES</span>
-                </div>
-                <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white font-sans">
-                  Blogs &amp; Dispatches
-                </h1>
-                <p className="text-sm md:text-base text-zinc-400 mt-2 font-normal max-w-xl">
-                  Technical deep dives, multi-agent AI blueprints, and on-chain architecture breakdowns from Usmaan Gani.
-                </p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3">
-                <a
-                  href="https://x.com/Usmaangani252"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 font-mono text-xs md:text-sm px-4 py-2 rounded-full border border-zinc-700 hover:border-zinc-500 text-white transition-all bg-zinc-900/90 shadow-sm hover:bg-zinc-800"
-                >
-                  <XIcon className="w-3.5 h-3.5 fill-current" />
-                  <span>@Usmaangani252 ↗</span>
-                </a>
-                <a
-                  href="https://www.linkedin.com/in/usmaan-gani/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 font-mono text-xs md:text-sm px-4 py-2 rounded-full border border-blue-900/60 hover:border-blue-600 text-blue-400 hover:text-white hover:bg-blue-600/20 transition-all bg-zinc-900/90"
-                >
-                  <LinkedInIcon className="w-3.5 h-3.5 fill-current" />
-                  <span>LinkedIn ↗</span>
-                </a>
-          </div>
-        </div>
-
-        {/* Real-Time Live Profile Masthead (Dual X + LinkedIn Support) */}
-        <div
-          className={`p-6 sm:p-8 md:p-10 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm ${
-            inView ? "animate-fade-in-up delay-100" : "anim-hidden"
-          }`}
-        >
-          {/* Header Bar with Network Switcher */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 mb-6 border-b border-[var(--color-border)]">
-            <div className="flex items-center gap-2.5">
-              <span className="w-2 h-2 rounded-full bg-[var(--color-online)] animate-pulse" />
-              <span className="font-mono text-xs uppercase tracking-wider text-[var(--color-text-muted)] font-semibold">
-                Real-Time Community & Social Sync
-              </span>
-            </div>
-
-            {/* Network Selector Tabs */}
-            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[var(--color-elevated)] border border-[var(--color-border)] self-start sm:self-auto font-mono text-xs">
-              <button
-                type="button"
-                onClick={() => setActiveNetwork("all")}
-                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                  activeNetwork === "all"
-                    ? "bg-[var(--color-surface)] text-[var(--color-text-primary)] font-bold shadow-xs border border-[var(--color-border)]"
-                    : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
-                }`}
-              >
-                ALL NETWORKS
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveNetwork("x")}
-                className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
-                  activeNetwork === "x"
-                    ? "bg-[var(--color-surface)] text-[var(--color-amber)] font-bold shadow-xs border border-[var(--color-border)]"
-                    : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
-                }`}
-              >
-                <XIcon className="w-3 h-3 fill-current" />
-                <span>𝕏 TWITTER</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveNetwork("linkedin")}
-                className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
-                  activeNetwork === "linkedin"
-                    ? "bg-[var(--color-surface)] text-[#0a66c2] font-bold shadow-xs border border-[var(--color-border)]"
-                    : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
-                }`}
-              >
-                <LinkedInIcon className="w-3.5 h-3.5 fill-current" />
-                <span>LINKEDIN</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Profile Identity & Metrics Content */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-6">
-              <div className="relative w-20 h-20 md:w-22 md:h-22 rounded-2xl overflow-hidden border border-[var(--color-border-bright)] shrink-0 bg-black shadow-md">
-                {/* High-resolution X / profile avatar */}
-                <img
-                  src={avatarSrc}
-                  alt={xStats.name || "Usmaan Gani"}
-                  width={88}
-                  height={88}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src = "/images/avatar-sun.png";
-                  }}
-                />
-              </div>
-              <div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <h2 className="font-bold text-xl md:text-2xl text-[var(--color-text-primary)] tracking-tight">
-                    Usmaan Gani
-                  </h2>
-                  <span className="font-mono text-xs md:text-sm text-[var(--color-text-muted)]">
-                    (theUG)
-                  </span>
-                  <span className="font-mono text-xs px-2.5 py-1 rounded-md border border-[var(--color-border)] text-[var(--color-amber)] bg-[rgba(255,94,58,0.08)] font-semibold">
-                    Founder @theugultimatum
+              {/* Header Bar with Network Switcher */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 mb-6 border-b border-[var(--color-border)]">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-2 h-2 rounded-full bg-[var(--color-online)] animate-pulse" />
+                  <span className="font-mono text-xs uppercase tracking-wider text-[var(--color-text-muted)] font-semibold">
+                    Real-Time Community & Social Sync
                   </span>
                 </div>
 
-                <p className="text-sm text-[var(--color-text-secondary)] mt-2 font-medium">
-                  {activeNetwork === "linkedin"
-                    ? linkedinStats.headline
-                    : "CONTENT CREATOR · Web3 Builder & Operator"}
-                </p>
-
-                <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-[var(--color-text-muted)] font-mono">
-                  <a
-                    href="https://x.com/Usmaangani252"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-[var(--color-amber)] transition-colors inline-flex items-center gap-1.5"
+                {/* Network Selector Tabs */}
+                <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[var(--color-elevated)] border border-[var(--color-border)] self-start sm:self-auto font-mono text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setActiveNetwork("all")}
+                    className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                      activeNetwork === "all"
+                        ? "bg-[var(--color-surface)] text-[var(--color-text-primary)] font-bold shadow-xs border border-[var(--color-border)]"
+                        : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+                    }`}
+                  >
+                    ALL NETWORKS
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveNetwork("x")}
+                    className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
+                      activeNetwork === "x"
+                        ? "bg-[var(--color-surface)] text-[var(--color-amber)] font-bold shadow-xs border border-[var(--color-border)]"
+                        : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+                    }`}
                   >
                     <XIcon className="w-3 h-3 fill-current" />
-                    <span>@Usmaangani252</span>
-                  </a>
-                  <span className="text-[var(--color-border-bright)]">•</span>
-                  <a
-                    href="https://www.linkedin.com/in/usmaan-gani/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-[#0a66c2] transition-colors inline-flex items-center gap-1.5 text-[#0a66c2]"
+                    <span>𝕏 TWITTER</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveNetwork("linkedin")}
+                    className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
+                      activeNetwork === "linkedin"
+                        ? "bg-[var(--color-surface)] text-[#0a66c2] font-bold shadow-xs border border-[var(--color-border)]"
+                        : "text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+                    }`}
                   >
-                    <LinkedInIcon className="w-3.5 h-3.5 fill-[#0a66c2]" />
-                    <span>in/usmaan-gani</span>
-                  </a>
-                  {isLiveSync && (
-                    <>
-                      <span className="text-[var(--color-border-bright)]">•</span>
-                      <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-online)] font-medium">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-online)] animate-pulse" />
-                        Live X sync
+                    <LinkedInIcon className="w-3.5 h-3.5 fill-current" />
+                    <span>LINKEDIN</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Profile Identity & Metrics Content */}
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+                  <div className="relative w-20 h-20 md:w-22 md:h-22 rounded-2xl overflow-hidden border border-[var(--color-border-bright)] shrink-0 bg-[var(--color-abyss)] shadow-md">
+                    {/* High-resolution X / profile avatar */}
+                    <img
+                      src={avatarSrc}
+                      alt={xStats.name || "Usmaan Gani"}
+                      width={88}
+                      height={88}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = "/images/avatar-sun.png";
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <h2 className="font-bold text-xl md:text-2xl text-[var(--color-text-primary)] tracking-tight">
+                        Usmaan Gani
+                      </h2>
+                      <span className="font-mono text-xs md:text-sm text-[var(--color-text-muted)]">
+                        (theUG)
                       </span>
+                      <span className="font-mono text-xs px-2.5 py-1 rounded-md border border-[var(--color-border)] text-[var(--color-amber)] bg-[rgba(255,94,58,0.08)] font-semibold">
+                        Founder @theugultimatum
+                      </span>
+                    </div>
+
+                    <p className="text-sm text-[var(--color-text-secondary)] mt-2 font-medium">
+                      {activeNetwork === "linkedin"
+                        ? linkedinStats.headline
+                        : "CONTENT CREATOR · Web3 Builder & Operator"}
+                    </p>
+
+                    <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-[var(--color-text-muted)] font-mono">
+                      <a
+                        href="https://x.com/Usmaangani252"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:text-[var(--color-amber)] transition-colors inline-flex items-center gap-1.5"
+                      >
+                        <XIcon className="w-3 h-3 fill-current" />
+                        <span>@Usmaangani252</span>
+                      </a>
+                      <span className="text-[var(--color-border-bright)]">•</span>
+                      <a
+                        href="https://www.linkedin.com/in/usmaan-gani/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:text-[#0a66c2] transition-colors inline-flex items-center gap-1.5 text-[#0a66c2]"
+                      >
+                        <LinkedInIcon className="w-3.5 h-3.5 fill-[#0a66c2]" />
+                        <span>in/usmaan-gani</span>
+                      </a>
+                      {isLiveSync && (
+                        <>
+                          <span className="text-[var(--color-border-bright)]">•</span>
+                          <span className="inline-flex items-center gap-1.5 text-xs text-[var(--color-online)] font-medium">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-online)] animate-pulse" />
+                            Live X sync
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Real-Time Metrics Strip */}
+                <div className="flex flex-wrap items-center gap-6 sm:gap-8 md:gap-10 border-t lg:border-t-0 pt-6 lg:pt-0 border-[var(--color-border)] justify-between lg:justify-end font-mono">
+                  {activeNetwork === "all" ? (
+                    <>
+                      <div>
+                        <div className="font-bold text-xl md:text-2xl text-[var(--color-text-primary)]">
+                          {xStats.tweets.toLocaleString()}
+                        </div>
+                        <div className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wider mt-0.5 flex items-center gap-1">
+                          <XIcon className="w-2.5 h-2.5 fill-current" /> 𝕏 Posts
+                        </div>
+                      </div>
+                      <div className="h-8 w-[1px] bg-[var(--color-border)] hidden sm:block" />
+                      <div>
+                        <div className="font-bold text-xl md:text-2xl text-[var(--color-cyan)]">
+                          {xStats.followers.toLocaleString()}
+                        </div>
+                        <div className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wider mt-0.5 flex items-center gap-1">
+                          <XIcon className="w-2.5 h-2.5 fill-current" /> 𝕏 Followers
+                        </div>
+                      </div>
+                      <div className="h-8 w-[1px] bg-[var(--color-border)] hidden sm:block" />
+                      <div>
+                        <div className="font-bold text-xl md:text-2xl text-[#0a66c2]">
+                          {linkedinStats.display_connections}
+                        </div>
+                        <div className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wider mt-0.5 flex items-center gap-1">
+                          <LinkedInIcon className="w-2.5 h-2.5 fill-[#0a66c2]" /> in Connections
+                        </div>
+                      </div>
+                      <div className="h-8 w-[1px] bg-[var(--color-border)] hidden sm:block" />
+                      <div>
+                        <div className="font-bold text-xl md:text-2xl text-[var(--color-text-primary)]">
+                          {linkedinStats.followers.toLocaleString()}
+                        </div>
+                        <div className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wider mt-0.5 flex items-center gap-1">
+                          <LinkedInIcon className="w-2.5 h-2.5 fill-[#0a66c2]" /> in Followers
+                        </div>
+                      </div>
+                    </>
+                  ) : activeNetwork === "x" ? (
+                    <>
+                      <div>
+                        <div className="font-bold text-2xl md:text-3xl text-[var(--color-text-primary)]">
+                          {xStats.tweets.toLocaleString()}
+                        </div>
+                        <div className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mt-1">
+                          Posts on 𝕏
+                        </div>
+                      </div>
+                      <div className="h-8 w-[1px] bg-[var(--color-border)]" />
+                      <div>
+                        <div className="font-bold text-2xl md:text-3xl text-[var(--color-cyan)]">
+                          {xStats.followers.toLocaleString()}
+                        </div>
+                        <div className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mt-1">
+                          𝕏 Followers
+                        </div>
+                      </div>
+                      <div className="h-8 w-[1px] bg-[var(--color-border)]" />
+                      <div>
+                        <div className="font-bold text-2xl md:text-3xl text-[var(--color-text-primary)]">
+                          {xStats.following.toLocaleString()}
+                        </div>
+                        <div className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mt-1">
+                          𝕏 Following
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div>
+                        <div className="font-bold text-2xl md:text-3xl text-[#0a66c2]">
+                          {linkedinStats.display_connections}
+                        </div>
+                        <div className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mt-1">
+                          Connections
+                        </div>
+                      </div>
+                      <div className="h-8 w-[1px] bg-[var(--color-border)]" />
+                      <div>
+                        <div className="font-bold text-2xl md:text-3xl text-[var(--color-cyan)]">
+                          {linkedinStats.followers.toLocaleString()}
+                        </div>
+                        <div className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mt-1">
+                          Followers
+                        </div>
+                      </div>
+                      <div className="h-8 w-[1px] bg-[var(--color-border)]" />
+                      <div>
+                        <div className="font-bold text-2xl md:text-3xl text-emerald-400">
+                          Verified
+                        </div>
+                        <div className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mt-1">
+                          Public Profile
+                        </div>
+                      </div>
                     </>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Real-Time Metrics Strip */}
-            <div className="flex flex-wrap items-center gap-6 sm:gap-8 md:gap-10 border-t lg:border-t-0 pt-6 lg:pt-0 border-[var(--color-border)] justify-between lg:justify-end font-mono">
-              {activeNetwork === "all" ? (
-                <>
-                  <div>
-                    <div className="font-bold text-xl md:text-2xl text-[var(--color-text-primary)]">
-                      {xStats.tweets.toLocaleString()}
-                    </div>
-                    <div className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wider mt-0.5 flex items-center gap-1">
-                      <XIcon className="w-2.5 h-2.5 fill-current" /> 𝕏 Posts
-                    </div>
+            {/* Content Section: Editorial Empty State or Real Post Feed */}
+            {!hasPosts ? (
+              <div
+                className={`mt-12 py-24 px-8 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] text-center shadow-sm ${
+                  inView ? "animate-fade-in-up delay-200" : "anim-hidden"
+                }`}
+              >
+                <div className="max-w-lg mx-auto">
+                  <div className="w-14 h-14 rounded-2xl border border-[var(--color-border)] mx-auto mb-5 flex items-center justify-center text-[var(--color-text-muted)] bg-[var(--color-elevated)] shadow-inner">
+                    <BookOpen size={24} />
                   </div>
-                  <div className="h-8 w-[1px] bg-[var(--color-border)] hidden sm:block" />
-                  <div>
-                    <div className="font-bold text-xl md:text-2xl text-[var(--color-cyan)]">
-                      {xStats.followers.toLocaleString()}
-                    </div>
-                    <div className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wider mt-0.5 flex items-center gap-1">
-                      <XIcon className="w-2.5 h-2.5 fill-current" /> 𝕏 Followers
-                    </div>
-                  </div>
-                  <div className="h-8 w-[1px] bg-[var(--color-border)] hidden sm:block" />
-                  <div>
-                    <div className="font-bold text-xl md:text-2xl text-[#0a66c2]">
-                      {linkedinStats.display_connections}
-                    </div>
-                    <div className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wider mt-0.5 flex items-center gap-1">
-                      <LinkedInIcon className="w-2.5 h-2.5 fill-[#0a66c2]" /> in Connections
-                    </div>
-                  </div>
-                  <div className="h-8 w-[1px] bg-[var(--color-border)] hidden sm:block" />
-                  <div>
-                    <div className="font-bold text-xl md:text-2xl text-[var(--color-text-primary)]">
-                      {linkedinStats.followers.toLocaleString()}
-                    </div>
-                    <div className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wider mt-0.5 flex items-center gap-1">
-                      <LinkedInIcon className="w-2.5 h-2.5 fill-[#0a66c2]" /> in Followers
-                    </div>
-                  </div>
-                </>
-              ) : activeNetwork === "x" ? (
-                <>
-                  <div>
-                    <div className="font-bold text-2xl md:text-3xl text-[var(--color-text-primary)]">
-                      {xStats.tweets.toLocaleString()}
-                    </div>
-                    <div className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mt-1">
-                      Posts on 𝕏
-                    </div>
-                  </div>
-                  <div className="h-8 w-[1px] bg-[var(--color-border)]" />
-                  <div>
-                    <div className="font-bold text-2xl md:text-3xl text-[var(--color-cyan)]">
-                      {xStats.followers.toLocaleString()}
-                    </div>
-                    <div className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mt-1">
-                      𝕏 Followers
-                    </div>
-                  </div>
-                  <div className="h-8 w-[1px] bg-[var(--color-border)]" />
-                  <div>
-                    <div className="font-bold text-2xl md:text-3xl text-[var(--color-text-primary)]">
-                      {xStats.following.toLocaleString()}
-                    </div>
-                    <div className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mt-1">
-                      𝕏 Following
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div>
-                    <div className="font-bold text-2xl md:text-3xl text-[#0a66c2]">
-                      {linkedinStats.display_connections}
-                    </div>
-                    <div className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mt-1">
-                      Connections
-                    </div>
-                  </div>
-                  <div className="h-8 w-[1px] bg-[var(--color-border)]" />
-                  <div>
-                    <div className="font-bold text-2xl md:text-3xl text-[var(--color-cyan)]">
-                      {linkedinStats.followers.toLocaleString()}
-                    </div>
-                    <div className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mt-1">
-                      Followers
-                    </div>
-                  </div>
-                  <div className="h-8 w-[1px] bg-[var(--color-border)]" />
-                  <div>
-                    <div className="font-bold text-2xl md:text-3xl text-emerald-400">
-                      Verified
-                    </div>
-                    <div className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider mt-1">
-                      Public Profile
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
 
-        {/* Content Section: Editorial Empty State or Real Post Feed */}
-        {!hasPosts ? (
-          <div
-            className={`mt-12 py-24 px-8 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] text-center shadow-sm ${
-              inView ? "animate-fade-in-up delay-200" : "anim-hidden"
-            }`}
-          >
-            <div className="max-w-lg mx-auto">
-              <div className="w-14 h-14 rounded-2xl border border-[var(--color-border)] mx-auto mb-5 flex items-center justify-center text-[var(--color-text-muted)] bg-[var(--color-elevated)] shadow-inner">
-                <BookOpen size={24} />
-              </div>
+                  <h3 className="font-sans font-bold text-xl md:text-2xl text-[var(--color-text-primary)] mb-3">
+                    Dispatches are being compiled
+                  </h3>
 
-              <h3 className="font-sans font-bold text-xl md:text-2xl text-[var(--color-text-primary)] mb-3">
-                Dispatches are being compiled
-              </h3>
+                  <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed mb-8 font-normal">
+                    Long-form technical articles, ecosystem teardowns, and architecture breakdowns will be published here directly from Usmaan Gani.
+                  </p>
 
-              <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed mb-8 font-normal">
-                Long-form technical articles, ecosystem teardowns, and architecture breakdowns will be published here directly from Usmaan Gani.
-              </p>
-
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <a
-                  href="https://x.com/Usmaangani252"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 font-mono text-xs md:text-sm px-6 py-3 rounded-xl font-medium bg-[var(--color-amber)] text-black hover:opacity-90 transition-opacity shadow-sm"
-                >
-                  <XIcon className="w-4 h-4 fill-current" />
-                  <span>Read {xStats.tweets.toLocaleString()} posts on X ↗</span>
-                </a>
-                <a
-                  href="https://www.linkedin.com/in/usmaan-gani/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 font-mono text-xs md:text-sm px-5 py-3 rounded-xl border border-[#0a66c2]/40 text-[#0a66c2] hover:text-white hover:bg-[#0a66c2]/15 transition-all bg-[var(--color-surface)]"
-                >
-                  <LinkedInIcon className="w-4 h-4 fill-current" />
-                  <span>Connect on LinkedIn ↗</span>
-                </a>
-                <a
-                  href="https://x.com/theugultimatum"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 font-mono text-xs md:text-sm px-5 py-3 rounded-xl border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-bright)] transition-colors bg-[var(--color-surface)]"
-                >
-                  <span>@theugultimatum ↗</span>
-                </a>
-              </div>
-            </div>
-          </div>
-        ) : (
-          /* Filter Bar & Dispatches Grid */
-          <>
-            <div
-              className={`flex flex-col lg:flex-row lg:items-center justify-between gap-6 mt-12 pb-6 border-b border-[var(--color-border)] ${
-                inView ? "animate-fade-in-up delay-200" : "anim-hidden"
-              }`}
-            >
-              <div className="flex flex-wrap items-center gap-2.5">
-                {categories.map((cat) => {
-                  const count =
-                    cat === "ALL"
-                      ? posts.length
-                      : posts.filter((p) => p.category === cat).length;
-                  const isActive = activeCategory === cat;
-                  return (
-                    <button
-                      key={cat}
-                      onClick={() => setActiveCategory(cat)}
-                      className={`font-mono text-xs md:text-sm px-4 py-2 rounded-xl transition-all border ${
-                        isActive
-                          ? "bg-[var(--color-text-primary)] text-[var(--color-void)] border-[var(--color-text-primary)] font-semibold shadow-sm"
-                          : "bg-[var(--color-surface)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:border-[var(--color-border-bright)] hover:text-[var(--color-text-primary)]"
-                      }`}
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <a
+                      href="https://x.com/Usmaangani252"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 font-mono text-xs md:text-sm px-6 py-3 rounded-xl font-medium bg-[var(--color-amber)] text-black hover:opacity-90 transition-opacity shadow-sm"
                     >
-                      {cat}{" "}
-                      <span className="text-xs opacity-70">({count})</span>
-                    </button>
-                  );
-                })}
+                      <XIcon className="w-4 h-4 fill-current" />
+                      <span>Read {xStats.tweets.toLocaleString()} posts on X ↗</span>
+                    </a>
+                    <a
+                      href="https://www.linkedin.com/in/usmaan-gani/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 font-mono text-xs md:text-sm px-5 py-3 rounded-xl border border-[#0a66c2]/40 text-[#0a66c2] hover:text-white hover:bg-[#0a66c2]/15 transition-all bg-[var(--color-surface)]"
+                    >
+                      <LinkedInIcon className="w-4 h-4 fill-current" />
+                      <span>Connect on LinkedIn ↗</span>
+                    </a>
+                    <a
+                      href="https://x.com/theugultimatum"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 font-mono text-xs md:text-sm px-5 py-3 rounded-xl border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-bright)] transition-colors bg-[var(--color-surface)]"
+                    >
+                      <span>@theugultimatum ↗</span>
+                    </a>
+                  </div>
+                </div>
               </div>
-
-              <div className="relative min-w-[280px]">
-                <Search
-                  size={15}
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]"
-                />
-                <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Type keywords to filter..."
-                      style={{ paddingLeft: "44px", paddingRight: "16px" }}
-                      className="w-full h-11 bg-[#0c0e14] border border-zinc-800 focus:border-[var(--color-amber)] focus:ring-1 focus:ring-[var(--color-amber)] rounded-xl font-mono text-sm text-white placeholder:text-zinc-500 focus:outline-none transition-all shadow-inner"
-                    />
-              </div>
-            </div>
-
-            <div
-                  className={`grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mt-10 items-start ${
-                    inView ? "animate-fade-in-up delay-300" : "anim-hidden"
+            ) : (
+              /* Filter Bar & Dispatches Grid */
+              <>
+                <div
+                  className={`flex flex-col lg:flex-row lg:items-center justify-between gap-6 mt-12 pb-6 border-b border-[var(--color-border)] ${
+                    inView ? "animate-fade-in-up delay-200" : "anim-hidden"
                   }`}
                 >
-                  {filteredPosts.map((post) => (
-                    <DispatchCard key={post.id || post.slug} post={post} avatarSrc={avatarSrc} />
-                  ))}
-            </div>
-          </>
-        )}
-      </div>
-    </section>
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    {categories.map((cat) => {
+                      const count =
+                        cat === "ALL"
+                          ? posts.length
+                          : posts.filter((p) => p.category === cat).length;
+                      const isActive = activeCategory === cat;
+                      return (
+                        <button
+                          key={cat}
+                          onClick={() => setActiveCategory(cat)}
+                          className={`font-mono text-xs md:text-sm px-4 py-2 rounded-xl transition-all border ${
+                            isActive
+                              ? "bg-[var(--color-text-primary)] text-[var(--color-void)] border-[var(--color-text-primary)] font-semibold shadow-sm"
+                              : "bg-[var(--color-surface)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:border-[var(--color-border-bright)] hover:text-[var(--color-text-primary)]"
+                          }`}
+                        >
+                          {cat}{" "}
+                          <span className="text-xs opacity-70">({count})</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="relative min-w-[280px]">
+                    <Search
+                      size={15}
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]"
+                    />
+                    <input
+                          type="text"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          placeholder="Type keywords to filter..."
+                          style={{ paddingLeft: "44px", paddingRight: "16px" }}
+                          className="blogs-search-input w-full h-11 bg-[var(--color-surface)] border border-[var(--color-border)] focus:border-[var(--color-amber)] focus:ring-1 focus:ring-[var(--color-amber)] rounded-xl font-mono text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none transition-all shadow-sm"
+                        />
+                  </div>
+                </div>
+
+                <div
+                      className={`grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mt-10 items-start ${
+                        inView ? "animate-fade-in-up delay-300" : "anim-hidden"
+                      }`}
+                    >
+                      {filteredPosts.map((post) => (
+                        <DispatchCard key={post.id || post.slug} post={post} avatarSrc={avatarSrc} />
+                      ))}
+                </div>
+              </>
+            )}
+          </div>
+        </section>
   );
 }

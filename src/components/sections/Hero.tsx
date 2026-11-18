@@ -580,67 +580,155 @@ function VisitorTelemetryPanel() {
   }, []);
 
   return (
-    <div className="panel hover-glow-edge" style={{ contain: "layout paint style" }}>
-      <div className="panel-header flex items-center justify-between">
-        <span className="panel-title font-mono text-[10px] tracking-wider flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-online)] shadow-sm animate-pulse" />
-          <span>client_telemetry.sys</span>
-        </span>
-        <span style={{ fontSize: "7px", color: "var(--color-online)", fontFamily: "var(--font-mono)", letterSpacing: "0.08em" }}>
-          ● {clientPlatform}
-        </span>
+    <div className="panel hover-glow-edge overflow-hidden relative" style={{ contain: "layout paint style" }}>
+      {/* Subtle animated scanline */}
+      <div 
+        className="absolute inset-x-0 h-10 pointer-events-none bg-gradient-to-b from-transparent via-[rgba(0,217,255,0.04)] to-transparent"
+        style={{ animation: "scanline-drop 4s linear infinite" }}
+      />
+
+      {/* Panel Header - Adaptive design tokens for Light & Dark mode */}
+      <div className="panel-header flex items-center justify-between border-b border-[var(--color-border)] px-3 py-2 bg-[var(--color-abyss)]">
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--color-online)] opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--color-online)]" />
+          </span>
+          <span className="font-mono text-[10px] tracking-wider text-[var(--color-text-primary)] font-bold">
+            client_telemetry.sys
+          </span>
+        </div>
+        <div className="flex items-center gap-2 font-mono text-[8px]">
+          <span className="px-1.5 py-0.5 rounded border border-[var(--color-border-bright)] bg-[var(--color-elevated)] text-[var(--color-online)] font-semibold">
+            CH-01 LIVE
+          </span>
+          <span className="text-[var(--color-online)] tracking-wide font-medium">
+            ● {clientPlatform}
+          </span>
+        </div>
       </div>
-      <div className="panel-body font-mono text-[9px]" style={{ padding: "12px 14px" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          {stats.map((s) => (
+
+      <div className="panel-body font-mono text-[9px] p-3 sm:p-3.5 space-y-3 bg-[var(--color-surface)]">
+        {/* Live Waveform Motion Graphic */}
+        <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-abyss)] p-2 overflow-hidden relative shadow-sm">
+          <div className="flex items-center justify-between text-[7.5px] text-[var(--color-text-muted)] font-mono mb-1">
+            <span className="flex items-center gap-1 text-[var(--color-cyan)] font-bold">
+              <span className="inline-block w-1 h-1 rounded-full bg-[var(--color-cyan)] animate-pulse" />
+              SIGNAL WAVEFORM OSCILLOSCOPE
+            </span>
+            <span className="font-medium">60.0 FPS · SYNCED</span>
+          </div>
+          <div className="h-9 w-full overflow-hidden relative">
+            {/* Background gridlines */}
             <div 
-              key={s.label} 
-              className="flex items-center justify-between gap-1.5"
+              className="absolute inset-0 opacity-20 pointer-events-none"
+              style={{
+                backgroundImage: "linear-gradient(to right, var(--color-border) 1px, transparent 1px), linear-gradient(to bottom, var(--color-border) 1px, transparent 1px)",
+                backgroundSize: "16px 8px"
+              }}
+            />
+            {/* Dual-layer animated moving sine wave */}
+            <div className="flex w-[200%] h-full" style={{ animation: "pulse-wave 4s linear infinite" }}>
+              <svg className="w-1/2 h-full stroke-[var(--color-cyan)] fill-none stroke-2" preserveAspectRatio="none" viewBox="0 0 200 40">
+                <path d="M 0 20 Q 25 2, 50 20 T 100 20 T 150 20 T 200 20" opacity="0.9" />
+              </svg>
+              <svg className="w-1/2 h-full stroke-[var(--color-cyan)] fill-none stroke-2" preserveAspectRatio="none" viewBox="0 0 200 40">
+                <path d="M 0 20 Q 25 2, 50 20 T 100 20 T 150 20 T 200 20" opacity="0.9" />
+              </svg>
+            </div>
+            <div className="flex w-[200%] h-full absolute top-0 left-0" style={{ animation: "pulse-wave 2.5s linear infinite" }}>
+              <svg className="w-1/2 h-full stroke-[var(--color-amber)] fill-none stroke-[1.5]" preserveAspectRatio="none" viewBox="0 0 200 40">
+                <path d="M 0 20 Q 15 35, 30 20 T 60 20 T 100 20 T 140 20 T 170 35 T 200 20" opacity="0.75" />
+              </svg>
+              <svg className="w-1/2 h-full stroke-[var(--color-amber)] fill-none stroke-[1.5]" preserveAspectRatio="none" viewBox="0 0 200 40">
+                <path d="M 0 20 Q 15 35, 30 20 T 60 20 T 100 20 T 140 20 T 170 35 T 200 20" opacity="0.75" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Structured & Aligned Telemetry Data Rows */}
+        <div className="space-y-1.5">
+          {stats.map((s, idx) => (
+            <div 
+              key={s.label}
+              className="flex items-center justify-between gap-2 p-1.5 rounded bg-[var(--color-abyss)] border border-[var(--color-border)] hover:border-[var(--color-border-bright)] transition-colors"
             >
-              <span style={{ color: "var(--color-text-secondary)", fontSize: "8.5px" }} className="shrink-0">
-                {s.label}
-              </span>
-
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span style={{ color: "var(--color-text-muted)", fontSize: "7.5px" }} className="hidden sm:inline truncate">
-                  {s.detail}
+              {/* Left Label & Mini-EQ */}
+              <div className="flex items-center gap-2 w-32 sm:w-36 shrink-0">
+                <div className="flex items-end gap-0.5 h-2.5 w-3 shrink-0">
+                  <div 
+                    className="w-0.5 bg-[var(--color-cyan)] rounded-t"
+                    style={{ 
+                      animation: `eq-pulse-${(idx % 3) + 1} 1.2s ease-out infinite`,
+                      animationDelay: `${idx * 0.15}s`
+                    }}
+                  />
+                  <div 
+                    className="w-0.5 bg-[var(--color-online)] rounded-t"
+                    style={{ 
+                      animation: `eq-pulse-${((idx + 1) % 3) + 1} 0.9s ease-out infinite`,
+                      animationDelay: `${idx * 0.2}s`
+                    }}
+                  />
+                  <div 
+                    className="w-0.5 bg-[var(--color-amber)] rounded-t"
+                    style={{ 
+                      animation: `eq-pulse-${((idx + 2) % 3) + 1} 1.5s ease-out infinite`,
+                      animationDelay: `${idx * 0.1}s`
+                    }}
+                  />
+                </div>
+                <span className="text-[8.5px] font-bold text-[var(--color-text-primary)] truncate">
+                  {s.label}
                 </span>
+              </div>
 
-                {/* Animated Hardware Meter Bar */}
+              {/* Center Aligned Hardware Meter with Moving Pulse */}
+              <div className="flex-1 min-w-[70px] sm:min-w-[100px] flex items-center gap-2">
                 <div 
-                  className="w-10 sm:w-14 h-1.5 rounded-full overflow-hidden shrink-0 flex items-center p-[0.5px]"
-                  style={{
-                    backgroundColor: "var(--color-elevated)",
-                    border: "1px solid var(--color-border)",
-                  }}
+                  className="w-full h-2 rounded-full overflow-hidden bg-[var(--color-elevated)] border border-[var(--color-border)] p-[1px] relative shadow-inner"
                   title={`${s.pct}% capacity readout`}
                 >
                   <div 
-                    className="h-full rounded-full transition-all duration-1000 ease-out"
+                    className="h-full rounded-full transition-all duration-1000 ease-out relative"
                     style={{
                       width: isAnimated ? `${s.pct}%` : "0%",
                       backgroundColor: s.color,
                       boxShadow: `0 0 6px ${s.color}`,
                     }}
-                  />
+                  >
+                    <div className="absolute right-0 top-0 bottom-0 w-1.5 bg-white rounded-full opacity-90 animate-pulse" />
+                  </div>
                 </div>
+              </div>
 
-                <span style={{ color: s.color, fontWeight: "bold", fontSize: "8px" }} className="shrink-0 font-mono">
-                  [{s.value}]
+              {/* Right Aligned Technical Readout */}
+              <div className="flex items-center justify-end gap-1.5 w-24 sm:w-32 shrink-0 text-right">
+                <span className="hidden sm:inline text-[7.5px] text-[var(--color-text-muted)] font-mono">
+                  {s.detail}
+                </span>
+                <span 
+                  style={{ color: s.color }} 
+                  className="font-mono font-bold text-[8px] tracking-tight bg-[var(--color-elevated)] px-1.5 py-0.5 rounded border border-[var(--color-border)]"
+                >
+                  {s.value}
                 </span>
               </div>
             </div>
           ))}
         </div>
-        <div style={{ marginTop: "8px", paddingTop: "6px", borderTop: "1px solid var(--color-border)", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "7.5px", color: "var(--color-text-muted)" }}>
+
+        {/* Bottom Status Probe */}
+        <div className="pt-2 border-t border-[var(--color-border)] flex justify-between items-center text-[7.5px] text-[var(--color-text-muted)]">
           <div className="flex items-center gap-1.5 font-mono">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--color-cyan)] animate-pulse" />
-            <span>PROBE // LIVE_CLIENT</span>
+            <span className="text-[var(--color-text-secondary)] font-medium">TELEMETRY MATRIX // REALTIME DUPLEX</span>
           </div>
-          <div className="flex items-center gap-1 font-mono">
-            <span style={{ color: "var(--color-cyan)" }}>SYNCED</span>
-            <span style={{ color: "var(--color-border-bright)" }}>·</span>
-            <span style={{ color: "var(--color-online)" }}>ACTIVE</span>
+          <div className="flex items-center gap-1.5 font-mono font-bold">
+            <span className="text-[var(--color-cyan)]">60Hz</span>
+            <span className="text-[var(--color-border-bright)]">·</span>
+            <span className="text-[var(--color-online)]">ONLINE</span>
           </div>
         </div>
       </div>
@@ -834,29 +922,45 @@ export function Hero() {
       paddingRight: "clamp(28px, 4vw, 60px)",
       display: "flex", alignItems: "center",
     }}>
-      <div style={{ width: "100%", maxWidth: "1420px", margin: "0 auto" }}>
-
-        {/* System breadcrumb */}
+      <div style={{ width: "100%", maxWidth: "1420px", margin: "0 auto" }}>        {/* System breadcrumb */}
         <div
-          className={mounted ? "animate-fade-in" : "anim-hidden"}
-          style={{
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            marginBottom: "clamp(28px, 4vh, 48px)",
-            paddingBottom: "14px",
-            borderBottom: "1px solid var(--color-border)",
-          }}
+          className={`flex flex-wrap items-center justify-between gap-3 mb-[clamp(28px,4vh,44px)] pb-3.5 border-b border-zinc-800 ${
+            mounted ? "animate-fade-in" : "anim-hidden"
+          }`}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "var(--color-text-muted)", letterSpacing: "0.1em" }}>INDEX.01</span>
-            <span style={{ color: "var(--color-border)", fontSize: "10px" }}>—</span>
-            {["AI SYSTEMS", "AUTOMATION", "INFRASTRUCTURE", "WEB3", "ALPHA & NFTs"].map((tag, i, arr) => (
-              <span key={tag} style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: "9px", letterSpacing: "0.12em", color: "var(--color-text-muted)" }}>{tag}</span>
-                {i < arr.length - 1 && <span style={{ color: "var(--color-border)" }}>·</span>}
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4 font-mono">
+            {/* Index Pill Badge */}
+            <div className="flex items-center gap-2 px-2.5 py-1 rounded bg-zinc-900/90 border border-zinc-700/80 shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-amber)] animate-pulse" />
+              <span className="text-[11px] font-bold tracking-widest text-white">
+                INDEX // 01
               </span>
-            ))}
+            </div>
+
+            <span className="text-zinc-600 hidden sm:inline" aria-hidden="true">—</span>
+
+            {/* Categorical Tags */}
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              {["AI SYSTEMS", "AUTOMATION", "INFRASTRUCTURE", "WEB3", "ALPHA & NFTs"].map((tag, i, arr) => (
+                <span key={tag} className="flex items-center gap-2 sm:gap-3">
+                  <span className="text-[11px] font-semibold tracking-[0.14em] text-zinc-200 hover:text-white transition-colors cursor-default">
+                    {tag}
+                  </span>
+                  {i < arr.length - 1 && (
+                    <span className="text-zinc-700 text-[10px]" aria-hidden="true">/</span>
+                  )}
+                </span>
+              ))}
+            </div>
           </div>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: "9px", color: "var(--color-text-muted)", letterSpacing: "0.1em" }}>BUILD_0525</span>
+
+          {/* Build Status Indicator */}
+          <div className="flex items-center gap-2 font-mono text-[10px] text-zinc-400 bg-zinc-950 px-2.5 py-1 rounded border border-zinc-800/80">
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-online)]" />
+            <span className="font-bold text-zinc-200">BUILD_0525</span>
+            <span className="text-zinc-600">·</span>
+            <span className="text-[var(--color-online)] font-semibold">STABLE</span>
+          </div>
         </div>
 
         {/* Main grid — asymmetric 5:7 */}
@@ -931,15 +1035,15 @@ export function Hero() {
 
                   <div className="flex flex-col">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-mono text-[9px] uppercase tracking-widest text-[var(--color-online)] font-bold flex items-center gap-1">
+                      <span className="collab-broadcast-tag font-mono text-[9px] uppercase tracking-widest text-[var(--color-online)] font-bold flex items-center gap-1">
                         <Radio size={10} className="animate-pulse" />
                         <span>BROADCAST // OPEN FOR COLLAB</span>
                       </span>
                     </div>
 
-                    <h4 className="font-bold text-sm text-[var(--color-text-primary)] group-hover:text-[var(--color-online)] transition-colors tracking-tight">
+                    <h2 className="font-bold text-sm text-[var(--color-text-primary)] group-hover:text-[var(--color-online)] transition-colors tracking-tight">
                       Available for Collaboration
-                    </h4>
+                    </h2>
 
                     <p className="font-mono text-[11px] text-[var(--color-text-secondary)] mt-0.5 leading-relaxed">
                       EVM protocols, autonomous AI workflows, testnet alpha &amp; full-stack Web3 architecture.
