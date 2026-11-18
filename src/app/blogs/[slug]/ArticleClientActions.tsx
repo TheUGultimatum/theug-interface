@@ -37,3 +37,4 @@ export function ShareArticleButton({ title }: { title: string }) {
     </button>
   );
 }
+
