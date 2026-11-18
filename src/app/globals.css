@@ -635,22 +635,24 @@ body {
   align-items: center;
   gap: 8px;
   padding: 10px 22px;
+  min-height: 44px;
   font-family: var(--font-mono), monospace;
   font-size: 11px;
+  font-weight: 700;
   letter-spacing: 0.08em;
-  color: var(--color-amber-bright);
-  background: rgba(255, 94, 58, 0.06);
-  border: 1px solid var(--color-amber);
-  border-radius: 2px;
-  cursor: none;
+  color: #FFA033;
+  background: rgba(255, 123, 0, 0.08);
+  border: 1px solid #FF7B00;
+  border-radius: 4px;
+  cursor: pointer;
   transition: all var(--transition-base);
   text-decoration: none;
   white-space: nowrap;
 }
 
 .btn-primary:hover {
-  background: rgba(255, 94, 58, 0.14);
-  box-shadow: 0 0 20px rgba(255, 94, 58, 0.18);
+  background: rgba(255, 123, 0, 0.18);
+  box-shadow: 0 0 20px rgba(255, 123, 0, 0.25);
   transform: translateY(-1px);
 }
 
@@ -661,13 +663,15 @@ body {
   align-items: center;
   gap: 8px;
   padding: 10px 22px;
+  min-height: 44px;
   font-family: var(--font-mono), monospace;
   font-size: 11px;
+  font-weight: 600;
   letter-spacing: 0.08em;
   color: var(--color-text-secondary);
   background: transparent;
   border: 1px solid var(--color-border);
-  border-radius: 2px;
+  border-radius: 4px;
   cursor: none;
   transition: all var(--transition-base);
   text-decoration: none;
@@ -838,27 +842,27 @@ body {
 
 .day-mode .btn-primary {
   color: #FFFFFF !important;
-  background-color: #BF360C !important;
-  border-color: #BF360C !important;
+  background-color: #9A3412 !important;
+  border-color: #9A3412 !important;
   font-weight: 700;
 }
 
 .day-mode .btn-primary:hover {
-  background-color: #9A2807 !important;
-  border-color: #9A2807 !important;
-  box-shadow: 0 4px 14px rgba(191, 54, 12, 0.28) !important;
+  background-color: #7C2D12 !important;
+  border-color: #7C2D12 !important;
+  box-shadow: 0 4px 14px rgba(124, 45, 18, 0.3) !important;
 }
 
 .day-mode .btn-secondary {
-  color: #1A1A1E !important;
-  background-color: #EDEDF0 !important;
-  border-color: #D2D2D6 !important;
+  color: #0F172A !important;
+  background-color: #F1F5F9 !important;
+  border-color: #CBD5E1 !important;
   font-weight: 600;
 }
 
 .day-mode .btn-secondary:hover {
-  background-color: #E2E2E6 !important;
-  border-color: #8E8E93 !important;
+  background-color: #E2E8F0 !important;
+  border-color: #94A3B8 !important;
 }
 
 /* ============================================
@@ -873,10 +877,13 @@ body {
   border-color: var(--color-online);
   box-shadow: 0 8px 30px rgba(0, 217, 255, 0.18);
 }
+.collab-broadcast-tag {
+  color: #00E5FF;
+}
 .collab-pill {
   background-color: rgba(0, 217, 255, 0.08);
   border: 1px solid rgba(0, 217, 255, 0.35);
-  color: var(--color-online);
+  color: #00E5FF;
 }
 .collab-card:hover .collab-pill {
   background-color: var(--color-online);
@@ -886,38 +893,40 @@ body {
 
 /* Day Mode Collaboration Card overrides */
 .day-mode .collab-card {
-  border: 1px solid #E2E2E6;
+  border: 1px solid #E2E8F0;
   background-color: #FFFFFF;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
 }
 .day-mode .collab-card:hover {
-  border-color: #0369A1;
-  box-shadow: 0 8px 24px rgba(3, 105, 161, 0.15);
+  border-color: #075985;
+  box-shadow: 0 8px 24px rgba(7, 89, 133, 0.15);
 }
 .day-mode .collab-card h4,
-.day-mode .collab-card h2 {
-  color: #1A1A1E;
+.day-mode .collab-card h2,
+.day-mode .collab-card .font-bold {
+  color: #0F172A !important;
 }
 .day-mode .collab-card:hover h4,
-.day-mode .collab-card:hover h2 {
-  color: #0369A1;
+.day-mode .collab-card:hover h2,
+.day-mode .collab-card:hover .font-bold {
+  color: #075985 !important;
 }
 .day-mode .collab-card p {
-  color: #374151;
+  color: #334155 !important;
 }
 .day-mode .collab-broadcast-tag {
-  color: #0369A1 !important;
+  color: #075985 !important;
 }
 .day-mode .collab-pill {
   background-color: #E0F2FE !important;
   border: 1px solid #7DD3FC !important;
-  color: #0369A1 !important;
+  color: #075985 !important;
   font-weight: 700;
 }
 .day-mode .collab-card:hover .collab-pill {
-  background-color: #0369A1 !important;
+  background-color: #075985 !important;
   color: #FFFFFF !important;
-  border-color: #0369A1 !important;
+  border-color: #075985 !important;
 }
 .day-mode .collab-glow {
   opacity: 0.08 !important;

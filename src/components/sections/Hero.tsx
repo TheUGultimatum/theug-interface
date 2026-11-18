@@ -794,56 +794,25 @@ function ScrambleText({ text, trigger }: { text: string, trigger: boolean }) {
 }
 
 function HeroIdentity() {
-  const [phase, setPhase] = useState<"init" | "reveal" | "stable">("init");
-  const [initText, setInitText] = useState("");
   const [roleIdx, setRoleIdx] = useState(0);
   const [titleIdx, setTitleIdx] = useState(0);
 
   useEffect(() => {
-    // Phase 1: Init sequence
-    const text = "SYS.INIT // IDENTITY_MODULE...";
-    let i = 0;
-    const typeInterval = setInterval(() => {
-      setInitText(text.slice(0, i));
-      i++;
-      if (i > text.length) {
-        clearInterval(typeInterval);
-        setTimeout(() => setPhase("reveal"), 400);
-      }
-    }, 40);
-
-    return () => clearInterval(typeInterval);
-  }, []);
-
-  useEffect(() => {
-    if (phase === "reveal") {
-      setTimeout(() => setPhase("stable"), 1200); // Give scramble time to finish
-    }
-  }, [phase]);
-
-  useEffect(() => {
-    if (phase !== "stable") return;
     const roleInterval = setInterval(() => {
-      setRoleIdx(prev => (prev + 1) % ROLES.length);
+      setRoleIdx((prev) => (prev + 1) % ROLES.length);
     }, 2500);
     const titleInterval = setInterval(() => {
-      setTitleIdx(prev => (prev + 1) % HERO_TITLES.length);
+      setTitleIdx((prev) => (prev + 1) % HERO_TITLES.length);
     }, 4500); // 4.5 seconds per title loop
     return () => {
       clearInterval(roleInterval);
       clearInterval(titleInterval);
     };
-  }, [phase]);
+  }, []);
 
   return (
     <div style={{ lineHeight: 0.88, position: "relative", minHeight: "clamp(170px, 20vw, 290px)" }}>
-      {phase === "init" && (
-        <div className="font-mono text-[11px] text-[var(--color-text-secondary)] mt-4 animate-pulse">
-          $ {initText}<span className="cursor-blink" />
-        </div>
-      )}
-
-      {(phase === "reveal" || phase === "stable") && (
+      {true && (
         <div className="animate-fade-in" style={{ animationDuration: "0.8s" }}>
           <h1 
             className="text-hero" 
@@ -859,9 +828,9 @@ function HeroIdentity() {
               minHeight: "clamp(120px, 16vw, 245px)",
             }}
           >
-            <span><ScrambleText key={`l1-${titleIdx}`} text={HERO_TITLES[titleIdx].line1} trigger={phase === "reveal" || phase === "stable"} /></span>
+            <span><ScrambleText key={`l1-${titleIdx}`} text={HERO_TITLES[titleIdx].line1} trigger={true} /></span>
             <span style={{ color: "var(--color-text-muted)" }}>
-              <ScrambleText key={`l2-${titleIdx}`} text={HERO_TITLES[titleIdx].line2} trigger={phase === "reveal" || phase === "stable"} />
+              <ScrambleText key={`l2-${titleIdx}`} text={HERO_TITLES[titleIdx].line2} trigger={true} />
             </span>
           </h1>
           
@@ -870,7 +839,7 @@ function HeroIdentity() {
             style={{ 
               marginTop: "16px", display: "flex", alignItems: "center", justifyContent: "flex-start",
               gap: "16px", flexWrap: "wrap",
-              opacity: phase === "stable" ? 1 : 0, transition: "opacity 0.6s ease 0.6s"
+              opacity: 1
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
@@ -909,7 +878,7 @@ function HeroIdentity() {
 
 /* ─── Hero ───────────────────────────────────────────────── */
 export function Hero() {
-  const [mounted, setMounted] = useState(false);
+  const [mounted, setMounted] = useState(true);
 
   useEffect(() => { setTimeout(() => setMounted(true), 60); }, []);
 
@@ -1041,9 +1010,7 @@ export function Hero() {
                       </span>
                     </div>
 
-                    <h2 className="font-bold text-sm text-[var(--color-text-primary)] group-hover:text-[var(--color-online)] transition-colors tracking-tight">
-                      Available for Collaboration
-                    </h2>
+                    <span className="block font-bold text-sm text-[var(--color-text-primary)] group-hover:text-[var(--color-online)] transition-colors tracking-tight">Available for Collaboration</span>
 
                     <p className="font-mono text-[11px] text-[var(--color-text-secondary)] mt-0.5 leading-relaxed">
                       EVM protocols, autonomous AI workflows, testnet alpha &amp; full-stack Web3 architecture.

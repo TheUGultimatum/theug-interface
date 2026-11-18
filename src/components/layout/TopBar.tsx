@@ -90,7 +90,7 @@ export function TopBar() {
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <button
             onClick={toggleTheme}
-            className="min-w-[44px] min-h-[38px] p-2 rounded-md border border-[var(--color-border)] flex items-center justify-center cursor-pointer transition-colors active:scale-95"
+            className="w-12 h-12 min-w-[48px] min-h-[48px] p-2 rounded-lg border border-[var(--color-border)] flex items-center justify-center cursor-pointer transition-colors active:scale-95"
             style={{ color: "var(--color-text-secondary)", background: "transparent" }}
             aria-label={dayMode ? "Switch to Night Mode" : "Switch to Day Mode"}
           >
@@ -108,7 +108,7 @@ export function TopBar() {
         <LiveClock />
         <button
           onClick={toggleTheme}
-          className="p-2 min-w-[36px] min-h-[36px] rounded-md border border-[var(--color-border)] hover:border-[var(--color-amber)] transition-colors flex items-center justify-center cursor-pointer"
+          className="w-12 h-12 min-w-[48px] min-h-[48px] p-2 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-amber)] transition-colors flex items-center justify-center cursor-pointer"
           style={{ color: "var(--color-text-secondary)", background: "transparent" }}
           title={dayMode ? "Switch to Night Mode" : "Switch to Day Mode"}
           aria-label={dayMode ? "Switch to Night Mode" : "Switch to Day Mode"}

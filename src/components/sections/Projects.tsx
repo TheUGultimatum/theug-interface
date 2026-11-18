@@ -26,7 +26,7 @@ import defaultProjects from "@/data/projects.json";
 
 function useInView() {
   const ref = useRef<HTMLElement>(null);
-  const [inView, setInView] = useState(false);
+  const [inView, setInView] = useState(true);
   useEffect(() => {
     const obs = new IntersectionObserver(
       ([e]) => {
@@ -104,6 +104,7 @@ function ProjectPreview({
             alt={project.name}
             fill
             sizes={large ? "(max-width: 1024px) 100vw, 50vw" : "(max-width: 640px) 100vw, 33vw"}
+            priority={Boolean(large || project.featured)}
             className="transition-transform duration-500 ease-out group-hover:scale-105"
             style={{
               objectFit: "cover",
@@ -881,9 +882,9 @@ function ProjectCard({
 }
 
 /* ─── Main Projects Section ───────────────────────────────────────────── */
-export function Projects() {
+export function Projects({ initialProjects }: { initialProjects?: Project[] } = {}) {
   const { ref, inView } = useInView();
-  const [projectList, setProjectList] = useState<Project[]>(defaultProjects as Project[]);
+  const [projectList, setProjectList] = useState<Project[]>(initialProjects && initialProjects.length > 0 ? initialProjects : (defaultProjects as Project[]));
   const [activeCategory, setActiveCategory] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);

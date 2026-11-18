@@ -35,7 +35,7 @@ const IDENTITY_LINES = [
 
 function useInView() {
   const ref = useRef<HTMLElement>(null);
-  const [inView, setInView] = useState(false);
+  const [inView, setInView] = useState(true);
   useEffect(() => {
     const obs = new IntersectionObserver(
       ([e]) => { if (e.isIntersecting) { setInView(true); obs.disconnect(); } },
@@ -64,7 +64,7 @@ export function About() {
         {/* Section label */}
         <div className={inView ? "animate-fade-in" : "anim-hidden"}>
           <SectionLabel label="ABOUT.LOG" />
-          <h1 className="sr-only">Usmaan Gani — AI Engineer & Web3 Builder</h1>
+          <h2 className="sr-only">About Usmaan Gani</h2>
         </div>
 
         <div

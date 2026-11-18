@@ -23,7 +23,7 @@ import { BLOGS_DATA, XPost } from "@/config/blogsData";
 
 function useInView() {
   const ref = useRef<HTMLElement>(null);
-  const [inView, setInView] = useState(false);
+  const [inView, setInView] = useState(true);
   useEffect(() => {
     const obs = new IntersectionObserver(
       ([e]) => {

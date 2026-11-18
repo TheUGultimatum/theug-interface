@@ -13,7 +13,8 @@ export function GlobalLoader() {
       }
     } catch {}
 
-    setLoading(true);
+    // Instant render without blocking curtain
+    setLoading(false);
 
     if ("scrollRestoration" in history) {
       history.scrollRestoration = "manual";
