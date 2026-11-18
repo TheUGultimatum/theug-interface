@@ -6,6 +6,7 @@ import {
   saveStoredBlogs,
   getStorageDiagnostics,
 } from "@/lib/serverStore";
+import { isNeonConfigured, neonDeleteBlog } from "@/lib/neon";
 
 function verifyAdminRequest(request: Request): boolean {
   const authHeader = request.headers.get("authorization");
@@ -18,11 +19,12 @@ function verifyAdminRequest(request: Request): boolean {
   return Boolean(rawSecret && legacyKey && legacyKey === rawSecret);
 }
 
-// GET all blogs
-export async function GET() {
+// GET all blogs (public list, admin gets storage diagnostics)
+export async function GET(request: Request) {
   const blogs = await getStoredBlogs();
-  const storage = getStorageDiagnostics();
-  return NextResponse.json({ success: true, blogs, storage });
+  const isAdmin = verifyAdminRequest(request);
+  const storage = isAdmin ? getStorageDiagnostics() : undefined;
+  return NextResponse.json({ success: true, blogs, ...(storage ? { storage } : {}) });
 }
 
 // POST: Add new blog or replace entire list
@@ -133,6 +135,10 @@ export async function DELETE(request: Request) {
 
     if (updatedList.length === currentList.length) {
       return NextResponse.json({ success: false, error: "Dispatch not found" }, { status: 404 });
+    }
+
+    if (isNeonConfigured()) {
+      await neonDeleteBlog(targetId);
     }
 
     const saveRes = await saveStoredBlogs(updatedList);

@@ -125,7 +125,7 @@ export async function getStoredProjects(): Promise<Project[]> {
   if (isNeonConfigured()) {
     try {
       const fromNeon = await neonGetProjects();
-      if (fromNeon !== null && fromNeon.length > 0) {
+      if (fromNeon !== null) {
         globalThis.__theug_projects_cache = fromNeon;
         return fromNeon;
       }

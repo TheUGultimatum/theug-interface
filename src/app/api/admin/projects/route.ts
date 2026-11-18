@@ -6,6 +6,7 @@ import {
   saveStoredProjects,
   getStorageDiagnostics,
 } from "@/lib/serverStore";
+import { isNeonConfigured, neonDeleteProject } from "@/lib/neon";
 
 function verifyAdminRequest(request: Request): boolean {
   const authHeader = request.headers.get("authorization");
@@ -13,17 +14,17 @@ function verifyAdminRequest(request: Request): boolean {
 
   if (verifySessionToken(token)) return true;
 
-  // Fallback check against raw secret if configured
   const legacyKey = request.headers.get("x-admin-key");
   const rawSecret = process.env.ADMIN_PASSWORD;
   return Boolean(rawSecret && legacyKey && legacyKey === rawSecret);
 }
 
-// GET all projects (public or authenticated)
-export async function GET() {
+// GET all projects (public list, admin gets storage diagnostics)
+export async function GET(request: Request) {
   const projects = await getStoredProjects();
-  const storage = getStorageDiagnostics();
-  return NextResponse.json({ success: true, projects, storage });
+  const isAdmin = verifyAdminRequest(request);
+  const storage = isAdmin ? getStorageDiagnostics() : undefined;
+  return NextResponse.json({ success: true, projects, ...(storage ? { storage } : {}) });
 }
 
 // POST: Add new project or replace entire list
@@ -111,6 +112,10 @@ export async function DELETE(request: Request) {
 
     if (updatedList.length === currentList.length) {
       return NextResponse.json({ success: false, error: "Project not found" }, { status: 404 });
+    }
+
+    if (isNeonConfigured()) {
+      await neonDeleteProject(targetId);
     }
 
     const saveRes = await saveStoredProjects(updatedList);

@@ -42,6 +42,12 @@ export function resetRateLimit(identifier: string) {
   rateLimitMap.delete(identifier);
 }
 
+function safeCompare(a: string, b: string): boolean {
+  const hashA = crypto.createHash("sha256").update(a).digest();
+  const hashB = crypto.createHash("sha256").update(b).digest();
+  return crypto.timingSafeEqual(hashA, hashB);
+}
+
 export function verifyCredentials(
   username?: string,
   password?: string,
@@ -59,19 +65,10 @@ export function verifyCredentials(
 
   if (!username || !password || !pin) return false;
 
-  // Constant-time comparison to prevent timing attacks
-  const userMatch = crypto.timingSafeEqual(
-    Buffer.from(username.padEnd(64)),
-    Buffer.from(expectedUser.padEnd(64))
-  );
-  const passMatch = crypto.timingSafeEqual(
-    Buffer.from(password.padEnd(64)),
-    Buffer.from(expectedPass.padEnd(64))
-  );
-  const pinMatch = crypto.timingSafeEqual(
-    Buffer.from(pin.padEnd(16)),
-    Buffer.from(expectedPin.padEnd(16))
-  );
+  // Constant-time comparison via fixed 32-byte SHA-256 hashes to prevent timing attacks & buffer mismatch
+  const userMatch = safeCompare(username, expectedUser);
+  const passMatch = safeCompare(password, expectedPass);
+  const pinMatch = safeCompare(pin, expectedPin);
 
   return userMatch && passMatch && pinMatch;
 }
@@ -100,13 +97,6 @@ export function verifySessionToken(token?: string | null): boolean {
   const payload = `${expiresAtStr}:${randomHex}`;
   const expectedHmac = crypto.createHmac("sha256", SESSION_SECRET).update(payload).digest("hex");
 
-  try {
-    return crypto.timingSafeEqual(
-      Buffer.from(clientHmac),
-      Buffer.from(expectedHmac)
-    );
-  } catch {
-    return false;
-  }
+  return safeCompare(clientHmac, expectedHmac);
 }
 

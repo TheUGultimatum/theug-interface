@@ -97,7 +97,7 @@ export function Now() {
 
                 <div style={{ borderTop: "1px solid var(--color-border)", opacity: 0.3, marginTop: "8px" }} />
 
-                <div style={{ color: "var(--color-text-muted)", fontSize: "9px" }}>
+                <div suppressHydrationWarning style={{ color: "var(--color-text-muted)", fontSize: "9px" }}>
                   LAST_SYNC // {new Date().toISOString().slice(0, 10)} · CLUSTER_ID #48E
                 </div>
               </div>

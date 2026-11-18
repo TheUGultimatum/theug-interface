@@ -67,45 +67,62 @@ export async function ensureDatabaseTables() {
       );
     `);
 
-    // Check if projects table needs initial seed from projects.json
-    const countRes = (await sql.query(
-      `SELECT COUNT(*)::int as count FROM projects`
-    )) as Array<{ count: number }>;
-    if (countRes && countRes[0] && countRes[0].count === 0) {
-      console.info("[Neon] Seeding initial projects from projects.json...");
-      const projectsToSeed = defaultProjects as Project[];
-      for (let i = 0; i < projectsToSeed.length; i++) {
-        const p = projectsToSeed[i];
-        await sql.query(
-          `INSERT INTO projects (
-            id, name, tagline, description, stack, status, deploy_target,
-            live_url, github_url, is_private, banner_url, featured,
-            accent_color, accent_rgb, category, year, sort_order
-          ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
-          ) ON CONFLICT (id) DO NOTHING`,
-          [
-            p.id,
-            p.name,
-            p.tagline || "",
-            p.description || "",
-            JSON.stringify(p.stack || []),
-            p.status,
-            p.deployTarget || "",
-            p.liveUrl || "",
-            p.githubUrl || "",
-            Boolean(p.isPrivate),
-            p.bannerUrl || "",
-            Boolean(p.featured),
-            p.accentColor || "",
-            p.accentRgb || "",
-            p.category || "",
-            p.year || "",
-            i,
-          ]
-        );
+    // System migration table to prevent re-seeding if user intentionally deletes projects
+    await sql.query(`
+      CREATE TABLE IF NOT EXISTS _system_meta (
+        key VARCHAR(100) PRIMARY KEY,
+        value TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    const metaRes = (await sql.query(
+      `SELECT value FROM _system_meta WHERE key = 'initial_seed_completed'`
+    )) as Array<{ value: string }>;
+
+    if (!metaRes || metaRes.length === 0) {
+      const countRes = (await sql.query(
+        `SELECT COUNT(*)::int as count FROM projects`
+      )) as Array<{ count: number }>;
+
+      if (countRes && countRes[0] && countRes[0].count === 0) {
+        console.info("[Neon] First-time initialization: seeding projects from projects.json...");
+        const projectsToSeed = defaultProjects as Project[];
+        for (let i = 0; i < projectsToSeed.length; i++) {
+          const p = projectsToSeed[i];
+          await sql.query(
+            `INSERT INTO projects (
+              id, name, tagline, description, stack, status, deploy_target,
+              live_url, github_url, is_private, banner_url, featured,
+              accent_color, accent_rgb, category, year, sort_order
+            ) VALUES (
+              $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
+            ) ON CONFLICT (id) DO NOTHING`,
+            [
+              p.id,
+              p.name,
+              p.tagline || "",
+              p.description || "",
+              JSON.stringify(p.stack || []),
+              p.status,
+              p.deployTarget || "",
+              p.liveUrl || "",
+              p.githubUrl || "",
+              Boolean(p.isPrivate),
+              p.bannerUrl || "",
+              Boolean(p.featured),
+              p.accentColor || "",
+              p.accentRgb || "",
+              p.category || "",
+              p.year || "",
+              i,
+            ]
+          );
+        }
       }
-      console.info(`[Neon] Successfully seeded ${projectsToSeed.length} projects.`);
+      await sql.query(
+        `INSERT INTO _system_meta (key, value) VALUES ('initial_seed_completed', 'true') ON CONFLICT DO NOTHING`
+      );
     }
 
     isInitialized = true;
@@ -237,39 +254,21 @@ export async function neonSaveBlogsList(blogs: XPost[]): Promise<boolean> {
 
   try {
     await ensureDatabaseTables();
-    // In transaction or loop
-    await sql.query(`BEGIN`);
-    await sql.query(`DELETE FROM blogs`);
-    for (const post of blogs) {
-      await sql.query(
-        `INSERT INTO blogs (
-          id, slug, title, type, url, published_at, read_time,
-          category, summary, body, stats, highlights, tags, is_pinned, updated_at
-        ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW()
-        )`,
-        [
-          post.id,
-          post.slug || post.id,
-          post.title,
-          post.type || "article",
-          post.url || "",
-          post.publishedAt || "",
-          post.readTime || "",
-          post.category || "Web3",
-          post.summary || "",
-          post.body || "",
-          JSON.stringify(post.stats || {}),
-          JSON.stringify(post.highlights || []),
-          JSON.stringify(post.tags || []),
-          Boolean(post.isPinned),
-        ]
-      );
+    if (blogs.length === 0) {
+      await sql.query(`DELETE FROM blogs`);
+      return true;
     }
-    await sql.query(`COMMIT`);
+
+    // Prune blogs that are no longer in the list
+    const remainingIds = blogs.map((b) => b.id);
+    await sql.query(`DELETE FROM blogs WHERE NOT (id = ANY($1::text[]))`, [remainingIds]);
+
+    // Upsert all blogs
+    for (const post of blogs) {
+      await neonSaveBlog(post);
+    }
     return true;
   } catch (err) {
-    await sql.query(`ROLLBACK`).catch(() => {});
     console.error("[Neon] neonSaveBlogsList error:", err);
     return false;
   }
@@ -282,11 +281,11 @@ export async function neonDeleteBlog(id: string): Promise<boolean> {
   try {
     await ensureDatabaseTables();
     const cleanId = id.trim().toLowerCase();
-    const res = await sql.query(
-      `DELETE FROM blogs WHERE LOWER(id) = $1 OR LOWER(slug) = $1`,
+    const res = (await sql.query(
+      `DELETE FROM blogs WHERE LOWER(id) = $1 OR LOWER(slug) = $1 RETURNING id`,
       [cleanId]
-    );
-    return Boolean(res);
+    )) as Array<{ id: string }>;
+    return Boolean(res && res.length > 0);
   } catch (err) {
     console.error("[Neon] neonDeleteBlog error:", err);
     return false;
@@ -357,7 +356,7 @@ export async function neonGetProjects(): Promise<Project[] | null> {
   }
 }
 
-export async function neonSaveProject(project: Project): Promise<boolean> {
+export async function neonSaveProject(project: Project, sortOrder?: number): Promise<boolean> {
   const sql = getSql();
   if (!sql) return false;
 
@@ -367,9 +366,9 @@ export async function neonSaveProject(project: Project): Promise<boolean> {
       `INSERT INTO projects (
         id, name, tagline, description, stack, status, deploy_target,
         live_url, github_url, is_private, banner_url, featured,
-        accent_color, accent_rgb, category, year, updated_at
+        accent_color, accent_rgb, category, year, sort_order, updated_at
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW()
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NOW()
       )
       ON CONFLICT (id) DO UPDATE SET
         name = EXCLUDED.name,
@@ -387,6 +386,7 @@ export async function neonSaveProject(project: Project): Promise<boolean> {
         accent_rgb = EXCLUDED.accent_rgb,
         category = EXCLUDED.category,
         year = EXCLUDED.year,
+        sort_order = COALESCE(EXCLUDED.sort_order, projects.sort_order),
         updated_at = NOW();`,
       [
         project.id,
@@ -405,6 +405,7 @@ export async function neonSaveProject(project: Project): Promise<boolean> {
         project.accentRgb || "",
         project.category || "",
         project.year || "",
+        sortOrder ?? 0,
       ]
     );
     return true;
@@ -420,43 +421,21 @@ export async function neonSaveProjectsList(projects: Project[]): Promise<boolean
 
   try {
     await ensureDatabaseTables();
-    await sql.query(`BEGIN`);
-    await sql.query(`DELETE FROM projects`);
-    for (let i = 0; i < projects.length; i++) {
-      const p = projects[i];
-      await sql.query(
-        `INSERT INTO projects (
-          id, name, tagline, description, stack, status, deploy_target,
-          live_url, github_url, is_private, banner_url, featured,
-          accent_color, accent_rgb, category, year, sort_order, updated_at
-        ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NOW()
-        )`,
-        [
-          p.id,
-          p.name,
-          p.tagline || "",
-          p.description || "",
-          JSON.stringify(p.stack || []),
-          p.status,
-          p.deployTarget || "",
-          p.liveUrl || "",
-          p.githubUrl || "",
-          Boolean(p.isPrivate),
-          p.bannerUrl || "",
-          Boolean(p.featured),
-          p.accentColor || "",
-          p.accentRgb || "",
-          p.category || "",
-          p.year || "",
-          i,
-        ]
-      );
+    if (projects.length === 0) {
+      await sql.query(`DELETE FROM projects`);
+      return true;
     }
-    await sql.query(`COMMIT`);
+
+    // Prune removed projects
+    const remainingIds = projects.map((p) => p.id);
+    await sql.query(`DELETE FROM projects WHERE NOT (id = ANY($1::text[]))`, [remainingIds]);
+
+    // Upsert all projects with new sort order
+    for (let i = 0; i < projects.length; i++) {
+      await neonSaveProject(projects[i], i);
+    }
     return true;
   } catch (err) {
-    await sql.query(`ROLLBACK`).catch(() => {});
     console.error("[Neon] neonSaveProjectsList error:", err);
     return false;
   }
@@ -469,8 +448,11 @@ export async function neonDeleteProject(id: string): Promise<boolean> {
   try {
     await ensureDatabaseTables();
     const cleanId = id.trim().toLowerCase();
-    const res = await sql.query(`DELETE FROM projects WHERE LOWER(id) = $1`, [cleanId]);
-    return Boolean(res);
+    const res = (await sql.query(
+      `DELETE FROM projects WHERE LOWER(id) = $1 RETURNING id`,
+      [cleanId]
+    )) as Array<{ id: string }>;
+    return Boolean(res && res.length > 0);
   } catch (err) {
     console.error("[Neon] neonDeleteProject error:", err);
     return false;

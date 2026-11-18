@@ -567,7 +567,10 @@ export default function AdminPage() {
     try {
       const res = await fetch("/api/admin/preview-link", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionToken}`,
+        },
         body: JSON.stringify({ url: targetUrl.trim() }),
       });
 

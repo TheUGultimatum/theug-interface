@@ -4,14 +4,14 @@ import path from "path";
 import { verifySessionToken } from "@/lib/adminAuth";
 
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "projects");
-const ALLOWED_MIME_TYPES = [
-  "image/png",
-  "image/jpeg",
-  "image/jpg",
-  "image/webp",
-  "image/gif",
-  "image/svg+xml",
-];
+const MIME_EXTENSION_MAP: Record<string, string> = {
+  "image/png": ".png",
+  "image/jpeg": ".jpg",
+  "image/jpg": ".jpg",
+  "image/webp": ".webp",
+  "image/gif": ".gif",
+};
+
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 export async function POST(request: Request) {
@@ -31,12 +31,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "No file provided" }, { status: 400 });
     }
 
-    // 2. Validate file type
-    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+    // 2. Validate strict allowed MIME type and extension
+    const ext = MIME_EXTENSION_MAP[file.type.toLowerCase()];
+    if (!ext) {
       return NextResponse.json(
         {
           success: false,
-          error: `Unsupported file type: ${file.type}. Allowed: PNG, JPEG, WEBP, GIF, SVG`,
+          error: `Unsupported file type: ${file.type}. Allowed: PNG, JPEG, WEBP, GIF`,
         },
         { status: 400 }
       );
@@ -51,18 +52,34 @@ export async function POST(request: Request) {
     }
 
     // 4. Ensure upload directory exists
-    await fs.mkdir(UPLOAD_DIR, { recursive: true });
+    try {
+      await fs.mkdir(UPLOAD_DIR, { recursive: true });
+    } catch {
+      // ignore on serverless read-only
+    }
 
-    // 5. Generate safe unique filename
+    // 5. Generate safe unique filename using enforced extension only
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    const ext = path.extname(file.name) || `.${file.type.split("/")[1] || "png"}`;
-    const cleanBase = path.basename(file.name, ext).replace(/[^a-zA-Z0-9_-]/g, "_");
+    const cleanBase = path.basename(file.name, path.extname(file.name)).replace(/[^a-zA-Z0-9_-]/g, "_");
     const uniqueName = `theug_${cleanBase}_${Date.now()}${ext}`.toLowerCase();
     const targetFilePath = path.join(UPLOAD_DIR, uniqueName);
 
-    await fs.writeFile(targetFilePath, buffer);
+    try {
+      await fs.writeFile(targetFilePath, buffer);
+    } catch {
+      // If filesystem is read-only (e.g. Vercel), convert to data URL so the image still renders
+      const base64Data = buffer.toString("base64");
+      const dataUri = `data:${file.type};base64,${base64Data}`;
+      return NextResponse.json({
+        success: true,
+        url: dataUri,
+        name: uniqueName,
+        size: file.size,
+        message: "Image uploaded as inline asset",
+      });
+    }
 
     const publicUrl = `/uploads/projects/${uniqueName}`;
 

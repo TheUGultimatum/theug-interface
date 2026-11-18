@@ -1,6 +1,39 @@
 import { NextResponse } from "next/server";
+import { verifySessionToken } from "@/lib/adminAuth";
+
+function isPrivateIpOrHost(hostname: string): boolean {
+  const lower = hostname.toLowerCase();
+  if (
+    lower === "localhost" ||
+    lower === "127.0.0.1" ||
+    lower === "::1" ||
+    lower === "0.0.0.0" ||
+    lower.endsWith(".local") ||
+    lower.endsWith(".internal") ||
+    lower === "169.254.169.254"
+  ) {
+    return true;
+  }
+  // Check private IP ranges (10.x.x.x, 192.168.x.x, 172.16-31.x.x)
+  if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(lower)) return true;
+  if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(lower)) return true;
+  if (/^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(lower)) return true;
+  if (/^169\.254\.\d{1,3}\.\d{1,3}$/.test(lower)) return true;
+
+  return false;
+}
 
 export async function POST(request: Request) {
+  // 1. Require admin authentication
+  const authHeader = request.headers.get("authorization");
+  const token = authHeader?.replace(/^Bearer\s+/i, "") || request.headers.get("x-admin-token");
+  if (!verifySessionToken(token)) {
+    return NextResponse.json(
+      { success: false, error: "Unauthorized: Admin session required" },
+      { status: 401 }
+    );
+  }
+
   try {
     const { url } = await request.json();
 
@@ -12,6 +45,22 @@ export async function POST(request: Request) {
     }
 
     const trimmedUrl = url.trim();
+
+    // 2. Validate URL protocol and target (SSRF prevention)
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(trimmedUrl);
+    } catch {
+      return NextResponse.json({ success: false, error: "Malformed URL" }, { status: 400 });
+    }
+
+    if (parsedUrl.protocol !== "https:" && parsedUrl.protocol !== "http:") {
+      return NextResponse.json({ success: false, error: "Only HTTP/HTTPS URLs allowed" }, { status: 400 });
+    }
+
+    if (isPrivateIpOrHost(parsedUrl.hostname)) {
+      return NextResponse.json({ success: false, error: "Access to private or local hosts is disallowed" }, { status: 403 });
+    }
 
     // 1. Twitter / X Link Preview via official Twitter oEmbed
     const isXUrl = /(?:twitter\.com|x\.com)\/[^/]+\/status\/\d+/i.test(trimmedUrl);

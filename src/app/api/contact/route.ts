@@ -87,26 +87,31 @@ export async function POST(request: Request) {
     const resend = new Resend(apiKey);
 
     // Sanitize and format the message text slightly to prevent HTML injection in the template
-    const sanitizedMessage = message
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
+    const escapeHtml = (str: string) =>
+      str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+    const sanitizedMessage = escapeHtml(message);
+    const sanitizedName = escapeHtml(name.trim());
+    const sanitizedEmail = escapeHtml(email.trim());
 
     // 7. Dispatch Mail Transmission
     const { data, error } = await resend.emails.send({
       from: "onboarding@resend.dev",
       to: "usmaangani253@gmail.com",
-      subject: `[Portfolio Link] Telemetry Uplink from ${name.trim()}`,
+      subject: `[Portfolio Link] Telemetry Uplink from ${sanitizedName}`,
       html: `
         <div style="font-family: 'Courier New', Courier, monospace; padding: 24px; background-color: #050505; color: #ededed; border: 1px solid #1a1a1a; border-radius: 4px; max-width: 600px; margin: 0 auto; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);">
           <h2 style="color: #ff5e3a; border-bottom: 2px solid #1a1a1a; padding-bottom: 12px; margin-top: 0; font-size: 16px; letter-spacing: 0.1em; text-transform: uppercase;">
             [TELEMETRY UPLINK RECEIVED]
           </h2>
           <div style="margin: 16px 0; font-size: 13px; line-height: 1.6;">
-            <p style="margin: 6px 0;"><strong style="color: #00d9ff; text-transform: uppercase;">SENDER_NAME:</strong> ${name.trim()}</p>
-            <p style="margin: 6px 0;"><strong style="color: #00d9ff; text-transform: uppercase;">SENDER_EMAIL:</strong> <a href="mailto:${email.trim()}" style="color: #00d9ff; text-decoration: none;">${email.trim()}</a></p>
+            <p style="margin: 6px 0;"><strong style="color: #00d9ff; text-transform: uppercase;">SENDER_NAME:</strong> ${sanitizedName}</p>
+            <p style="margin: 6px 0;"><strong style="color: #00d9ff; text-transform: uppercase;">SENDER_EMAIL:</strong> <a href="mailto:${sanitizedEmail}" style="color: #00d9ff; text-decoration: none;">${sanitizedEmail}</a></p>
             <p style="margin: 6px 0; margin-top: 20px;"><strong style="color: #00d9ff; text-transform: uppercase;">PAYLOAD_TRANSMISSION:</strong></p>
             <pre style="background-color: #0a0a0a; padding: 16px; border-radius: 4px; border: 1px solid #1a1a1a; white-space: pre-wrap; font-family: 'Courier New', Courier, monospace; font-size: 12px; color: #ededed; margin: 8px 0; line-height: 1.5; overflow-x: auto;">${sanitizedMessage}</pre>
           </div>
