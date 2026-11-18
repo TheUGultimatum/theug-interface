@@ -142,31 +142,16 @@ function DispatchCard({ post }: { post: XPost }) {
 
         {/* Title */}
         <h3 className="font-sans font-bold text-xl md:text-2xl text-[var(--color-text-primary)] group-hover:text-[var(--color-amber)] transition-colors leading-snug mb-3.5">
-          {isArticle ? (
-            <Link
-              href={articleHref}
-              className="inline-flex items-center gap-2 focus:outline-none"
-            >
-              <span>{post.title}</span>
-              <ArrowUpRight
-                size={16}
-                className="opacity-0 -translate-y-0.5 translate-x-0.5 group-hover:opacity-100 transition-all text-[var(--color-amber)]"
-              />
-            </Link>
-          ) : (
-            <a
-              href={post.url || defaultExternalUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 focus:outline-none"
-            >
-              <span>{post.title}</span>
-              <ArrowUpRight
-                size={16}
-                className="opacity-0 -translate-y-0.5 translate-x-0.5 group-hover:opacity-100 transition-all text-[var(--color-amber)]"
-              />
-            </a>
-          )}
+          <Link
+            href={articleHref}
+            className="inline-flex items-center gap-2 focus:outline-none"
+          >
+            <span>{post.title}</span>
+            <ArrowUpRight
+              size={16}
+              className="opacity-0 -translate-y-0.5 translate-x-0.5 group-hover:opacity-100 transition-all text-[var(--color-amber)]"
+            />
+          </Link>
         </h3>
 
         {/* Summary */}
@@ -226,11 +211,11 @@ function DispatchCard({ post }: { post: XPost }) {
           )}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <button
             onClick={handleShare}
-            className="p-2 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-elevated)] transition-colors"
-            title="Copy link"
+            className="p-2 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-elevated)] transition-colors cursor-pointer"
+            title="Copy dispatch link"
             type="button"
           >
             {copied ? (
@@ -240,37 +225,29 @@ function DispatchCard({ post }: { post: XPost }) {
             )}
           </button>
 
-          {isArticle ? (
-            <Link
-              href={articleHref}
-              className="font-mono text-xs md:text-sm font-semibold text-[var(--color-cyan)] hover:underline inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[rgba(0,240,255,0.08)] hover:bg-[rgba(0,240,255,0.15)] transition-colors"
-            >
-              <span>Read Article</span>
-              <ArrowUpRight size={14} />
-            </Link>
-          ) : isLinkedIn ? (
+          {post.url && (
             <a
-              href={post.url || "https://www.linkedin.com/in/usmaan-gani/"}
+              href={post.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-mono text-xs md:text-sm font-semibold text-[#0a66c2] hover:underline inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[rgba(10,102,194,0.1)] hover:bg-[rgba(10,102,194,0.18)] transition-colors"
+              className="p-2 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-elevated)] transition-colors"
+              title={isLinkedIn ? "View original on LinkedIn" : "View original on X"}
             >
-              <LinkedInIcon className="w-3.5 h-3.5 fill-[#0a66c2]" />
-              <span>Read on LinkedIn</span>
-              <ExternalLink size={13} />
-            </a>
-          ) : (
-            <a
-              href={post.url || "https://x.com/Usmaangani252"}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-mono text-xs md:text-sm font-semibold text-[var(--color-amber)] hover:underline inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[rgba(255,94,58,0.08)] hover:bg-[rgba(255,94,58,0.15)] transition-colors"
-            >
-              <XIcon className="w-3 h-3 fill-current" />
-              <span>View on X</span>
-              <ExternalLink size={13} />
+              {isLinkedIn ? (
+                <LinkedInIcon className="w-3.5 h-3.5 fill-[#0a66c2]" />
+              ) : (
+                <XIcon className="w-3 h-3 fill-current text-[var(--color-amber)]" />
+              )}
             </a>
           )}
+
+          <Link
+            href={articleHref}
+            className="font-mono text-xs md:text-sm font-semibold text-[var(--color-cyan)] hover:underline inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[rgba(0,240,255,0.08)] hover:bg-[rgba(0,240,255,0.15)] transition-colors"
+          >
+            <span>Read Dispatch</span>
+            <ArrowUpRight size={14} />
+          </Link>
         </div>
       </div>
     </article>
