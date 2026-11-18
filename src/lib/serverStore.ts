@@ -4,6 +4,13 @@ import os from "os";
 import { XPost } from "@/config/blogsData";
 import { Project } from "@/types/project";
 import defaultProjects from "@/data/projects.json";
+import {
+  isNeonConfigured,
+  neonGetBlogs,
+  neonSaveBlogsList,
+  neonGetProjects,
+  neonSaveProjectsList,
+} from "./neon";
 
 // In-memory cache across serverless warm invocations
 declare global {
@@ -19,135 +26,29 @@ const LOCAL_PROJECTS_PATH = path.join(process.cwd(), "src", "data", "projects.js
 const TMP_BLOGS_PATH = path.join(os.tmpdir(), "theug_blogs_store.json");
 const TMP_PROJECTS_PATH = path.join(os.tmpdir(), "theug_projects_store.json");
 
-// GitHub GitOps Configuration (optional, enabled if GITHUB_TOKEN is present in env)
-const GITHUB_TOKEN =
-  process.env.GITHUB_TOKEN ||
-  process.env.GH_TOKEN ||
-  process.env.GITHUB_PAT ||
-  "";
-const GITHUB_OWNER = process.env.GITHUB_OWNER || "TheUGultimatum";
-const GITHUB_REPO = process.env.GITHUB_REPO || "theug-interface";
-const GITHUB_BRANCH = process.env.GITHUB_BRANCH || "main";
-
-// Upstash / Vercel KV Configuration (optional)
-const KV_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || "";
-const KV_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || "";
-
 /* ─────────────────────────────────────────────────────────────────────────────
-   Upstash / Vercel KV Helpers
-   ───────────────────────────────────────────────────────────────────────────── */
-async function kvGet<T>(key: string): Promise<T | null> {
-  if (!KV_URL || !KV_TOKEN) return null;
-  try {
-    const res = await fetch(`${KV_URL}/get/${encodeURIComponent(key)}`, {
-      headers: { Authorization: `Bearer ${KV_TOKEN}` },
-      cache: "no-store",
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (data.result) {
-      return typeof data.result === "string" ? JSON.parse(data.result) : data.result;
-    }
-    return null;
-  } catch (err) {
-    console.warn(`KV GET for "${key}" failed:`, err);
-    return null;
-  }
-}
-
-async function kvSet(key: string, value: unknown): Promise<boolean> {
-  if (!KV_URL || !KV_TOKEN) return false;
-  try {
-    const res = await fetch(`${KV_URL}/set/${encodeURIComponent(key)}`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${KV_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(JSON.stringify(value)),
-    });
-    return res.ok;
-  } catch (err) {
-    console.warn(`KV SET for "${key}" failed:`, err);
-    return false;
-  }
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   GitHub GitOps Commit Helper (Commits directly to the repo on main branch)
-   ───────────────────────────────────────────────────────────────────────────── */
-async function syncToGitHub(filePath: string, contentJson: string, commitMessage: string): Promise<boolean> {
-  if (!GITHUB_TOKEN) return false;
-
-  try {
-    const apiPath = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}`;
-    const headers = {
-      Authorization: `Bearer ${GITHUB_TOKEN}`,
-      Accept: "application/vnd.github+json",
-      "User-Agent": "theug-interface-cms",
-    };
-
-    // 1. Fetch current file SHA if exists
-    let sha: string | undefined;
-    try {
-      const getRes = await fetch(`${apiPath}?ref=${GITHUB_BRANCH}`, {
-        headers,
-        cache: "no-store",
-      });
-      if (getRes.ok) {
-        const fileInfo = await getRes.json();
-        sha = fileInfo.sha;
-      }
-    } catch {
-      // file might not exist yet
-    }
-
-    // 2. Commit updated file
-    const putRes = await fetch(apiPath, {
-      method: "PUT",
-      headers: {
-        ...headers,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        message: commitMessage,
-        content: Buffer.from(contentJson, "utf-8").toString("base64"),
-        branch: GITHUB_BRANCH,
-        ...(sha ? { sha } : {}),
-      }),
-    });
-
-    if (!putRes.ok) {
-      const errText = await putRes.text();
-      console.warn(`GitHub GitOps sync failed (${putRes.status}):`, errText);
-      return false;
-    }
-
-    console.info(`[GitOps] Successfully committed ${filePath} to ${GITHUB_REPO}:${GITHUB_BRANCH}`);
-    return true;
-  } catch (err) {
-    console.warn("GitHub GitOps commit error:", err);
-    return false;
-  }
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   BLOGS STORAGE
+   BLOGS STORAGE (NEON -> MEMORY -> TMP -> LOCAL FILE)
    ───────────────────────────────────────────────────────────────────────────── */
 export async function getStoredBlogs(): Promise<XPost[]> {
-  // 1. Return in-memory cache if available
+  // 1. Neon Serverless Postgres (Primary Database)
+  if (isNeonConfigured()) {
+    try {
+      const fromNeon = await neonGetBlogs();
+      if (fromNeon !== null) {
+        globalThis.__theug_blogs_cache = fromNeon;
+        return fromNeon;
+      }
+    } catch (err) {
+      console.warn("[Store] Neon getBlogs error, falling back to memory/file:", err);
+    }
+  }
+
+  // 2. Return in-memory cache if available
   if (globalThis.__theug_blogs_cache) {
     return globalThis.__theug_blogs_cache;
   }
 
-  // 2. Try KV
-  const fromKv = await kvGet<XPost[]>("theug_blogs");
-  if (fromKv && Array.isArray(fromKv)) {
-    globalThis.__theug_blogs_cache = fromKv;
-    return fromKv;
-  }
-
-  // 3. Try /tmp file (written by recent serverless invocations)
+  // 3. Try /tmp file
   try {
     const tmpData = await fs.readFile(TMP_BLOGS_PATH, "utf-8");
     const parsed = JSON.parse(tmpData);
@@ -176,21 +77,28 @@ export async function getStoredBlogs(): Promise<XPost[]> {
 }
 
 export async function saveStoredBlogs(blogs: XPost[]): Promise<{
+  savedToNeon: boolean;
   savedToDisk: boolean;
   savedToTmp: boolean;
-  savedToKv: boolean;
-  savedToGitHub: boolean;
 }> {
   // Always update global memory cache immediately
   globalThis.__theug_blogs_cache = blogs;
   const jsonString = JSON.stringify(blogs, null, 2);
 
+  let savedToNeon = false;
   let savedToDisk = false;
   let savedToTmp = false;
-  let savedToKv = false;
-  let savedToGitHub = false;
 
-  // 1. Write to /tmp (always writable in Vercel / AWS Lambda)
+  // 1. Save to Neon Postgres
+  if (isNeonConfigured()) {
+    try {
+      savedToNeon = await neonSaveBlogsList(blogs);
+    } catch (err) {
+      console.error("[Store] Neon saveStoredBlogs error:", err);
+    }
+  }
+
+  // 2. Write to /tmp (always writable in Vercel / AWS Lambda)
   try {
     await fs.writeFile(TMP_BLOGS_PATH, jsonString, "utf-8");
     savedToTmp = true;
@@ -198,53 +106,44 @@ export async function saveStoredBlogs(blogs: XPost[]): Promise<{
     console.warn("Could not write blogs to /tmp:", e);
   }
 
-  // 2. Try writing to repo file (works locally, read-only on Vercel)
+  // 3. Try writing to repo file (works locally, read-only on Vercel)
   try {
     await fs.writeFile(LOCAL_BLOGS_PATH, jsonString, "utf-8");
     savedToDisk = true;
   } catch {
-    // expected in Vercel serverless read-only filesystem
     savedToDisk = false;
   }
 
-  // 3. Try KV if configured
-  if (KV_URL && KV_TOKEN) {
-    savedToKv = await kvSet("theug_blogs", blogs);
-  }
-
-  // 4. Sync to GitHub repository if GITHUB_TOKEN is configured
-  if (GITHUB_TOKEN) {
-    savedToGitHub = await syncToGitHub(
-      "src/data/blogs.json",
-      jsonString,
-      `chore(cms): update dispatches via admin [${blogs.length} items]`
-    );
-  }
-
-  return { savedToDisk, savedToTmp, savedToKv, savedToGitHub };
+  return { savedToNeon, savedToDisk, savedToTmp };
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   PROJECTS STORAGE
+   PROJECTS STORAGE (NEON -> MEMORY -> TMP -> LOCAL FILE)
    ───────────────────────────────────────────────────────────────────────────── */
 export async function getStoredProjects(): Promise<Project[]> {
-  // 1. Return in-memory cache if available
-  if (globalThis.__theug_projects_cache) {
-    return globalThis.__theug_projects_cache;
+  // 1. Neon Serverless Postgres (Primary Database)
+  if (isNeonConfigured()) {
+    try {
+      const fromNeon = await neonGetProjects();
+      if (fromNeon !== null && fromNeon.length > 0) {
+        globalThis.__theug_projects_cache = fromNeon;
+        return fromNeon;
+      }
+    } catch (err) {
+      console.warn("[Store] Neon getProjects error, falling back to memory/file:", err);
+    }
   }
 
-  // 2. Try KV
-  const fromKv = await kvGet<Project[]>("theug_projects");
-  if (fromKv && Array.isArray(fromKv)) {
-    globalThis.__theug_projects_cache = fromKv;
-    return fromKv;
+  // 2. Return in-memory cache if available
+  if (globalThis.__theug_projects_cache) {
+    return globalThis.__theug_projects_cache;
   }
 
   // 3. Try /tmp file
   try {
     const tmpData = await fs.readFile(TMP_PROJECTS_PATH, "utf-8");
     const parsed = JSON.parse(tmpData);
-    if (Array.isArray(parsed)) {
+    if (Array.isArray(parsed) && parsed.length > 0) {
       globalThis.__theug_projects_cache = parsed;
       return parsed;
     }
@@ -256,7 +155,7 @@ export async function getStoredProjects(): Promise<Project[]> {
   try {
     const localData = await fs.readFile(LOCAL_PROJECTS_PATH, "utf-8");
     const parsed = JSON.parse(localData);
-    if (Array.isArray(parsed)) {
+    if (Array.isArray(parsed) && parsed.length > 0) {
       globalThis.__theug_projects_cache = parsed;
       return parsed;
     }
@@ -271,21 +170,28 @@ export async function getStoredProjects(): Promise<Project[]> {
 }
 
 export async function saveStoredProjects(projects: Project[]): Promise<{
+  savedToNeon: boolean;
   savedToDisk: boolean;
   savedToTmp: boolean;
-  savedToKv: boolean;
-  savedToGitHub: boolean;
 }> {
   // Always update global memory cache immediately
   globalThis.__theug_projects_cache = projects;
   const jsonString = JSON.stringify(projects, null, 2);
 
+  let savedToNeon = false;
   let savedToDisk = false;
   let savedToTmp = false;
-  let savedToKv = false;
-  let savedToGitHub = false;
 
-  // 1. Write to /tmp
+  // 1. Save to Neon Postgres
+  if (isNeonConfigured()) {
+    try {
+      savedToNeon = await neonSaveProjectsList(projects);
+    } catch (err) {
+      console.error("[Store] Neon saveStoredProjects error:", err);
+    }
+  }
+
+  // 2. Write to /tmp
   try {
     await fs.writeFile(TMP_PROJECTS_PATH, jsonString, "utf-8");
     savedToTmp = true;
@@ -293,7 +199,7 @@ export async function saveStoredProjects(projects: Project[]): Promise<{
     console.warn("Could not write projects to /tmp:", e);
   }
 
-  // 2. Try writing to repo file
+  // 3. Try writing to repo file
   try {
     await fs.writeFile(LOCAL_PROJECTS_PATH, jsonString, "utf-8");
     savedToDisk = true;
@@ -301,44 +207,25 @@ export async function saveStoredProjects(projects: Project[]): Promise<{
     savedToDisk = false;
   }
 
-  // 3. Try KV if configured
-  if (KV_URL && KV_TOKEN) {
-    savedToKv = await kvSet("theug_projects", projects);
-  }
-
-  // 4. Sync to GitHub repository if GITHUB_TOKEN is configured
-  if (GITHUB_TOKEN) {
-    savedToGitHub = await syncToGitHub(
-      "src/data/projects.json",
-      jsonString,
-      `chore(cms): update projects via admin [${projects.length} items]`
-    );
-  }
-
-  return { savedToDisk, savedToTmp, savedToKv, savedToGitHub };
+  return { savedToNeon, savedToDisk, savedToTmp };
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
    STORAGE DIAGNOSTICS
    ───────────────────────────────────────────────────────────────────────────── */
 export function getStorageDiagnostics() {
-  const hasGitHub = Boolean(GITHUB_TOKEN);
-  const hasKv = Boolean(KV_URL && KV_TOKEN);
+  const hasNeon = isNeonConfigured();
   const isVercel = Boolean(process.env.VERCEL);
 
-  let mode: "github" | "kv" | "local" | "tmp" = "local";
-  if (hasGitHub) mode = "github";
-  else if (hasKv) mode = "kv";
+  let mode: "neon" | "local" | "tmp" = "local";
+  if (hasNeon) mode = "neon";
   else if (isVercel) mode = "tmp";
 
   return {
     mode,
-    isPersistent: hasGitHub || hasKv || !isVercel,
-    hasGitHub,
-    hasKv,
+    isPersistent: hasNeon || !isVercel,
+    hasNeon,
     isVercel,
-    owner: GITHUB_OWNER,
-    repo: GITHUB_REPO,
-    branch: GITHUB_BRANCH,
+    database: hasNeon ? "Neon Serverless Postgres" : "File-based fallback",
   };
 }

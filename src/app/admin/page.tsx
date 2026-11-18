@@ -228,14 +228,13 @@ export default function AdminPage() {
   const [statusMessage, setStatusMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState<boolean>(false);
   const [storageInfo, setStorageInfo] = useState<{
-    mode: "github" | "kv" | "local" | "tmp";
+    mode: "neon" | "github" | "kv" | "local" | "tmp";
     isPersistent: boolean;
-    hasGitHub: boolean;
-    hasKv: boolean;
+    hasNeon?: boolean;
+    hasGitHub?: boolean;
+    hasKv?: boolean;
     isVercel: boolean;
-    owner?: string;
-    repo?: string;
-    branch?: string;
+    database?: string;
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -872,23 +871,23 @@ export default function AdminPage() {
 
           {/* Storage Connection Indicator */}
           <div className="flex flex-wrap items-center gap-2 mt-3 text-[11px] font-mono">
-            {storageInfo?.hasGitHub ? (
-              <span className="px-2.5 py-1 rounded-md bg-[rgba(0,255,136,0.08)] border border-[rgba(0,255,136,0.3)] text-[var(--color-online)] flex items-center gap-1.5">
+            {storageInfo?.hasNeon ? (
+              <span className="px-2.5 py-1 rounded-md bg-[rgba(0,255,136,0.08)] border border-[rgba(0,255,136,0.3)] text-[var(--color-online)] flex items-center gap-1.5 font-semibold">
                 <CheckCircle2 size={12} />
-                <span>GitOps Connected ({storageInfo.repo}:{storageInfo.branch})</span>
+                <span>Neon Postgres Connected (Real-Time Cloud DB)</span>
               </span>
-            ) : storageInfo?.hasKv ? (
+            ) : storageInfo?.hasGitHub ? (
               <span className="px-2.5 py-1 rounded-md bg-[rgba(0,255,136,0.08)] border border-[rgba(0,255,136,0.3)] text-[var(--color-online)] flex items-center gap-1.5">
                 <CheckCircle2 size={12} />
-                <span>KV Database Connected</span>
+                <span>GitOps Connected</span>
               </span>
             ) : storageInfo?.isVercel ? (
               <span
                 className="px-2.5 py-1 rounded-md bg-[rgba(255,184,0,0.08)] border border-[rgba(255,184,0,0.3)] text-[var(--color-amber)] flex items-center gap-1.5"
-                title="Serverless memory & /tmp active. Add GITHUB_TOKEN to Vercel Environment Variables for permanent Git auto-commits."
+                title="Add DATABASE_URL to Vercel Environment Variables to connect Neon."
               >
                 <AlertCircle size={12} />
-                <span>Serverless Storage (Add GITHUB_TOKEN to Vercel for auto Git commits)</span>
+                <span>Serverless Fallback (Add DATABASE_URL to Vercel)</span>
               </span>
             ) : (
               <span className="px-2.5 py-1 rounded-md bg-[var(--color-elevated)] border border-[var(--color-border)] text-[var(--color-text-muted)] flex items-center gap-1.5">
