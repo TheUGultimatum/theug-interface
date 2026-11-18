@@ -48,28 +48,6 @@
     "year": "2024"
   },
   {
-    "id": "drosera-network-node",
-    "name": "DROSERA NETWORK NODE",
-    "tagline": "Automated consensus node deployment & monitoring",
-    "description": "Infrastructure automation suite for running Drosera Network consensus nodes, telemetry streaming, and automated health recovery.",
-    "stack": [
-      "Shell",
-      "Docker",
-      "Linux",
-      "Node.js",
-      "RPC"
-    ],
-    "status": "live",
-    "deployTarget": "VPS / LINUX",
-    "githubUrl": "https://github.com/TheUGultimatum/DROSERA-NETWORK-NODE",
-    "isPrivate": false,
-    "featured": true,
-    "accentColor": "var(--color-purple)",
-    "accentRgb": "136,85,255",
-    "category": "INFRASTRUCTURE / NODES",
-    "year": "2025"
-  },
-  {
     "id": "dac-node-by-theug",
     "name": "DAC CHAIN TESTNET NODE",
     "tagline": "Automated node runner with wallet & faucet integration",
@@ -131,27 +109,6 @@
     "accentRgb": "136,85,255",
     "category": "AI / CONTENT",
     "year": "2024"
-  },
-  {
-    "id": "quip-node",
-    "name": "QUIP QUANTUM NODE",
-    "tagline": "VPS deployment guide & automated runner",
-    "description": "Automated deployment pipeline and management scripts for QUIP Quantum Blockchain nodes on cloud VPS instances.",
-    "stack": [
-      "Shell",
-      "Linux",
-      "VPS",
-      "Automation"
-    ],
-    "status": "live",
-    "deployTarget": "VPS",
-    "githubUrl": "https://github.com/TheUGultimatum/quip-node-for-vps",
-    "isPrivate": false,
-    "featured": false,
-    "accentColor": "var(--color-amber)",
-    "accentRgb": "255,94,58",
-    "category": "INFRASTRUCTURE / NODES",
-    "year": "2026"
   },
   {
     "id": "devkit",

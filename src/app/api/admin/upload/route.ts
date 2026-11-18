@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
+import sharp from "sharp";
 import { verifySessionToken } from "@/lib/adminAuth";
 
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "projects");
@@ -60,24 +61,35 @@ export async function POST(request: Request) {
 
     // 5. Generate safe unique filename using enforced extension only
     const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    let buffer: Buffer = Buffer.from(bytes);
+
+    // Compress & optimize image (max 1200px width WebP, quality 80) to prevent giant payloads
+    try {
+      const optimized = await sharp(buffer)
+        .resize({ width: 1200, withoutEnlargement: true })
+        .webp({ quality: 80 })
+        .toBuffer();
+      buffer = Buffer.from(optimized);
+    } catch (compressErr) {
+      console.warn("Sharp image compression fallback:", compressErr);
+    }
 
     const cleanBase = path.basename(file.name, path.extname(file.name)).replace(/[^a-zA-Z0-9_-]/g, "_");
-    const uniqueName = `theug_${cleanBase}_${Date.now()}${ext}`.toLowerCase();
+    const uniqueName = `theug_${cleanBase}_${Date.now()}.webp`.toLowerCase();
     const targetFilePath = path.join(UPLOAD_DIR, uniqueName);
 
     try {
       await fs.writeFile(targetFilePath, buffer);
     } catch {
-      // If filesystem is read-only (e.g. Vercel), convert to data URL so the image still renders
+      // If filesystem is read-only (e.g. Vercel), convert to optimized compact WebP data URL
       const base64Data = buffer.toString("base64");
-      const dataUri = `data:${file.type};base64,${base64Data}`;
+      const dataUri = `data:image/webp;base64,${base64Data}`;
       return NextResponse.json({
         success: true,
         url: dataUri,
         name: uniqueName,
-        size: file.size,
-        message: "Image uploaded as inline asset",
+        size: buffer.length,
+        message: "Image uploaded as optimized WebP asset",
       });
     }
 
